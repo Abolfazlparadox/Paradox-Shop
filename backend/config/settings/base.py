@@ -26,6 +26,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
+    # Local Common Apps
+    'common',
+
     # Local Domain Apps
     'apps.users',
     'apps.products',
@@ -103,6 +106,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+# Custom Auth User Model
+AUTH_USER_MODEL = 'users.User'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -186,15 +192,4 @@ LOGGING = {
             'propagate': False,
         },
     },
-}
-
-# Redis Cache Configuration
-# ----------------------------------------------------------------------
-from urllib.parse import urlparse
-redis_url = urlparse(REDIS_URL)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
-    }
 }

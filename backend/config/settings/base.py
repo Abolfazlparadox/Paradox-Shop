@@ -187,3 +187,14 @@ LOGGING = {
         },
     },
 }
+
+# Redis Cache Configuration
+# ----------------------------------------------------------------------
+from urllib.parse import urlparse
+redis_url = urlparse(REDIS_URL)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+    }
+}

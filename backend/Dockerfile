@@ -27,12 +27,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user 'appuser'
+RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
+
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY . .
 
+RUN mkdir -p /app/static /app/media && chown -R appuser:appuser /app
+
 RUN python manage.py collectstatic --noinput || true
+
+USER appuser
 
 EXPOSE 8000
 

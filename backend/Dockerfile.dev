@@ -11,12 +11,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv package manager via pip (reliable across all network environments)
+# Create a non-root user 'appuser' with explicit UID/GID
+RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
+
+# Install uv package manager globally
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml .
 RUN uv pip install --system -e .
 
 COPY . .
+
+# Ensure appuser owns /app and static/media directories
+RUN mkdir -p /app/static /app/media && chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8000

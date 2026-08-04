@@ -1,4 +1,6 @@
-version: '3.8'
+# Production Docker Compose Configuration
+# Note: Production secrets (POSTGRES_PASSWORD, DJANGO_SECRET_KEY, etc.) must be injected 
+# via secure CI/CD secrets / environment variables. Do not use unencrypted .env files in production.
 
 services:
   postgres:
@@ -12,7 +14,7 @@ services:
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,11 +36,20 @@ services:
     container_name: shop_backend_prod
     restart: always
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
-    env_file:
-      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,8 +63,31 @@ services:
     container_name: shop_celery_worker_prod
     restart: always
     command: celery -A config worker -l info
-    env_file:
-      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shop_celery_beat_prod
+    restart: always
+    command: celery -A config beat -l info
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     depends_on:
       - backend
       - redis
@@ -80,8 +114,8 @@ services:
       dockerfile: Dockerfile
     container_name: shop_frontend_prod
     restart: always
-    env_file:
-      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
 
 volumes:
   postgres_data_prod:

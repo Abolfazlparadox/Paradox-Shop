@@ -1,8 +1,11 @@
 from django.urls import path
-from .views import CategoriesHealthCheckView
+
+from .views import CategoryDetailView, CategoryListView, CategoryTreeView
 
 app_name = 'categories'
 
 urlpatterns = [
-    path('health/', CategoriesHealthCheckView.as_view(), name='module_health'),
+    path('tree/', CategoryTreeView.as_view(), name='tree'),
+    path('', CategoryListView.as_view(), name='list'),
+    path('<slug:slug>/', CategoryDetailView.as_view(), name='detail'),
 ]

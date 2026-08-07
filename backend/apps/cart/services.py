@@ -4,7 +4,6 @@ from rest_framework.exceptions import NotFound, ValidationError
 from apps.products.models import Product, ProductVariant
 
 from .models import Cart, CartItem
-from .selectors import CartSelector
 
 
 class CartService:
@@ -31,25 +30,41 @@ class CartService:
     def merge_guest_cart(*, user, session_key: str) -> Cart:
         """
         Merges a guest session Cart into the authenticated user's Cart.
-        Matching line items (same product + variant) have their quantities summed and
-        capped at available stock; non-matching items are moved over. The now-empty
-        guest cart is deleted once merged.
+        Applies select_for_update on both carts and required variants to prevent
+        race conditions with concurrent checkouts.
         """
-        guest_cart = CartSelector.get_session_cart(session_key)
         user_cart, _ = Cart.objects.get_or_create(user=user)
+        user_cart = Cart.objects.select_for_update().get(pk=user_cart.pk)
+
+        if not session_key:
+            return user_cart
+
+        guest_cart = Cart.objects.select_for_update().filter(session_key=session_key).first()
 
         if guest_cart is None or guest_cart.pk == user_cart.pk:
             return user_cart
 
-        for guest_item in guest_cart.items.select_related('product', 'variant').all():
+        # Pre-fetch and lock required variants to ensure live stock data
+        guest_items = list(guest_cart.items.select_related('product', 'variant').all())
+        variant_ids = [item.variant_id for item in guest_items if item.variant_id is not None]
+
+        locked_variants = {}
+        if variant_ids:
+            locked_variants = {
+                v.id: v for v in ProductVariant.objects.select_for_update().filter(id__in=variant_ids)
+            }
+
+        for guest_item in guest_items:
             existing_item = CartItem.objects.filter(
                 cart=user_cart, product=guest_item.product, variant=guest_item.variant
             ).first()
 
             if existing_item:
                 new_quantity = existing_item.quantity + guest_item.quantity
-                if guest_item.variant is not None:
-                    new_quantity = min(new_quantity, guest_item.variant.stock)
+                if guest_item.variant_id:
+                    variant = locked_variants.get(guest_item.variant_id)
+                    if variant:
+                        new_quantity = min(new_quantity, variant.stock)
                 existing_item.quantity = new_quantity
                 existing_item.save(update_fields=['quantity'])
             else:
@@ -66,13 +81,11 @@ class CartItemService:
     @staticmethod
     @transaction.atomic
     def add_item(*, cart: Cart, product_id, variant_id=None, quantity: int) -> CartItem:
-        """
-        Adds `quantity` units of a product (optionally a specific variant) to the cart.
-        If the same product/variant combination already exists in the cart, the
-        quantities are summed. Price is always taken from the server, never the client.
-        """
         if quantity < 1:
             raise ValidationError({'quantity': 'Quantity must be at least 1.'})
+
+        # Lock the Cart row first to maintain a consistent lock hierarchy (Cart -> ProductVariant)
+        cart = Cart.objects.select_for_update().get(pk=cart.pk)
 
         try:
             product = Product.objects.get(pk=product_id, is_active=True)
@@ -112,12 +125,20 @@ class CartItemService:
     @staticmethod
     @transaction.atomic
     def update_quantity(*, cart_item: CartItem, quantity: int) -> CartItem:
-        """Updates a CartItem's quantity, re-validating stock and refreshing the price snapshot."""
         if quantity < 1:
             raise ValidationError({'quantity': 'Quantity must be at least 1. Remove the item instead.'})
 
+        # Lock the parent Cart row first
+        cart = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
+
         if cart_item.variant_id:
-            variant = ProductVariant.objects.select_for_update().get(pk=cart_item.variant_id)
+            try:
+                variant = ProductVariant.objects.select_for_update().get(
+                    pk=cart_item.variant_id, product_id=cart_item.product_id, is_active=True
+                )
+            except ProductVariant.DoesNotExist:
+                raise NotFound('Product variant is no longer available.')
+
             CartItemService._validate_stock(variant=variant, requested_quantity=quantity)
             cart_item.unit_price = variant.final_price
         else:
@@ -128,19 +149,14 @@ class CartItemService:
         return cart_item
 
     @staticmethod
+    @transaction.atomic
     def remove_item(*, cart_item: CartItem) -> None:
-        """Removes a line item from the cart entirely."""
+        # Lock the parent Cart row first
+        cart = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
         cart_item.delete()
 
     @staticmethod
     def _validate_stock(*, variant: ProductVariant | None, requested_quantity: int) -> None:
-        """
-        Validates the requested quantity against variant stock.
-
-        NOTE: Products without a variant have no stock field in the current schema
-        (stock is only tracked on ProductVariant), so quantity is not stock-limited
-        for those line items.
-        """
         if variant is None:
             return
         if requested_quantity > variant.stock:

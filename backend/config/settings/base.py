@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     # Third Party Apps
     'rest_framework',
     'corsheaders',
+    'drf_spectacular',
 
     # Local Common Apps
     'common',
@@ -129,7 +130,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -138,8 +138,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'common.pagination.StandardResultsSetPagination',
     'PAGE_SIZE': 20,
     'EXCEPTION_HANDLER': 'common.exceptions.custom_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
-
+# OpenAPI Documentation Settings (drf-spectacular)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Paradox Shop API',
+    'DESCRIPTION': 'Official API documentation for the Paradox Shop platform.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+}
 # Simple JWT Settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', '30'))),

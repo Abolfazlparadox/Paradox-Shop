@@ -1,0 +1,2081 @@
+openapi: 3.0.3
+info:
+  title: Paradox Shop API
+  version: 1.0.0
+  description: Official API documentation for the Paradox Shop platform.
+paths:
+  /api/v1/cart/:
+    get:
+      operationId: v1_cart_retrieve
+      description: Returns the current Cart (authenticated user's or guest session's)
+        with its items.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/cart/items/:
+    post:
+      operationId: v1_cart_items_create
+      description: Adds an item to the current Cart.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/cart/items/{item_id}/:
+    patch:
+      operationId: v1_cart_items_partial_update
+      description: Updates the quantity of, or removes, a single Cart item belonging
+        to the current Cart.
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: v1_cart_items_destroy
+      description: Updates the quantity of, or removes, a single Cart item belonging
+        to the current Cart.
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/cart/merge/:
+    post:
+      operationId: v1_cart_merge_create
+      description: Merges a guest session Cart into the authenticated user's Cart.
+        Requires authentication.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/categories/:
+    get:
+      operationId: v1_categories_list
+      description: Returns a flat, paginated listing of active categories.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryListList'
+          description: ''
+  /api/v1/categories/{slug}/:
+    get:
+      operationId: v1_categories_retrieve
+      description: Returns a single Category with its parent, direct children and
+        dynamic attributes.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryDetail'
+          description: ''
+  /api/v1/categories/tree/:
+    get:
+      operationId: v1_categories_tree_retrieve
+      description: Returns the full active category hierarchy as a nested tree.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      description: |-
+        Production-grade system health check endpoint.
+        Performs checks for Database and Redis connectivity without leaking sensitive specs.
+      tags:
+      - v1
+      responses:
+        '200':
+          description: No response body
+  /api/v1/orders/:
+    get:
+      operationId: v1_orders_list
+      description: Lists the authenticated user's orders, newest first.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderListList'
+          description: ''
+  /api/v1/orders/{id}/:
+    get:
+      operationId: v1_orders_retrieve
+      description: Retrieves a single Order belonging to the authenticated user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+  /api/v1/orders/checkout/:
+    post:
+      operationId: v1_orders_checkout_create
+      description: |-
+        Initiates checkout from the authenticated user's current cart.
+
+        Validates:
+        - Cart is not empty
+        - Address belongs to the user
+        - Sufficient stock for all variants
+
+        Creates Order, OrderItems, OrderAddress, decrements stock, clears cart — all atomically.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/orders/health/:
+    get:
+      operationId: v1_orders_health_retrieve
+      description: Module health check endpoint.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/:
+    get:
+      operationId: v1_payments_list
+      description: Lists all Payments for the authenticated user's orders.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+  /api/v1/payments/{id}/:
+    get:
+      operationId: v1_payments_retrieve
+      description: Retrieves a single Payment record belonging to the authenticated
+        user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/v1/payments/health/:
+    get:
+      operationId: v1_payments_health_retrieve
+      description: Module health check endpoint.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/pay/:
+    post:
+      operationId: v1_payments_pay_create
+      description: |-
+        Initiates a mock payment for one of the authenticated user's eligible orders.
+
+        The order must be in 'pending' status to be eligible.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      description: |-
+        Returns a paginated, filterable Product catalog listing.
+
+        Supported query params:
+            category      - filter by Category slug
+            brand         - filter by Brand slug
+            is_featured   - filter by featured flag (true/false)
+            min_price     - minimum base_price (inclusive)
+            max_price     - maximum base_price (inclusive)
+            search        - case-insensitive match against name / short_description
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /api/v1/products/{slug}/:
+    get:
+      operationId: v1_products_retrieve
+      description: Returns a single Product with its brand, category, images, variants
+        and attribute values.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/reviews/create/:
+    post:
+      operationId: v1_reviews_create_create
+      description: |-
+        Submits a new product Review by an authenticated user.
+
+        The user must have purchased the product in a paid order.
+        Only one review per product per user is allowed.
+        New reviews are set to is_approved=False (pending moderation).
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reviews/health/:
+    get:
+      operationId: v1_reviews_health_retrieve
+      description: Module health check endpoint.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reviews/product/{product_id}/:
+    get:
+      operationId: v1_reviews_product_list
+      description: Lists approved (public) reviews for a specific product.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
+  /api/v1/users/addresses/:
+    get:
+      operationId: v1_users_addresses_list
+      description: CRUD endpoints for the authenticated user's address book.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAddressList'
+          description: ''
+    post:
+      operationId: v1_users_addresses_create
+      description: CRUD endpoints for the authenticated user's address book.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/users/addresses/{id}/:
+    get:
+      operationId: v1_users_addresses_retrieve
+      description: CRUD endpoints for the authenticated user's address book.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    put:
+      operationId: v1_users_addresses_update
+      description: CRUD endpoints for the authenticated user's address book.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    patch:
+      operationId: v1_users_addresses_partial_update
+      description: CRUD endpoints for the authenticated user's address book.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: v1_users_addresses_destroy
+      description: CRUD endpoints for the authenticated user's address book.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/login/:
+    post:
+      operationId: v1_users_login_create
+      description: Authenticates a user with email/password credentials and issues
+        JWT tokens.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/users/login/refresh/:
+    post:
+      operationId: v1_users_login_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/users/profile/:
+    get:
+      operationId: v1_users_profile_retrieve
+      description: Retrieves or partially/fully updates the authenticated user's account
+        and profile.
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: v1_users_profile_update
+      description: Retrieves or partially/fully updates the authenticated user's account
+        and profile.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: v1_users_profile_partial_update
+      description: Retrieves or partially/fully updates the authenticated user's account
+        and profile.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/users/register/:
+    post:
+      operationId: v1_users_register_create
+      description: Registers a new User account and returns the created user's profile
+        representation.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistration'
+          description: ''
+components:
+  schemas:
+    Address:
+      type: object
+      description: Serializer for a User's shipping/billing Address.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        title:
+          type: string
+          description: e.g. Home, Work
+          maxLength: 100
+        recipient_name:
+          type: string
+          maxLength: 200
+        recipient_phone:
+          type: string
+          maxLength: 20
+        province:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        address_line:
+          type: string
+        is_default:
+          type: boolean
+          title: Is Default Address
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line
+      - city
+      - created_at
+      - id
+      - postal_code
+      - province
+      - recipient_name
+      - recipient_phone
+      - title
+      - updated_at
+    AddressRequest:
+      type: object
+      description: Serializer for a User's shipping/billing Address.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          description: e.g. Home, Work
+          maxLength: 100
+        recipient_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        recipient_phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        province:
+          type: string
+          minLength: 1
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        postal_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        address_line:
+          type: string
+          minLength: 1
+        is_default:
+          type: boolean
+          title: Is Default Address
+      required:
+      - address_line
+      - city
+      - postal_code
+      - province
+      - recipient_name
+      - recipient_phone
+      - title
+    AttributeTypeEnum:
+      enum:
+      - text
+      - number
+      - boolean
+      - select
+      type: string
+      description: |-
+        * `text` - Text
+        * `number` - Number
+        * `boolean` - Boolean
+        * `select` - Select
+    BlankEnum:
+      enum:
+      - ''
+    Brand:
+      type: object
+      description: Lightweight Brand representation embedded in Product responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          title: Brand name
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        logo:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - id
+      - name
+      - slug
+    CategoryAttribute:
+      type: object
+      description: Serializer for a Category's dynamic attribute definitions.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          title: Attribute name
+          maxLength: 255
+        attribute_type:
+          $ref: '#/components/schemas/AttributeTypeEnum'
+        is_required:
+          type: boolean
+        is_filterable:
+          type: boolean
+          description: Used for search/catalog filters
+        is_variant:
+          type: boolean
+          description: Used to define product SKUs/variants
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - id
+      - name
+    CategoryDetail:
+      type: object
+      description: Full Category representation including parent, direct children
+        and dynamic attributes.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          nullable: true
+        image:
+          type: string
+          format: uri
+          nullable: true
+        parent:
+          allOf:
+          - $ref: '#/components/schemas/CategoryMini'
+          readOnly: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryMini'
+          readOnly: true
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryAttribute'
+          readOnly: true
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attributes
+      - children
+      - created_at
+      - id
+      - name
+      - parent
+      - slug
+    CategoryList:
+      type: object
+      description: Serializer for the flat, paginated Category listing endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        parent:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          nullable: true
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - id
+      - name
+      - parent
+      - slug
+    CategoryMini:
+      type: object
+      description: Lightweight Category representation used for embedding (parent,
+        children, product.category).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        image:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - id
+      - name
+      - slug
+    EmailTokenObtainPairRequest:
+      type: object
+      description: Issues JWT access/refresh tokens for email/password credentials
+        with basic user info embedded.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    GenderEnum:
+      enum:
+      - M
+      - F
+      - O
+      type: string
+      description: |-
+        * `M` - Male
+        * `F` - Female
+        * `O` - Other
+    NullEnum:
+      enum:
+      - null
+    OrderAddress:
+      type: object
+      description: Serializer for the shipping address snapshot attached to an Order.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        recipient_name:
+          type: string
+          readOnly: true
+        recipient_phone:
+          type: string
+          readOnly: true
+        province:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        postal_code:
+          type: string
+          readOnly: true
+        address_line:
+          type: string
+          readOnly: true
+      required:
+      - address_line
+      - city
+      - id
+      - postal_code
+      - province
+      - recipient_name
+      - recipient_phone
+    OrderDetail:
+      type: object
+      description: Full Order representation including items, shipping address, and
+        payment references.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        order_number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusC20Enum'
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Subtotal (Rial)
+        shipping_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Shipping cost (Rial)
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Discount amount (Rial)
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Total amount (Rial)
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Order notes
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        shipping_address:
+          allOf:
+          - $ref: '#/components/schemas/OrderAddress'
+          readOnly: true
+      required:
+      - cancelled_at
+      - created_at
+      - discount_amount
+      - id
+      - items
+      - notes
+      - order_number
+      - paid_at
+      - shipping_address
+      - shipping_cost
+      - status
+      - subtotal
+      - total
+      - updated_at
+    OrderItem:
+      type: object
+      description: Serializer for a single Order line item with product/variant references.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        product:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          readOnly: true
+          nullable: true
+        variant:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          readOnly: true
+          nullable: true
+          title: Product variant
+        product_name:
+          type: string
+          readOnly: true
+        variant_name:
+          type: string
+          readOnly: true
+          nullable: true
+        sku:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Unit price snapshot (Rial)
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Total price snapshot (Rial)
+      required:
+      - id
+      - product
+      - product_name
+      - quantity
+      - sku
+      - total_price
+      - unit_price
+      - variant
+      - variant_name
+    OrderList:
+      type: object
+      description: Lightweight Order representation for list endpoints.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        order_number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusC20Enum'
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Subtotal (Rial)
+        shipping_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Shipping cost (Rial)
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Discount amount (Rial)
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Total amount (Rial)
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Order notes
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - discount_amount
+      - id
+      - notes
+      - order_number
+      - paid_at
+      - shipping_cost
+      - status
+      - subtotal
+      - total
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedCategoryListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryList'
+    PaginatedOrderListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderList'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    PaginatedReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+    PatchedAddressRequest:
+      type: object
+      description: Serializer for a User's shipping/billing Address.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          description: e.g. Home, Work
+          maxLength: 100
+        recipient_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        recipient_phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        province:
+          type: string
+          minLength: 1
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        postal_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        address_line:
+          type: string
+          minLength: 1
+        is_default:
+          type: boolean
+          title: Is Default Address
+    PatchedUserProfileRequest:
+      type: object
+      description: Represents the authenticated user's account together with their
+        profile.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile:
+          $ref: '#/components/schemas/UserProfileDetailRequest'
+    Payment:
+      type: object
+      description: Serializer for a Payment record.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        order:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Amount (Rial)
+          description: Payment amount in Iranian Rial.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        payment_method:
+          allOf:
+          - $ref: '#/components/schemas/PaymentMethodEnum'
+          readOnly: true
+        gateway:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Payment gateway
+          description: e.g., zarinpal, pasargad
+        transaction_id:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - created_at
+      - gateway
+      - id
+      - order
+      - payment_method
+      - status
+      - transaction_id
+      - updated_at
+    PaymentMethodEnum:
+      enum:
+      - online
+      - wallet
+      - cod
+      type: string
+      description: |-
+        * `online` - Online Gateway
+        * `wallet` - User Wallet
+        * `cod` - Cash on Delivery
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - processing
+      - succeeded
+      - failed
+      - refunded
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `succeeded` - Succeeded
+        * `failed` - Failed
+        * `refunded` - Refunded
+    ProductAttributeValue:
+      type: object
+      description: Serializer exposing a Product's concrete value for a Category-defined
+        dynamic attribute.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        attribute_id:
+          type: string
+          format: uuid
+          readOnly: true
+        attribute_name:
+          type: string
+          readOnly: true
+        attribute_type:
+          type: string
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+      required:
+      - attribute_id
+      - attribute_name
+      - attribute_type
+      - id
+      - value
+    ProductDetail:
+      type: object
+      description: Full Product representation including brand, category, images,
+        variants and attributes.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          title: Product name
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        short_description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          title: Base price (Rial)
+          description: Base product price in Iranian Rial without decimals.
+        product_type:
+          $ref: '#/components/schemas/ProductTypeEnum'
+        is_active:
+          type: boolean
+        is_featured:
+          type: boolean
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Brand'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryMini'
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+          readOnly: true
+        attribute_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttributeValue'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attribute_values
+      - base_price
+      - brand
+      - category
+      - created_at
+      - description
+      - id
+      - images
+      - name
+      - slug
+      - variants
+    ProductImage:
+      type: object
+      description: Serializer for a Product's gallery images.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        image:
+          type: string
+          format: uri
+          title: Image file
+        alt_text:
+          type: string
+          nullable: true
+          title: Alternative text
+          maxLength: 255
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_primary:
+          type: boolean
+          title: Is primary image
+        variant:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          nullable: true
+          title: Product variant
+      required:
+      - id
+      - image
+    ProductList:
+      type: object
+      description: Lightweight Product representation for the paginated catalog listing
+        endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        name:
+          type: string
+          title: Product name
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        short_description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          title: Base price (Rial)
+          description: Base product price in Iranian Rial without decimals.
+        product_type:
+          $ref: '#/components/schemas/ProductTypeEnum'
+        is_featured:
+          type: boolean
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Brand'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryMini'
+          readOnly: true
+        primary_image:
+          type: string
+          readOnly: true
+      required:
+      - base_price
+      - brand
+      - category
+      - id
+      - name
+      - primary_image
+      - slug
+    ProductTypeEnum:
+      enum:
+      - simple
+      - variable
+      - digital
+      type: string
+      description: |-
+        * `simple` - Simple Product
+        * `variable` - Variable Product
+        * `digital` - Digital Product
+    ProductVariant:
+      type: object
+      description: Serializer for a Product's purchasable SKU/variant.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        sku:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          title: Variant name
+          description: e.g., Red / 128GB
+          maxLength: 255
+        price_override:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: Price override (Rial)
+          description: Overrides base product price if specified.
+        final_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+        stock:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Stock inventory
+        is_active:
+          type: boolean
+        attributes:
+          title: Variant attributes
+          description: JSON dictionary of specific variant attribute key-value pairs.
+      required:
+      - final_price
+      - id
+      - name
+      - sku
+    Review:
+      type: object
+      description: Serializer for a public Review representation.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        product:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID v4) for this record.
+          readOnly: true
+        user_display_name:
+          type: string
+          description: |-
+            Returns a privacy-safe display name for the reviewer.
+            Uses the user's full name if available, otherwise returns 'Anonymous'.
+            The user's email is never exposed on the public review endpoint.
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+          title: Rating (1-5)
+        title:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Review title
+        body:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Review body
+        is_verified_purchase:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - id
+      - is_verified_purchase
+      - product
+      - rating
+      - title
+      - updated_at
+      - user_display_name
+    StatusC20Enum:
+      enum:
+      - pending
+      - processing
+      - shipped
+      - delivered
+      - cancelled
+      - refunded
+      type: string
+      description: |-
+        * `pending` - Pending Payment
+        * `processing` - Processing
+        * `shipped` - Shipped
+        * `delivered` - Delivered
+        * `cancelled` - Cancelled
+        * `refunded` - Refunded
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UserProfile:
+      type: object
+      description: Represents the authenticated user's account together with their
+        profile.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile:
+          $ref: '#/components/schemas/UserProfileDetail'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - full_name
+      - id
+    UserProfileDetail:
+      type: object
+      description: Serializer for the UserProfile model, nested inside UserProfileSerializer.
+      properties:
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        national_id:
+          type: string
+          nullable: true
+          maxLength: 10
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        email_verified:
+          type: boolean
+          readOnly: true
+        phone_verified:
+          type: boolean
+          readOnly: true
+      required:
+      - email_verified
+      - phone_verified
+    UserProfileDetailRequest:
+      type: object
+      description: Serializer for the UserProfile model, nested inside UserProfileSerializer.
+      properties:
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        national_id:
+          type: string
+          nullable: true
+          maxLength: 10
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+    UserProfileRequest:
+      type: object
+      description: Represents the authenticated user's account together with their
+        profile.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile:
+          $ref: '#/components/schemas/UserProfileDetailRequest'
+    UserRegistration:
+      type: object
+      description: Validates and creates a new User account.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 255
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - email
+      - id
+    UserRegistrationRequest:
+      type: object
+      description: Validates and creates a new User account.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - email
+      - password
+      - password_confirm
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

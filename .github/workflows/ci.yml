@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-test:
-    name: Backend Test Suite
+    name: Backend Test Suite & Quality
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -40,10 +40,24 @@ jobs:
       - name: Install uv
         run: curl -sSf https://astral.sh/uv/install.sh | sh
 
-      - name: Install dependencies
+      - name: Install dependencies (including dev tools)
         run: |
           cd backend
-          uv pip install --system -e .
+          uv pip install --system --group dev -e .
+
+      - name: Django Migration Consistency Check
+        env:
+          POSTGRES_DB: shop_db_test
+          POSTGRES_USER: shop_user
+          POSTGRES_PASSWORD: shop_password_secure_123
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          DJANGO_SECRET_KEY: ci-test-secret-key
+          DJANGO_DEBUG: True
+        run: |
+          cd backend
+          python manage.py makemigrations --check --dry-run
 
       - name: Django System Check
         env:
@@ -59,7 +73,13 @@ jobs:
           cd backend
           python manage.py check
 
-      - name: Run Backend Tests
+      - name: Code Formatting & Linting Check
+        run: |
+          cd backend
+          black --check config apps common tests
+          flake8 config apps common tests
+
+      - name: Run Backend Tests with Coverage
         env:
           POSTGRES_DB: shop_db_test
           POSTGRES_USER: shop_user
@@ -71,7 +91,7 @@ jobs:
           DJANGO_DEBUG: True
         run: |
           cd backend
-          pytest
+          pytest --cov=apps --cov=common --cov-report=term-missing
 
   frontend-check:
     name: Frontend Lint & Type Check

@@ -14,14 +14,14 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = [
-            'avatar',
-            'national_id',
-            'date_of_birth',
-            'gender',
-            'email_verified',
-            'phone_verified',
+            "avatar",
+            "national_id",
+            "date_of_birth",
+            "gender",
+            "email_verified",
+            "phone_verified",
         ]
-        read_only_fields = ['email_verified', 'phone_verified']
+        read_only_fields = ["email_verified", "phone_verified"]
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -33,30 +33,30 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'password',
-            'password_confirm',
-            'first_name',
-            'last_name',
-            'phone_number',
+            "id",
+            "email",
+            "password",
+            "password_confirm",
+            "first_name",
+            "last_name",
+            "phone_number",
         ]
-        read_only_fields = ['id']
+        read_only_fields = ["id"]
 
     def validate_email(self, value):
         normalized_email = User.objects.normalize_email(value)
         if User.objects.filter(email__iexact=normalized_email).exists():
-            raise serializers.ValidationError('A user with this email address already exists.')
+            raise serializers.ValidationError("A user with this email address already exists.")
         return normalized_email
 
     def validate_phone_number(self, value):
         if value and User.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError('A user with this phone number already exists.')
+            raise serializers.ValidationError("A user with this phone number already exists.")
         return value
 
     def validate(self, attrs):
-        if attrs['password'] != attrs.pop('password_confirm'):
-            raise serializers.ValidationError({'password_confirm': 'Passwords do not match.'})
+        if attrs["password"] != attrs.pop("password_confirm"):
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
         return attrs
 
 
@@ -69,16 +69,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'full_name',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'profile',
-            'created_at',
+            "id",
+            "email",
+            "full_name",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "profile",
+            "created_at",
         ]
-        read_only_fields = ['id', 'email', 'created_at']
+        read_only_fields = ["id", "email", "created_at"]
 
     def validate_phone_number(self, value):
         if value:
@@ -86,11 +86,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
             if self.instance is not None:
                 queryset = queryset.exclude(pk=self.instance.pk)
             if queryset.exists():
-                raise serializers.ValidationError('A user with this phone number already exists.')
+                raise serializers.ValidationError("A user with this phone number already exists.")
         return value
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile', None)
+        profile_data = validated_data.pop("profile", None)
 
         for field, value in validated_data.items():
             setattr(instance, field, value)
@@ -111,29 +111,54 @@ class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = [
-            'id',
-            'title',
-            'recipient_name',
-            'recipient_phone',
-            'province',
-            'city',
-            'postal_code',
-            'address_line',
-            'is_default',
-            'created_at',
-            'updated_at',
+            "id",
+            "title",
+            "recipient_name",
+            "recipient_phone",
+            "province",
+            "city",
+            "postal_code",
+            "address_line",
+            "is_default",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Issues JWT access/refresh tokens for email/password credentials with basic user info embedded."""
+    """
+    Issues JWT access/refresh tokens for email/password credentials with basic user info embedded.
+    """
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['user'] = {
-            'id': str(self.user.id),
-            'email': self.user.email,
-            'full_name': self.user.full_name,
+        data["user"] = {
+            "id": str(self.user.id),
+            "email": self.user.email,
+            "full_name": self.user.full_name,
         }
         return data
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    """Validates the payload for changing the authenticated user's password."""
+
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(
+        required=True, write_only=True, validators=[validate_password]
+    )
+    new_password_confirm = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs.pop("new_password_confirm"):
+            raise serializers.ValidationError(
+                {"new_password_confirm": "New passwords do not match."}
+            )
+        return attrs
+
+
+class LogoutSerializer(serializers.Serializer):
+    """Validates the payload for logging out (blacklisting a refresh token)."""
+
+    refresh = serializers.CharField(required=True)

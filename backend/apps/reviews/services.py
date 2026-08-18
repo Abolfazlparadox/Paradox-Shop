@@ -11,8 +11,9 @@ class ReviewService:
 
     @staticmethod
     @transaction.atomic
-    def create_review(*, user, product_id, rating: int, title: str | None = None,
-                      body: str | None = None) -> Review:
+    def create_review(
+        *, user, product_id, rating: int, title: str | None = None, body: str | None = None
+    ) -> Review:
         """
         Creates a new Review for a product.
 
@@ -25,17 +26,17 @@ class ReviewService:
         """
         # --- Validate rating range ---
         if not (1 <= rating <= 5):
-            raise ValidationError({'rating': 'Rating must be between 1 and 5.'})
+            raise ValidationError({"rating": "Rating must be between 1 and 5."})
 
         # --- Check for duplicate review (fast path) ---
         if ReviewSelector.user_has_review_for_product(user=user, product_id=product_id):
-            raise ValidationError({'review': 'You have already reviewed this product.'})
+            raise ValidationError({"review": "You have already reviewed this product."})
 
         # --- Verify purchase (only delivered orders qualify) ---
         has_purchased = ReviewSelector.user_has_purchased_product(user=user, product_id=product_id)
         if not has_purchased:
             raise ValidationError(
-                {'review': 'You can only review products you have purchased and received.'}
+                {"review": "You can only review products you have purchased and received."}
             )
 
         # --- Create the review ---
@@ -51,6 +52,6 @@ class ReviewService:
         try:
             review.save()
         except django.db.utils.IntegrityError:
-            raise ValidationError({'review': 'You have already reviewed this product.'})
+            raise ValidationError({"review": "You have already reviewed this product."})
 
         return review

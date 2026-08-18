@@ -15,7 +15,7 @@ class UserSelector:
         Returns a single active, non-deleted User with the related profile pre-fetched.
         Raises User.DoesNotExist if no matching user is found.
         """
-        return User.objects.select_related('profile').get(pk=user_id, is_deleted=False)
+        return User.objects.select_related("profile").get(pk=user_id, is_deleted=False)
 
     @staticmethod
     def get_active_users() -> QuerySet:
@@ -29,7 +29,9 @@ class AddressSelector:
     @staticmethod
     def get_user_addresses(user) -> QuerySet:
         """Returns all non-deleted addresses belonging to the given user, default-first."""
-        return Address.objects.filter(user=user, is_deleted=False).order_by('-is_default', '-created_at')
+        return Address.objects.filter(user=user, is_deleted=False).order_by(
+            "-is_default", "-created_at"
+        )
 
     @staticmethod
     def get_default_address(user) -> Address | None:

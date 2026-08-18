@@ -1,20 +1,26 @@
+from django.http import Http404
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .models import Order
 from .permissions import IsOrderOwner
 from .selectors import OrderSelector
 from .serializers import CheckoutSerializer, OrderDetailSerializer, OrderListSerializer
 from .services import OrderService
 
 
+@extend_schema(tags=["Orders"])
 class OrdersHealthCheckView(APIView):
     """Module health check endpoint."""
+
     def get(self, request):
-        return Response({'module': 'orders', 'status': 'initialized'})
+        return Response({"module": "orders", "status": "initialized"})
 
 
+@extend_schema(tags=["Orders"])
 class OrderListView(generics.ListAPIView):
     """Lists the authenticated user's orders, newest first."""
 
@@ -25,6 +31,7 @@ class OrderListView(generics.ListAPIView):
         return OrderSelector.get_user_orders(self.request.user)
 
 
+@extend_schema(tags=["Orders"])
 class OrderDetailView(generics.RetrieveAPIView):
     """Retrieves a single Order belonging to the authenticated user."""
 
@@ -32,18 +39,19 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsOrderOwner]
 
     def get_object(self):
-        """
-        Enforce ownership at the DB query level by passing the authenticated
-        user into the selector, which filters by both pk and user.
-        """
-        obj = OrderSelector.get_order_detail(
-            order_id=self.kwargs[self.lookup_field],
-            user=self.request.user,
-        )
+        try:
+            obj = OrderSelector.get_order_detail(
+                order_id=self.kwargs[self.lookup_field],
+                user=self.request.user,
+            )
+        except Order.DoesNotExist:
+            raise Http404("Order not found or does not belong to you.")
+
         self.check_object_permissions(self.request, obj)
         return obj
 
 
+@extend_schema(tags=["Orders"], request=CheckoutSerializer, responses={201: OrderDetailSerializer})
 class CheckoutView(APIView):
     """
     Initiates checkout from the authenticated user's current cart.
@@ -64,10 +72,27 @@ class CheckoutView(APIView):
 
         order = OrderService.create_order_from_cart(
             user=request.user,
-            address_id=serializer.validated_data['address_id'],
-            notes=serializer.validated_data.get('notes'),
+            address_id=serializer.validated_data["address_id"],
+            notes=serializer.validated_data.get("notes"),
         )
 
         # Re-fetch with full relations for the response
         order = OrderSelector.get_order_detail(order.id, user=request.user)
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Orders"], responses={200: OrderDetailSerializer})
+class CancelOrderView(APIView):
+    """
+    Cancels a pending or processing Order belonging to the authenticated user and restores stock.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        order = OrderService.cancel_order(
+            user=request.user,
+            order_id=pk,
+        )
+        order = OrderSelector.get_order_detail(order.id, user=request.user)
+        return Response(OrderDetailSerializer(order).data, status=status.HTTP_200_OK)

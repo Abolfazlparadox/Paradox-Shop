@@ -1,11 +1,18 @@
-from django.urls import path, include
-from common.health import SystemHealthCheckView
+from django.urls import include, path
+
+from common.health import (
+    LivenessHealthCheckView,
+    ReadinessHealthCheckView,
+    SystemHealthCheckView,
+)
 
 app_name = 'api_v1'
 
 urlpatterns = [
-    # System Health Endpoint
+    # System Health Endpoints
     path('health/', SystemHealthCheckView.as_view(), name='health'),
+    path('health/live/', LivenessHealthCheckView.as_view(), name='health-live'),
+    path('health/ready/', ReadinessHealthCheckView.as_view(), name='health-ready'),
 
     # Domain API Router mounts
     path('users/', include('apps.users.urls', namespace='users')),

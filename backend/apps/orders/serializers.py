@@ -13,15 +13,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = [
-            'id',
-            'product',
-            'variant',
-            'product_name',
-            'variant_name',
-            'sku',
-            'quantity',
-            'unit_price',
-            'total_price',
+            "id",
+            "product",
+            "variant",
+            "product_name",
+            "variant_name",
+            "sku",
+            "quantity",
+            "unit_price",
+            "total_price",
         ]
         read_only_fields = fields
 
@@ -32,13 +32,13 @@ class OrderAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderAddress
         fields = [
-            'id',
-            'recipient_name',
-            'recipient_phone',
-            'province',
-            'city',
-            'postal_code',
-            'address_line',
+            "id",
+            "recipient_name",
+            "recipient_phone",
+            "province",
+            "city",
+            "postal_code",
+            "address_line",
         ]
         read_only_fields = fields
 
@@ -49,16 +49,16 @@ class OrderListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id',
-            'order_number',
-            'status',
-            'subtotal',
-            'shipping_cost',
-            'discount_amount',
-            'total',
-            'notes',
-            'created_at',
-            'paid_at',
+            "id",
+            "order_number",
+            "status",
+            "subtotal",
+            "shipping_cost",
+            "discount_amount",
+            "total",
+            "notes",
+            "created_at",
+            "paid_at",
         ]
         read_only_fields = fields
 
@@ -72,20 +72,20 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id',
-            'order_number',
-            'status',
-            'subtotal',
-            'shipping_cost',
-            'discount_amount',
-            'total',
-            'notes',
-            'paid_at',
-            'cancelled_at',
-            'created_at',
-            'updated_at',
-            'items',
-            'shipping_address',
+            "id",
+            "order_number",
+            "status",
+            "subtotal",
+            "shipping_cost",
+            "discount_amount",
+            "total",
+            "notes",
+            "paid_at",
+            "cancelled_at",
+            "created_at",
+            "updated_at",
+            "items",
+            "shipping_address",
         ]
         read_only_fields = fields
 

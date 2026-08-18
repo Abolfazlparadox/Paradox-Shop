@@ -14,10 +14,14 @@ class ReviewSelector:
         Returns approved reviews for a given product, newest first.
         Only approved reviews are publicly visible.
         """
-        return Review.objects.filter(
-            product_id=product_id,
-            is_approved=True,
-        ).select_related('user').order_by('-created_at')
+        return (
+            Review.objects.filter(
+                product_id=product_id,
+                is_approved=True,
+            )
+            .select_related("user")
+            .order_by("-created_at")
+        )
 
     @staticmethod
     def user_has_purchased_product(*, user, product_id) -> bool:

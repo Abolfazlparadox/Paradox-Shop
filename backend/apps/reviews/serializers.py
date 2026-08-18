@@ -11,15 +11,15 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = [
-            'id',
-            'product',
-            'user_display_name',
-            'rating',
-            'title',
-            'body',
-            'is_verified_purchase',
-            'created_at',
-            'updated_at',
+            "id",
+            "product",
+            "user_display_name",
+            "rating",
+            "title",
+            "body",
+            "is_verified_purchase",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = fields
 
@@ -32,7 +32,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         full_name = obj.user.full_name
         if full_name and full_name.strip() and full_name != obj.user.email:
             return full_name
-        return 'Anonymous'
+        return "Anonymous"
 
 
 class CreateReviewSerializer(serializers.Serializer):

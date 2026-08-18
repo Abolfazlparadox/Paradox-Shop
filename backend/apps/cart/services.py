@@ -45,13 +45,14 @@ class CartService:
             return user_cart
 
         # Pre-fetch and lock required variants to ensure live stock data
-        guest_items = list(guest_cart.items.select_related('product', 'variant').all())
+        guest_items = list(guest_cart.items.select_related("product", "variant").all())
         variant_ids = [item.variant_id for item in guest_items if item.variant_id is not None]
 
         locked_variants = {}
         if variant_ids:
             locked_variants = {
-                v.id: v for v in ProductVariant.objects.select_for_update().filter(id__in=variant_ids)
+                v.id: v
+                for v in ProductVariant.objects.select_for_update().filter(id__in=variant_ids)
             }
 
         for guest_item in guest_items:
@@ -66,10 +67,10 @@ class CartService:
                     if variant:
                         new_quantity = min(new_quantity, variant.stock)
                 existing_item.quantity = new_quantity
-                existing_item.save(update_fields=['quantity'])
+                existing_item.save(update_fields=["quantity"])
             else:
                 guest_item.cart = user_cart
-                guest_item.save(update_fields=['cart'])
+                guest_item.save(update_fields=["cart"])
 
         guest_cart.delete()
         return user_cart
@@ -82,7 +83,7 @@ class CartItemService:
     @transaction.atomic
     def add_item(*, cart: Cart, product_id, variant_id=None, quantity: int) -> CartItem:
         if quantity < 1:
-            raise ValidationError({'quantity': 'Quantity must be at least 1.'})
+            raise ValidationError({"quantity": "Quantity must be at least 1."})
 
         # Lock the Cart row first to maintain a consistent lock hierarchy (Cart -> ProductVariant)
         cart = Cart.objects.select_for_update().get(pk=cart.pk)
@@ -90,7 +91,7 @@ class CartItemService:
         try:
             product = Product.objects.get(pk=product_id, is_active=True)
         except Product.DoesNotExist:
-            raise NotFound('Product not found or is not available.')
+            raise NotFound("Product not found or is not available.")
 
         variant = None
         if variant_id:
@@ -99,7 +100,7 @@ class CartItemService:
                     pk=variant_id, product=product, is_active=True
                 )
             except ProductVariant.DoesNotExist:
-                raise NotFound('Product variant not found or is not available.')
+                raise NotFound("Product variant not found or is not available.")
 
         existing_item = CartItem.objects.filter(cart=cart, product=product, variant=variant).first()
         requested_quantity = quantity + (existing_item.quantity if existing_item else 0)
@@ -111,7 +112,7 @@ class CartItemService:
         if existing_item:
             existing_item.quantity = requested_quantity
             existing_item.unit_price = unit_price
-            existing_item.save(update_fields=['quantity', 'unit_price'])
+            existing_item.save(update_fields=["quantity", "unit_price"])
             return existing_item
 
         return CartItem.objects.create(
@@ -126,10 +127,12 @@ class CartItemService:
     @transaction.atomic
     def update_quantity(*, cart_item: CartItem, quantity: int) -> CartItem:
         if quantity < 1:
-            raise ValidationError({'quantity': 'Quantity must be at least 1. Remove the item instead.'})
+            raise ValidationError(
+                {"quantity": "Quantity must be at least 1. Remove the item instead."}
+            )
 
         # Lock the parent Cart row first
-        cart = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
+        _ = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
 
         if cart_item.variant_id:
             try:
@@ -137,7 +140,7 @@ class CartItemService:
                     pk=cart_item.variant_id, product_id=cart_item.product_id, is_active=True
                 )
             except ProductVariant.DoesNotExist:
-                raise NotFound('Product variant is no longer available.')
+                raise NotFound("Product variant is no longer available.")
 
             CartItemService._validate_stock(variant=variant, requested_quantity=quantity)
             cart_item.unit_price = variant.final_price
@@ -145,14 +148,14 @@ class CartItemService:
             cart_item.unit_price = cart_item.product.base_price
 
         cart_item.quantity = quantity
-        cart_item.save(update_fields=['quantity', 'unit_price'])
+        cart_item.save(update_fields=["quantity", "unit_price"])
         return cart_item
 
     @staticmethod
     @transaction.atomic
     def remove_item(*, cart_item: CartItem) -> None:
         # Lock the parent Cart row first
-        cart = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
+        _ = Cart.objects.select_for_update().get(pk=cart_item.cart_id)
         cart_item.delete()
 
     @staticmethod
@@ -160,6 +163,10 @@ class CartItemService:
         if variant is None:
             return
         if requested_quantity > variant.stock:
-            raise ValidationError({
-                'quantity': f'Only {variant.stock} unit(s) of "{variant.name}" are currently in stock.'
-            })
+            raise ValidationError(
+                {
+                    "quantity": (
+                        f'Only {variant.stock} unit(s) of "{variant.name}" are currently in stock.'
+                    )
+                }
+            )

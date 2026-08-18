@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.categories.serializers import CategoryMiniSerializer
@@ -10,7 +11,7 @@ class BrandSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Brand
-        fields = ['id', 'name', 'slug', 'logo']
+        fields = ["id", "name", "slug", "logo"]
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -18,7 +19,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'alt_text', 'sort_order', 'is_primary', 'variant']
+        fields = ["id", "image", "alt_text", "sort_order", "is_primary", "variant"]
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -28,21 +29,31 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductVariant
-        fields = ['id', 'sku', 'name', 'price_override', 'final_price', 'stock', 'is_active', 'attributes']
+        fields = [
+            "id",
+            "sku",
+            "name",
+            "price_override",
+            "final_price",
+            "stock",
+            "is_active",
+            "attributes",
+        ]
 
 
 class ProductAttributeValueSerializer(serializers.ModelSerializer):
     """Serializer exposing a Product's concrete value for a Category-defined dynamic attribute."""
 
-    attribute_id = serializers.UUIDField(source='attribute.id', read_only=True)
-    attribute_name = serializers.CharField(source='attribute.name', read_only=True)
-    attribute_type = serializers.CharField(source='attribute.attribute_type', read_only=True)
+    attribute_id = serializers.UUIDField(source="attribute.id", read_only=True)
+    attribute_name = serializers.CharField(source="attribute.name", read_only=True)
+    attribute_type = serializers.CharField(source="attribute.attribute_type", read_only=True)
     value = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductAttributeValue
-        fields = ['id', 'attribute_id', 'attribute_name', 'attribute_type', 'value']
+        fields = ["id", "attribute_id", "attribute_name", "attribute_type", "value"]
 
+    @extend_schema_field({"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "nullable": True})
     def get_value(self, obj):
         if obj.value_text is not None:
             return obj.value_text
@@ -61,21 +72,22 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id',
-            'name',
-            'slug',
-            'short_description',
-            'base_price',
-            'product_type',
-            'is_featured',
-            'brand',
-            'category',
-            'primary_image',
+            "id",
+            "name",
+            "slug",
+            "short_description",
+            "base_price",
+            "product_type",
+            "is_featured",
+            "brand",
+            "category",
+            "primary_image",
         ]
 
+    @extend_schema_field({"type": "string", "format": "uri", "nullable": True})
     def get_primary_image(self, obj):
-        request = self.context.get('request')
-        primary_images = getattr(obj, 'primary_images', None)
+        request = self.context.get("request")
+        primary_images = getattr(obj, "primary_images", None)
         image_obj = primary_images[0] if primary_images else None
 
         if image_obj is None or not image_obj.image:
@@ -97,19 +109,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id',
-            'name',
-            'slug',
-            'description',
-            'short_description',
-            'base_price',
-            'product_type',
-            'is_active',
-            'is_featured',
-            'brand',
-            'category',
-            'images',
-            'variants',
-            'attribute_values',
-            'created_at',
+            "id",
+            "name",
+            "slug",
+            "description",
+            "short_description",
+            "base_price",
+            "product_type",
+            "is_active",
+            "is_featured",
+            "brand",
+            "category",
+            "images",
+            "variants",
+            "attribute_values",
+            "created_at",
         ]

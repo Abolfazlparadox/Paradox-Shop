@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,6 +16,7 @@ from .serializers import (
 from .services import CartItemService, CartService
 
 
+@extend_schema(tags=["Cart"], responses={200: CartSerializer})
 class CartView(APIView):
     """Returns the current Cart (authenticated user's or guest session's) with its items."""
 
@@ -26,6 +28,7 @@ class CartView(APIView):
         return Response(CartSerializer(cart).data)
 
 
+@extend_schema(tags=["Cart"], request=AddCartItemSerializer, responses={201: CartSerializer})
 class CartItemListView(APIView):
     """Adds an item to the current Cart."""
 
@@ -38,9 +41,9 @@ class CartItemListView(APIView):
         cart = CartService.get_or_create_cart_for_request(request)
         CartItemService.add_item(
             cart=cart,
-            product_id=serializer.validated_data['product_id'],
-            variant_id=serializer.validated_data.get('variant_id'),
-            quantity=serializer.validated_data['quantity'],
+            product_id=serializer.validated_data["product_id"],
+            variant_id=serializer.validated_data.get("variant_id"),
+            quantity=serializer.validated_data["quantity"],
         )
 
         cart = CartSelector.get_cart_with_items(cart.id)
@@ -52,17 +55,21 @@ class CartItemDetailView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(tags=["Cart"], request=UpdateCartItemSerializer, responses={200: CartSerializer})
     def patch(self, request, item_id):
         cart = CartService.get_or_create_cart_for_request(request)
         cart_item = self._get_owned_item(cart, item_id)
 
         serializer = UpdateCartItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        CartItemService.update_quantity(cart_item=cart_item, quantity=serializer.validated_data['quantity'])
+        CartItemService.update_quantity(
+            cart_item=cart_item, quantity=serializer.validated_data["quantity"]
+        )
 
         cart = CartSelector.get_cart_with_items(cart.id)
         return Response(CartSerializer(cart).data)
 
+    @extend_schema(tags=["Cart"], responses={200: CartSerializer})
     def delete(self, request, item_id):
         cart = CartService.get_or_create_cart_for_request(request)
         cart_item = self._get_owned_item(cart, item_id)
@@ -77,9 +84,10 @@ class CartItemDetailView(APIView):
         try:
             return CartSelector.get_cart_item(cart, item_id)
         except CartItem.DoesNotExist:
-            raise NotFound('Cart item not found.')
+            raise NotFound("Cart item not found.")
 
 
+@extend_schema(tags=["Cart"], request=MergeCartSerializer, responses={200: CartSerializer})
 class MergeCartView(APIView):
     """Merges a guest session Cart into the authenticated user's Cart. Requires authentication."""
 
@@ -90,7 +98,7 @@ class MergeCartView(APIView):
         serializer.is_valid(raise_exception=True)
 
         cart = CartService.merge_guest_cart(
-            user=request.user, session_key=serializer.validated_data['session_key']
+            user=request.user, session_key=serializer.validated_data["session_key"]
         )
         cart = CartSelector.get_cart_with_items(cart.id)
         return Response(CartSerializer(cart).data)

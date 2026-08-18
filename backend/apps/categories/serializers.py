@@ -9,22 +9,35 @@ class CategoryAttributeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CategoryAttribute
         fields = [
-            'id',
-            'name',
-            'attribute_type',
-            'is_required',
-            'is_filterable',
-            'is_variant',
-            'sort_order',
+            "id",
+            "name",
+            "attribute_type",
+            "is_required",
+            "is_filterable",
+            "is_variant",
+            "sort_order",
         ]
 
 
 class CategoryMiniSerializer(serializers.ModelSerializer):
-    """Lightweight Category representation used for embedding (parent, children, product.category)."""
+    """
+    Lightweight Category representation used for embedding (parent, children, product.category).
+    """
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'image']
+        fields = ["id", "name", "slug", "image"]
+
+
+class CategoryTreeNodeSerializer(serializers.Serializer):
+    """Recursive serializer schema for nested category tree nodes."""
+
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    slug = serializers.SlugField()
+    image = serializers.ImageField(allow_null=True)
+    sort_order = serializers.IntegerField()
+    children = serializers.ListField(child=serializers.DictField(), default=[])
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -34,7 +47,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'parent', 'image', 'sort_order']
+        fields = ["id", "name", "slug", "parent", "image", "sort_order"]
 
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
@@ -47,14 +60,14 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = [
-            'id',
-            'name',
-            'slug',
-            'description',
-            'image',
-            'parent',
-            'children',
-            'attributes',
-            'sort_order',
-            'created_at',
+            "id",
+            "name",
+            "slug",
+            "description",
+            "image",
+            "parent",
+            "children",
+            "attributes",
+            "sort_order",
+            "created_at",
         ]

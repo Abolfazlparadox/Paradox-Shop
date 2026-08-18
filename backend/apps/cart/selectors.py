@@ -18,15 +18,22 @@ class CartSelector:
 
     @staticmethod
     def get_cart_with_items(cart_id) -> Cart:
-        """Returns a Cart with its line items (and each item's product/variant) optimally pre-fetched."""
+        """
+        Returns a Cart with its line items (and each item's product/variant) optimally pre-fetched.
+        """
         return Cart.objects.prefetch_related(
             Prefetch(
-                'items',
-                queryset=CartItem.objects.select_related('product', 'variant').order_by('-created_at'),
+                "items",
+                queryset=CartItem.objects.select_related("product", "variant").order_by(
+                    "-created_at"
+                ),
             )
         ).get(pk=cart_id)
 
     @staticmethod
     def get_cart_item(cart: Cart, item_id) -> CartItem:
-        """Returns a single CartItem, scoped to the given Cart. Raises CartItem.DoesNotExist otherwise."""
-        return CartItem.objects.select_related('product', 'variant').get(pk=item_id, cart=cart)
+        """
+        Returns a single CartItem, scoped to the given Cart.
+        Raises CartItem.DoesNotExist otherwise.
+        """
+        return CartItem.objects.select_related("product", "variant").get(pk=item_id, cart=cart)

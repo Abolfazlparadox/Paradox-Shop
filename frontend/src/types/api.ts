@@ -277,7 +277,8 @@ export interface Cart {
   user?: string | null;
   session_key?: string | null;
   items: CartItem[];
-  total_items: number;
+  items_count?: number;
+  total_items?: number;
   subtotal: string;
   created_at: string;
   updated_at: string;

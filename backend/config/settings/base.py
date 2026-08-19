@@ -1,7 +1,8 @@
 import os
 from datetime import timedelta
 from pathlib import Path
-
+from celery.schedules import crontab
+from corsheaders.defaults import default_headers
 import dotenv
 from celery.schedules import crontab
 
@@ -224,6 +225,19 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Security & CORS/CSRF Settings
+# CORS Configuration
+CORS_ALLOW_ALL_ORIGINS = True  # در محیط توسعه
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-request-id",
+    "x-session-key",
+    "idempotency-key",
+]
+
+CORS_EXPOSE_HEADERS = [
+    "x-request-id",
+]
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")

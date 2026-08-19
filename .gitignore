@@ -60,3 +60,8 @@ frontend/yarn-error.log*
 
 # Docker
 .docker/
+
+#َAgent
+.agent
+.agents
+skills-lock.json

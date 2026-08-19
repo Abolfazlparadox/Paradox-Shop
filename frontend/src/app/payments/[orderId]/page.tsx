@@ -110,7 +110,7 @@ export default function PaymentTerminalPage() {
   }
 
   // If already paid / processed
-  const isAlreadyPaid = order.status !== 'PENDING' && !completedPayment;
+  const isAlreadyPaid = order.status?.toLowerCase() !== 'pending' && !completedPayment;
 
   return (
     <main className="py-10 sm:py-16 bg-grid-pattern min-h-screen relative">

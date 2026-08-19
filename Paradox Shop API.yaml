@@ -10,25 +10,49 @@ paths:
       description: Returns the current Cart (authenticated user's or guest session's)
         with its items.
       tags:
-      - v1
+      - Cart
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /api/v1/cart/items/:
     post:
       operationId: v1_cart_items_create
       description: Adds an item to the current Cart.
       tags:
-      - v1
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+        required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /api/v1/cart/items/{item_id}/:
     patch:
       operationId: v1_cart_items_partial_update
@@ -42,13 +66,30 @@ paths:
           format: uuid
         required: true
       tags:
-      - v1
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCartItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCartItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCartItemRequest'
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
     delete:
       operationId: v1_cart_items_destroy
       description: Updates the quantity of, or removes, a single Cart item belonging
@@ -61,30 +102,59 @@ paths:
           format: uuid
         required: true
       tags:
-      - v1
+      - Cart
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /api/v1/cart/merge/:
     post:
       operationId: v1_cart_merge_create
       description: Merges a guest session Cart into the authenticated user's Cart.
         Requires authentication.
       tags:
-      - v1
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+        required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /api/v1/categories/:
     get:
       operationId: v1_categories_list
       description: Returns a flat, paginated listing of active categories.
       parameters:
+      - in: query
+        name: is_root
+        schema:
+          type: boolean
+        description: Filter root-level categories only (true/false)
       - name: page
         required: false
         in: query
@@ -97,10 +167,17 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: Filter direct children of parent category slug
       tags:
-      - v1
+      - Categories
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -121,9 +198,11 @@ paths:
           type: string
         required: true
       tags:
-      - v1
+      - Categories
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -134,24 +213,58 @@ paths:
           description: ''
   /api/v1/categories/tree/:
     get:
-      operationId: v1_categories_tree_retrieve
+      operationId: v1_categories_tree_list
       description: Returns the full active category hierarchy as a nested tree.
       tags:
-      - v1
+      - Categories
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTreeNode'
+          description: ''
   /api/v1/health/:
     get:
       operationId: v1_health_retrieve
-      description: |-
-        Production-grade system health check endpoint.
-        Performs checks for Database and Redis connectivity without leaking sensitive specs.
+      description: Backwards-compatible full system health check endpoint.
       tags:
-      - v1
+      - Health
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/live/:
+    get:
+      operationId: v1_health_live_retrieve
+      description: |-
+        Lightweight liveness probe.
+        Returns 200 OK as long as the application process is running and responding.
+      tags:
+      - Health
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/ready/:
+    get:
+      operationId: v1_health_ready_retrieve
+      description: |-
+        Readiness probe verifying DB and Redis dependencies.
+        Returns 200 OK when ready to accept traffic, 503 if any dependency fails.
+      tags:
+      - Health
+      security:
+      - bearerAuth: []
       responses:
         '200':
           description: No response body
@@ -173,9 +286,11 @@ paths:
         schema:
           type: integer
       tags:
-      - v1
+      - Orders
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -195,9 +310,36 @@ paths:
           format: uuid
         required: true
       tags:
-      - v1
+      - Orders
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+  /api/v1/orders/{id}/cancel/:
+    post:
+      operationId: v1_orders_cancel_create
+      description: Cancels a pending or processing Order belonging to the authenticated
+        user and restores stock.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -218,20 +360,40 @@ paths:
 
         Creates Order, OrderItems, OrderAddress, decrements stock, clears cart — all atomically.
       tags:
-      - v1
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+        required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
   /api/v1/orders/health/:
     get:
       operationId: v1_orders_health_retrieve
       description: Module health check endpoint.
       tags:
-      - v1
+      - Orders
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -254,9 +416,11 @@ paths:
         schema:
           type: integer
       tags:
-      - v1
+      - Payments
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -277,9 +441,11 @@ paths:
           format: uuid
         required: true
       tags:
-      - v1
+      - Payments
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -292,9 +458,11 @@ paths:
       operationId: v1_payments_health_retrieve
       description: Module health check endpoint.
       tags:
-      - v1
+      - Payments
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -306,13 +474,32 @@ paths:
         Initiates a mock payment for one of the authenticated user's eligible orders.
 
         The order must be in 'pending' status to be eligible.
+        Supports idempotency_key to safely prevent duplicate payment attempts.
       tags:
-      - v1
+      - Payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+        required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
   /api/v1/products/:
     get:
       operationId: v1_products_list
@@ -327,6 +514,31 @@ paths:
             max_price     - maximum base_price (inclusive)
             search        - case-insensitive match against name / short_description
       parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+        description: Filter by Brand slug
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: Filter by Category slug
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+        description: Filter by featured flag (true/false)
+      - in: query
+        name: max_price
+        schema:
+          type: integer
+        description: Maximum base price (inclusive)
+      - in: query
+        name: min_price
+        schema:
+          type: integer
+        description: Minimum base price (inclusive)
       - name: page
         required: false
         in: query
@@ -339,10 +551,17 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search term in name or description
       tags:
-      - v1
+      - Products
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -363,9 +582,11 @@ paths:
           type: string
         required: true
       tags:
-      - v1
+      - Products
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -380,24 +601,44 @@ paths:
       description: |-
         Submits a new product Review by an authenticated user.
 
-        The user must have purchased the product in a paid order.
+        The user must have purchased the product in a paid (delivered) order.
         Only one review per product per user is allowed.
         New reviews are set to is_approved=False (pending moderation).
       tags:
-      - v1
+      - Reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+        required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
-        '200':
-          description: No response body
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
   /api/v1/reviews/health/:
     get:
       operationId: v1_reviews_health_retrieve
       description: Module health check endpoint.
       tags:
-      - v1
+      - Reviews
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -426,9 +667,11 @@ paths:
           format: uuid
         required: true
       tags:
-      - v1
+      - Reviews
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -455,9 +698,11 @@ paths:
         schema:
           type: integer
       tags:
-      - v1
+      - Users
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -469,7 +714,7 @@ paths:
       operationId: v1_users_addresses_create
       description: CRUD endpoints for the authenticated user's address book.
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -483,7 +728,9 @@ paths:
               $ref: '#/components/schemas/AddressRequest'
         required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '201':
           content:
@@ -504,9 +751,11 @@ paths:
           description: Unique identifier (UUID v4) for this record.
         required: true
       tags:
-      - v1
+      - Users
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -526,7 +775,7 @@ paths:
           description: Unique identifier (UUID v4) for this record.
         required: true
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -540,7 +789,9 @@ paths:
               $ref: '#/components/schemas/AddressRequest'
         required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -560,7 +811,7 @@ paths:
           description: Unique identifier (UUID v4) for this record.
         required: true
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -573,7 +824,9 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedAddressRequest'
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -593,9 +846,11 @@ paths:
           description: Unique identifier (UUID v4) for this record.
         required: true
       tags:
-      - v1
+      - Users
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '204':
           description: No response body
@@ -605,7 +860,7 @@ paths:
       description: Authenticates a user with email/password credentials and issues
         JWT tokens.
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -619,6 +874,7 @@ paths:
               $ref: '#/components/schemas/EmailTokenObtainPairRequest'
         required: true
       security:
+      - bearerAuth: []
       - {}
       responses:
         '200':
@@ -643,6 +899,8 @@ paths:
             schema:
               $ref: '#/components/schemas/TokenRefreshRequest'
         required: true
+      security:
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -650,15 +908,71 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/v1/users/logout/:
+    post:
+      operationId: v1_users_logout_create
+      description: Blacklists the provided refresh token to log the user out.
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Logout'
+          description: ''
+  /api/v1/users/password/change/:
+    post:
+      operationId: v1_users_password_change_create
+      description: Changes the authenticated user's password.
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/users/profile/:
     get:
       operationId: v1_users_profile_retrieve
       description: Retrieves or partially/fully updates the authenticated user's account
         and profile.
       tags:
-      - v1
+      - Users
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -671,7 +985,7 @@ paths:
       description: Retrieves or partially/fully updates the authenticated user's account
         and profile.
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -684,7 +998,9 @@ paths:
             schema:
               $ref: '#/components/schemas/UserProfileRequest'
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -697,7 +1013,7 @@ paths:
       description: Retrieves or partially/fully updates the authenticated user's account
         and profile.
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -710,7 +1026,9 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedUserProfileRequest'
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -724,7 +1042,7 @@ paths:
       description: Registers a new User account and returns the created user's profile
         representation.
       tags:
-      - v1
+      - Users
       requestBody:
         content:
           application/json:
@@ -738,7 +1056,9 @@ paths:
               $ref: '#/components/schemas/UserRegistrationRequest'
         required: true
       security:
+      - jwtAuth: []
       - cookieAuth: []
+      - bearerAuth: []
       - {}
       responses:
         '201':
@@ -749,6 +1069,23 @@ paths:
           description: ''
 components:
   schemas:
+    AddCartItemRequest:
+      type: object
+      description: Validates the payload for adding an item to the Cart.
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+      required:
+      - product_id
     Address:
       type: object
       description: Serializer for a User's shipping/billing Address.
@@ -884,6 +1221,126 @@ components:
       - id
       - name
       - slug
+    Cart:
+      type: object
+      description: Serializer representing the full Cart with its line items and computed
+        totals.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          readOnly: true
+        items_count:
+          type: integer
+          readOnly: true
+        subtotal:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - items
+      - items_count
+      - subtotal
+      - updated_at
+    CartItem:
+      type: object
+      description: Serializer representing a single line item inside the Cart.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID v4) for this record.
+        product:
+          allOf:
+          - $ref: '#/components/schemas/CartItemProduct'
+          readOnly: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/CartItemVariant'
+          readOnly: true
+          nullable: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: Unit price (Rial)
+          description: Price snapshot in Iranian Rial at time of adding to cart.
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product
+      - total_price
+      - unit_price
+      - variant
+    CartItemProduct:
+      type: object
+      description: Minimal Product snapshot embedded inside a CartItem representation.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - id
+      - is_active
+      - name
+      - slug
+    CartItemVariant:
+      type: object
+      description: Minimal ProductVariant snapshot embedded inside a CartItem representation.
+      properties:
+        id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+        name:
+          type: string
+        stock:
+          type: integer
+        is_active:
+          type: boolean
+      required:
+      - id
+      - is_active
+      - name
+      - sku
+      - stock
     CategoryAttribute:
       type: object
       description: Serializer for a Category's dynamic attribute definitions.
@@ -1027,6 +1484,82 @@ components:
       - id
       - name
       - slug
+    CategoryTreeNode:
+      type: object
+      description: Recursive serializer schema for nested category tree nodes.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        image:
+          type: string
+          format: uri
+          nullable: true
+        sort_order:
+          type: integer
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          default: []
+      required:
+      - id
+      - image
+      - name
+      - slug
+      - sort_order
+    CheckoutRequest:
+      type: object
+      description: Validates the payload for initiating checkout from the user's cart.
+      properties:
+        address_id:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          nullable: true
+      required:
+      - address_id
+    CreatePaymentRequest:
+      type: object
+      description: Validates the payload for initiating a payment on an order.
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - order_id
+    CreateReviewRequest:
+      type: object
+      description: Validates the payload for submitting a new product Review.
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        title:
+          type: string
+          nullable: true
+          maxLength: 255
+        body:
+          type: string
+          nullable: true
+      required:
+      - product_id
+      - rating
     EmailTokenObtainPairRequest:
       type: object
       description: Issues JWT access/refresh tokens for email/password credentials
@@ -1053,6 +1586,33 @@ components:
         * `M` - Male
         * `F` - Female
         * `O` - Other
+    Logout:
+      type: object
+      description: Validates the payload for logging out (blacklisting a refresh token).
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    LogoutRequest:
+      type: object
+      description: Validates the payload for logging out (blacklisting a refresh token).
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    MergeCartRequest:
+      type: object
+      description: Validates the payload for merging a guest session Cart into the
+        authenticated user's Cart.
+      properties:
+        session_key:
+          type: string
+          minLength: 1
+      required:
+      - session_key
     NullEnum:
       enum:
       - null
@@ -1439,6 +1999,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Review'
+    PasswordChangeRequest:
+      type: object
+      description: Validates the payload for changing the authenticated user's password.
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password_confirm:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - new_password
+      - new_password_confirm
+      - old_password
     PatchedAddressRequest:
       type: object
       description: Serializer for a User's shipping/billing Address.
@@ -1474,6 +2054,13 @@ components:
         is_default:
           type: boolean
           title: Is Default Address
+    PatchedUpdateCartItemRequest:
+      type: object
+      description: Validates the payload for updating a Cart item's quantity.
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
     PatchedUserProfileRequest:
       type: object
       description: Represents the authenticated user's account together with their
@@ -1530,6 +2117,12 @@ components:
           type: string
           readOnly: true
           nullable: true
+        idempotency_key:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Unique key supplied by client to prevent duplicate payment
+            submissions.
         created_at:
           type: string
           format: date-time
@@ -1543,6 +2136,7 @@ components:
       - created_at
       - gateway
       - id
+      - idempotency_key
       - order
       - payment_method
       - status
@@ -1593,7 +2187,11 @@ components:
           type: string
           readOnly: true
         value:
-          type: string
+          oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          nullable: true
           readOnly: true
       required:
       - attribute_id
@@ -1752,6 +2350,8 @@ components:
           readOnly: true
         primary_image:
           type: string
+          format: uri
+          nullable: true
           readOnly: true
       required:
       - base_price
@@ -2075,7 +2675,32 @@ components:
       - password
       - password_confirm
   securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     cookieAuth:
       type: apiKey
       in: cookie
       name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Health
+  description: System health and readiness checks
+- name: Users
+  description: Authentication, profile, and address management
+- name: Products
+  description: Product catalog browsing
+- name: Categories
+  description: Category taxonomy and hierarchy
+- name: Cart
+  description: Shopping cart management
+- name: Orders
+  description: Order lifecycle and checkout
+- name: Payments
+  description: Payment processing
+- name: Reviews
+  description: Product reviews and ratings

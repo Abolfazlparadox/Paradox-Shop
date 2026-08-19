@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "name": "PARADOX SHOP",
+    "tagline": "Impossible Minimalism",
+    "manifesto": "Engineered luxury commerce platform. Precision design, architectural geometry, and curated artifacts."
+  },
+  "nav": {
+    "catalog": "Catalog",
+    "categories": "Categories",
+    "about": "About",
+    "search": "Search products...",
+    "cart": "Cart",
+    "account": "Account",
+    "login": "Sign In",
+    "register": "Create Account",
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "addresses": "Addresses",
+    "logout": "Sign Out"
+  },
+  "actions": {
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "checkout": "Proceed to Checkout",
+    "continueShopping": "Continue Shopping",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "apply": "Apply",
+    "filter": "Filter",
+    "sort": "Sort",
+    "viewDetails": "View Details"
+  },
+  "auth": {
+    "email": "Email Address",
+    "password": "Password",
+    "passwordConfirm": "Confirm Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "signInTitle": "Access Your Account",
+    "signUpTitle": "Join Paradox Shop",
+    "forgotPassword": "Forgot password?",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty.",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "itemCount": "{count} item(s)"
+  },
+  "order": {
+    "orderNumber": "Order Number",
+    "status": "Status",
+    "date": "Date",
+    "total": "Total Amount",
+    "paymentStatus": "Payment Status",
+    "shippingAddress": "Shipping Address",
+    "items": "Items"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "PROCESSING": "Processing",
+    "SHIPPED": "Shipped",
+    "DELIVERED": "Delivered",
+    "CANCELLED": "Cancelled",
+    "REFUNDED": "Refunded"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "tryAgain": "Try Again",
+    "noResults": "No results found.",
+    "currency": "Rial"
+  }
+}

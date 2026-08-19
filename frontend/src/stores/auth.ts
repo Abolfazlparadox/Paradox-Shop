@@ -58,6 +58,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const tokens = await authApi.login(credentials);
       get().setTokens(tokens);
       const profile = await authApi.getProfile();
+
+      // Automatically merge guest session cart into user cart
+      if (typeof window !== 'undefined') {
+        const guestSession = localStorage.getItem('pdx_session_key');
+        if (guestSession) {
+          try {
+            const { cartApi } = await import('@/lib/api/endpoints');
+            await cartApi.mergeCart({ session_key: guestSession });
+            localStorage.removeItem('pdx_session_key');
+          } catch {
+            // Non-blocking merge error
+          }
+        }
+      }
+
       set({ user: profile, isLoading: false });
       return tokens;
     } catch (err: any) {

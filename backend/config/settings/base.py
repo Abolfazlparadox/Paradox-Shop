@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -206,6 +207,22 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
+# Business Logic Configuration for Background Tasks
+ORDER_PAYMENT_TIMEOUT_MINUTES = int(os.getenv("ORDER_PAYMENT_TIMEOUT_MINUTES", "30"))
+GUEST_CART_RETENTION_DAYS = int(os.getenv("GUEST_CART_RETENTION_DAYS", "7"))
+
+# Celery Beat Periodic Tasks Schedule
+CELERY_BEAT_SCHEDULE = {
+    "cancel-stale-pending-orders": {
+        "task": "apps.orders.tasks.cancel_stale_pending_orders",
+        "schedule": 300.0,  # Run every 5 minutes (300 seconds)
+    },
+    "cleanup-abandoned-guest-carts": {
+        "task": "apps.cart.tasks.cleanup_abandoned_guest_carts",
+        "schedule": crontab(hour="0", minute="0"),  # Run daily at 00:00 UTC
+    },
+}
+
 # Security & CORS/CSRF Settings
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
@@ -233,8 +250,7 @@ LOGGING = {
     "formatters": {
         "verbose": {
             "format": (
-                "{levelname} {asctime} [{request_id}] {module} "
-                "{process:d} {thread:d} {message}"
+                "{levelname} {asctime} [{request_id}] {module} " "{process:d} {thread:d} {message}"
             ),
             "style": "{",
         },

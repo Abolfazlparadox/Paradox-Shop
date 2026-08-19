@@ -7,7 +7,7 @@ from rest_framework import status
 class TestCategoriesAPI:
     def test_category_tree(self, api_client, create_category):
         root = create_category(name="Electronics", slug="electronics")
-        child = create_category(name="Smartphones", slug="smartphones", parent=root)
+        create_category(name="Smartphones", slug="smartphones", parent=root)
 
         url = reverse("api_v1:categories:tree")
         response = api_client.get(url)

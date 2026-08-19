@@ -37,6 +37,15 @@ class UserService:
         )
         UserProfile.objects.create(user=user)
         logger.info("User registered: user_id=%s email=%s", user.id, user.email)
+
+        # Dispatch background welcome notification safely on transaction commit
+        user_id_str = str(user.id)
+        user_email = user.email
+        user_name = f"{user.first_name} {user.last_name}".strip()
+        from .tasks import send_welcome_email
+
+        transaction.on_commit(lambda: send_welcome_email.delay(user_id_str, user_email, user_name))
+
         return user
 
     @staticmethod

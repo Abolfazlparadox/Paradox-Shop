@@ -11,13 +11,12 @@ from apps.reviews.models import Review
 @pytest.mark.django_db
 class TestReviewsAPI:
     def test_create_review_verified_purchase(
-        self, auth_client, create_user, create_product, create_variant, create_address
+        self, auth_client, create_user, create_product, create_variant
     ):
         user = create_user()
         client = auth_client(user)
         prod = create_product()
         variant = create_variant(product=prod)
-        address = create_address(user=user)
 
         # Create a delivered order for this product so user qualifies as verified purchase
         order = Order.objects.create(

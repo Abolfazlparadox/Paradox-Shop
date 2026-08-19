@@ -59,7 +59,7 @@ def auth_client(create_user):
 
 @pytest.fixture
 def create_brand(db):
-    def _create_brand(name='Test Brand', slug='test-brand'):
+    def _create_brand(name="Test Brand", slug="test-brand"):
         brand, _ = Brand.objects.get_or_create(name=name, slug=slug)
         return brand
 

@@ -180,7 +180,7 @@ class OrderService:
 
     @staticmethod
     @transaction.atomic
-    def cancel_order(*, user, order_id: uuid.UUID) -> Order:
+    def cancel_order(*, user=None, order_id: uuid.UUID) -> Order:
         """
         Cancels a pending or processing order and restores variant stock.
 
@@ -188,7 +188,10 @@ class OrderService:
         Variant stock is restored atomically.
         """
         try:
-            order = Order.objects.select_for_update().get(pk=order_id, user=user)
+            if user is not None:
+                order = Order.objects.select_for_update().get(pk=order_id, user=user)
+            else:
+                order = Order.objects.select_for_update().get(pk=order_id)
         except Order.DoesNotExist:
             raise ValidationError({"order_id": "Order not found or does not belong to this user."})
 
@@ -213,7 +216,7 @@ class OrderService:
             "Order cancelled: order_id=%s order_number=%s user_id=%s",
             order.id,
             order.order_number,
-            user.id,
+            order.user_id,
         )
         return order
 

@@ -16,8 +16,8 @@ class TestProductsAPI:
         assert data["results"] == []
 
     def test_product_list_with_items(self, api_client, create_product):
-        p1 = create_product(name="Phone A", slug="phone-a", base_price=Decimal("5000000"))
-        p2 = create_product(name="Phone B", slug="phone-b", base_price=Decimal("10000000"))
+        create_product(name="Phone A", slug="phone-a", base_price=Decimal("5000000"))
+        create_product(name="Phone B", slug="phone-b", base_price=Decimal("10000000"))
 
         url = reverse("api_v1:products:list")
         response = api_client.get(url)

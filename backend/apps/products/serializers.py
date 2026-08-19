@@ -53,7 +53,9 @@ class ProductAttributeValueSerializer(serializers.ModelSerializer):
         model = ProductAttributeValue
         fields = ["id", "attribute_id", "attribute_name", "attribute_type", "value"]
 
-    @extend_schema_field({"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "nullable": True})
+    @extend_schema_field(
+        {"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "nullable": True}
+    )
     def get_value(self, obj):
         if obj.value_text is not None:
             return obj.value_text

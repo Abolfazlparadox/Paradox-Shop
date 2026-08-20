@@ -73,6 +73,11 @@ const config: Config = {
         card: '0 4px 20px -2px rgba(0, 0, 0, 0.1)',
         elevated: '0 10px 30px -5px rgba(0, 0, 0, 0.3)',
       },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'out-cubic': 'cubic-bezier(0.33, 1, 0.68, 1)',
+        'in-out-subtle': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
       animation: {
         'pulse-subtle': 'pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { Drawer } from '@/components/ui/Drawer';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { CatalogFilters } from '@/features/catalog/components/CatalogFilters';
 import { CatalogGrid } from '@/features/catalog/components/CatalogGrid';
 import { CatalogPagination } from '@/features/catalog/components/CatalogPagination';
@@ -64,40 +65,42 @@ function CatalogContent() {
     <main className="py-10 sm:py-16 bg-bg-primary min-h-screen">
       <Container size="lg" className="space-y-8">
         {/* Catalog Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-border-subtle">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-mono text-fg-muted mb-2">
-              <Layers className="w-3.5 h-3.5" />
-              <span>CATALOG DISCOVERY</span>
-              {filters.category && (
-                <>
-                  <span>/</span>
-                  <span className="text-fg-primary uppercase font-bold">{filters.category}</span>
-                </>
-              )}
+        <ScrollReveal variant="fade-up">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-border-subtle">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-mono text-fg-muted mb-2">
+                <Layers className="w-3.5 h-3.5" />
+                <span>CATALOG DISCOVERY</span>
+                {filters.category && (
+                  <>
+                    <span>/</span>
+                    <span className="text-fg-primary uppercase font-bold">{filters.category}</span>
+                  </>
+                )}
+              </div>
+              <h1 className="text-3xl font-bold font-display text-fg-primary tracking-tight">
+                Engineering Artifacts
+              </h1>
             </div>
-            <h1 className="text-3xl font-bold font-display text-fg-primary tracking-tight">
-              Engineering Artifacts
-            </h1>
-          </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3">
-            <span className="text-xs font-mono text-fg-muted">
-              Showing <span className="font-semibold text-fg-primary">{totalCount}</span> artifact(s)
-            </span>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <span className="text-xs font-mono text-fg-muted">
+                Showing <span className="font-semibold text-fg-primary">{totalCount}</span> artifact(s)
+              </span>
 
-            {/* Mobile Filter Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsMobileFilterOpen(true)}
-              leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
-              className="lg:hidden"
-            >
-              Filters
-            </Button>
+              {/* Mobile Filter Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMobileFilterOpen(true)}
+                leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+                className="lg:hidden"
+              >
+                Filters
+              </Button>
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* Catalog Layout: Sidebar + Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

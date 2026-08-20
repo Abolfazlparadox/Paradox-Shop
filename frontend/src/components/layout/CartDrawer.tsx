@@ -10,6 +10,7 @@ import { useUIStore } from '@/stores/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '@/lib/api/endpoints';
 import { Cart } from '@/types/api';
+import { notify } from '@/stores/notifications';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
 
 export function CartDrawer() {
@@ -28,12 +29,19 @@ export function CartDrawer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
+    onError: (err) => {
+      notify.error('Failed to update cart item', err);
+    },
   });
 
   const removeMutation = useMutation({
     mutationFn: (itemId: string) => cartApi.removeItem(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      notify.info('Item removed from cart');
+    },
+    onError: (err) => {
+      notify.error('Failed to remove cart item', err);
     },
   });
 

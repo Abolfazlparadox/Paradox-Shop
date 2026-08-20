@@ -139,5 +139,10 @@ export function PenroseHero3D() {
     );
   }
 
-  return <div ref={mountRef} className="w-full h-72 sm:h-96 flex items-center justify-center pointer-events-none" />;
+  return (
+    <div
+      ref={mountRef}
+      className="w-full h-72 sm:h-96 flex items-center justify-center pointer-events-none transition-opacity duration-700 ease-out-expo"
+    />
+  );
 }

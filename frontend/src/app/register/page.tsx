@@ -7,6 +7,7 @@ import { Container } from '@/components/ui/Container';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
+import { notify } from '@/stores/notifications';
 import { Mail, Lock, User, Phone, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 function RegisterForm() {
@@ -47,6 +48,7 @@ function RegisterForm() {
         last_name: lastName,
         phone_number: phoneNumber.trim() ? phoneNumber.trim() : null,
       });
+      notify.success('Account Created', 'Your account has been registered successfully.');
       router.push(redirectUrl);
     } catch (err: any) {
       const data = err.response?.data;
@@ -61,6 +63,7 @@ function RegisterForm() {
         }
       }
       setErrorMessage(msg);
+      notify.error('Registration Failed', msg);
     }
   };
 

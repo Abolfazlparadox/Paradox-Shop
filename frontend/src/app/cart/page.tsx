@@ -10,6 +10,8 @@ import { CartGuestAlert } from '@/features/cart/components/CartGuestAlert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '@/lib/api/endpoints';
 import { Cart } from '@/types/api';
+import { notify } from '@/stores/notifications';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function CartPage() {
@@ -26,12 +28,19 @@ export default function CartPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
+    onError: (err) => {
+      notify.error('Failed to update item quantity', err);
+    },
   });
 
   const removeMutation = useMutation({
     mutationFn: (itemId: string) => cartApi.removeItem(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      notify.info('Item removed from cart');
+    },
+    onError: (err) => {
+      notify.error('Failed to remove item', err);
     },
   });
 

@@ -9,10 +9,14 @@ import { ProductReviews } from './ProductReviews';
 import { Price } from '@/components/ui/Price';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { SectionDivider } from '@/components/ui/SectionDivider';
 import { useUIStore } from '@/stores/ui';
+import { notify } from '@/stores/notifications';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '@/lib/api/endpoints';
 import { ShoppingBag, Check, Plus, Minus, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function ProductDetailView({ product }: { product: ProductDetail }) {
   const { toggleCartDrawer } = useUIStore();
@@ -38,8 +42,15 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       setAddedRecently(true);
+      notify.success(
+        'Added to Bag',
+        `${quantity}x ${product.name}${selectedVariant ? ` (${selectedVariant.sku})` : ''} acquired.`
+      );
       setTimeout(() => setAddedRecently(false), 2000);
       toggleCartDrawer();
+    },
+    onError: (err) => {
+      notify.error('Unable to add item to bag', err);
     },
   });
 
@@ -98,13 +109,23 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
             )}
           </div>
 
-          {/* Price Stage */}
-          <div className="p-4 bg-bg-elevated border border-border-subtle rounded-lg flex items-center justify-between">
+          {/* Price Stage with Smooth Spring Transition */}
+          <div className="p-4 bg-bg-elevated border border-border-subtle rounded-lg flex items-center justify-between shadow-subtle hover:border-border-accent transition-colors">
             <div className="space-y-0.5">
               <span className="text-[10px] font-mono uppercase text-fg-muted block">
                 Authoritative Price
               </span>
-              <Price amount={activePrice} size="xl" />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activePrice}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Price amount={activePrice} size="xl" />
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             <div className="text-end">
@@ -144,7 +165,7 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1 || isOutOfStock}
-                  className="p-1.5 text-fg-muted hover:text-fg-primary disabled:opacity-30 focus-ring rounded-sm cursor-pointer"
+                  className="p-1.5 text-fg-muted hover:text-fg-primary disabled:opacity-30 focus-ring rounded-sm cursor-pointer transition-colors"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="w-4 h-4" />
@@ -155,7 +176,7 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
                 <button
                   onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
                   disabled={quantity >= currentStock || isOutOfStock}
-                  className="p-1.5 text-fg-muted hover:text-fg-primary disabled:opacity-30 focus-ring rounded-sm cursor-pointer"
+                  className="p-1.5 text-fg-muted hover:text-fg-primary disabled:opacity-30 focus-ring rounded-sm cursor-pointer transition-colors"
                   aria-label="Increase quantity"
                 >
                   <Plus className="w-4 h-4" />
@@ -169,7 +190,7 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
                 isLoading={addToCartMutation.isPending}
                 onClick={() => addToCartMutation.mutate()}
                 leftIcon={addedRecently ? <Check className="w-4 h-4 text-emerald-400" /> : <ShoppingBag className="w-4 h-4" />}
-                className="flex-1 text-sm font-semibold tracking-wide"
+                className="flex-1 text-sm font-semibold tracking-wide shadow-card"
               >
                 {addedRecently ? 'Added to Bag' : isOutOfStock ? 'Sold Out' : 'Acquire Artifact'}
               </Button>
@@ -195,50 +216,54 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
       </div>
 
       {/* Description & Technical Specification Table */}
-      <section className="pt-10 border-t border-border-subtle space-y-6">
-        <h2 className="text-xl font-bold font-display text-fg-primary">
-          Design Narrative & Specifications
-        </h2>
+      <ScrollReveal variant="fade-up">
+        <section className="pt-10 border-t border-border-subtle space-y-6">
+          <h2 className="text-xl font-bold font-display text-fg-primary">
+            Design Narrative & Specifications
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          <div className="md:col-span-7 space-y-4">
-            <p className="text-sm text-fg-secondary leading-relaxed whitespace-pre-line">
-              {product.description}
-            </p>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div className="md:col-span-7 space-y-4">
+              <p className="text-sm text-fg-secondary leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
+            </div>
 
-          <div className="md:col-span-5 bg-bg-elevated border border-border-subtle rounded-lg p-5">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-fg-primary font-semibold mb-4 pb-2 border-b border-border-subtle">
-              Technical Metadata
-            </h3>
-            <dl className="divide-y divide-border-subtle text-xs font-mono">
-              <div className="flex justify-between py-2">
-                <dt className="text-fg-muted">Product Type</dt>
-                <dd className="text-fg-primary uppercase">{product.product_type}</dd>
-              </div>
-              <div className="flex justify-between py-2">
-                <dt className="text-fg-muted">Category</dt>
-                <dd className="text-fg-primary">{product.category?.name}</dd>
-              </div>
-              {product.brand && (
+            <div className="md:col-span-5 bg-bg-elevated border border-border-subtle rounded-lg p-5 shadow-card hover:border-border-accent transition-colors">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-fg-primary font-semibold mb-4 pb-2 border-b border-border-subtle">
+                Technical Metadata
+              </h3>
+              <dl className="divide-y divide-border-subtle text-xs font-mono">
                 <div className="flex justify-between py-2">
-                  <dt className="text-fg-muted">Brand / Atelier</dt>
-                  <dd className="text-fg-primary">{product.brand.name}</dd>
+                  <dt className="text-fg-muted">Product Type</dt>
+                  <dd className="text-fg-primary uppercase">{product.product_type}</dd>
                 </div>
-              )}
-              {product.attribute_values?.map((attr) => (
-                <div key={attr.attribute_id} className="flex justify-between py-2">
-                  <dt className="text-fg-muted">{attr.attribute_name}</dt>
-                  <dd className="text-fg-primary">{String(attr.value)}</dd>
+                <div className="flex justify-between py-2">
+                  <dt className="text-fg-muted">Category</dt>
+                  <dd className="text-fg-primary">{product.category?.name}</dd>
                 </div>
-              ))}
-            </dl>
+                {product.brand && (
+                  <div className="flex justify-between py-2">
+                    <dt className="text-fg-muted">Brand / Atelier</dt>
+                    <dd className="text-fg-primary">{product.brand.name}</dd>
+                  </div>
+                )}
+                {product.attribute_values?.map((attr) => (
+                  <div key={attr.attribute_id} className="flex justify-between py-2">
+                    <dt className="text-fg-muted">{attr.attribute_name}</dt>
+                    <dd className="text-fg-primary">{String(attr.value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       {/* Reviews Section */}
-      <ProductReviews productId={product.id} />
+      <ScrollReveal variant="fade-up">
+        <ProductReviews productId={product.id} />
+      </ScrollReveal>
     </div>
   );
 }

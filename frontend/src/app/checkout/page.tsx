@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Price } from '@/components/ui/Price';
 import { AddressSelector } from '@/features/address/components/AddressSelector';
 import { useAuthStore } from '@/stores/auth';
+import { notify } from '@/stores/notifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi, ordersApi } from '@/lib/api/endpoints';
 import { Address, Cart, OrderDetail } from '@/types/api';
@@ -61,6 +62,7 @@ export default function CheckoutPage() {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       setCreatedOrder(order);
       setStep(3);
+      notify.success('Order Created', `Order #${order.order_number} has been created and stock locked.`);
     },
     onError: (err: any) => {
       const data = err.response?.data;
@@ -75,6 +77,7 @@ export default function CheckoutPage() {
         }
       }
       setErrorMessage(msg);
+      notify.error('Checkout Failed', msg);
     },
   });
 

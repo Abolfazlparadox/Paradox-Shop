@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Price } from '@/components/ui/Price';
 import { Badge } from '@/components/ui/Badge';
 import { useAuthStore } from '@/stores/auth';
+import { notify } from '@/stores/notifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, paymentsApi } from '@/lib/api/endpoints';
 import { OrderDetail, PaymentDetail } from '@/types/api';
@@ -58,6 +59,7 @@ export default function PaymentTerminalPage() {
       queryClient.invalidateQueries({ queryKey: ['order', orderId] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setCompletedPayment(payment);
+      notify.success('Payment Cleared', `Transaction ${payment.transaction_id} verified successfully.`);
     },
     onError: (err: any) => {
       const data = err.response?.data;
@@ -72,6 +74,7 @@ export default function PaymentTerminalPage() {
         }
       }
       setErrorMessage(msg);
+      notify.error('Payment Failed', msg);
     },
   });
 

@@ -25,8 +25,9 @@ export function ProductCard({
 
   return (
     <article
+      data-cursor="view"
       className={cn(
-        'group relative flex flex-col bg-bg-elevated border border-border-subtle rounded-lg overflow-hidden transition-all duration-200 hover:border-border-accent hover:shadow-card',
+        'group relative flex flex-col bg-bg-elevated border border-border-subtle rounded-lg overflow-hidden transition-all duration-300 ease-out-cubic hover:border-border-accent hover:shadow-card hover:-translate-y-0.5',
         className
       )}
     >

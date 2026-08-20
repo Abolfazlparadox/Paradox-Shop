@@ -27,6 +27,11 @@
     --status-info: #3b82f6;
 
     --radius: 0.375rem;
+
+    /* Global Motion Language Tokens */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-in-out-subtle: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
@@ -53,6 +58,11 @@
     --status-info: #60a5fa;
 
     --radius: 0.375rem;
+
+    /* Global Motion Language Tokens */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-in-out-subtle: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   * {
@@ -88,6 +98,7 @@
 ::-webkit-scrollbar-thumb {
   background: var(--border-accent);
   border-radius: 3px;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -124,10 +135,27 @@
   outline-offset: 2px;
 }
 
+/* Micro-Interaction & Light Shimmer Utilities */
+.shimmer-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-glow) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: auto !important;
   }
   *,
   *::before,
@@ -135,5 +163,6 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

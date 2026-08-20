@@ -26,6 +26,9 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils/cn';
+
 export function Navbar() {
   const {
     theme,
@@ -39,6 +42,20 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Dynamic scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Global Keyboard shortcut for search (⌘K or Ctrl+K)
   useEffect(() => {
@@ -70,13 +87,20 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border-subtle bg-bg-glass backdrop-blur-md transition-colors duration-200">
+      <header
+        className={cn(
+          'sticky top-0 z-40 w-full border-b transition-all duration-300 ease-out-cubic',
+          isScrolled
+            ? 'border-border-accent bg-bg-glass/95 backdrop-blur-md shadow-subtle py-0.5'
+            : 'border-border-subtle bg-bg-glass/80 backdrop-blur-sm'
+        )}
+      >
         <Container size="lg">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Left: Brand Mark & Identity */}
             <div className="flex items-center gap-6">
-              <Link href="/" className="flex items-center gap-2.5 focus-ring rounded-sm">
-                <div className="w-8 h-8 rounded-sm bg-accent text-accent-fg font-mono font-bold text-xs flex items-center justify-center tracking-tighter">
+              <Link href="/" className="flex items-center gap-2.5 focus-ring rounded-sm group">
+                <div className="w-8 h-8 rounded-sm bg-accent text-accent-fg font-mono font-bold text-xs flex items-center justify-center tracking-tighter shadow-subtle transition-transform duration-200 group-hover:scale-105">
                   PX
                 </div>
                 <span className="font-display font-bold text-base tracking-tight text-fg-primary">
@@ -178,15 +202,25 @@ export function Navbar() {
               {/* Cart Drawer Trigger with Authoritative Counter */}
               <button
                 onClick={toggleCartDrawer}
+                data-cursor="action"
                 className="relative inline-flex items-center justify-center h-9 px-3 rounded-md bg-bg-secondary hover:bg-border-subtle text-fg-primary border border-border-subtle transition-colors focus-ring cursor-pointer"
                 aria-label={`Cart with ${totalItems} items`}
               >
                 <ShoppingBag className="w-4 h-4" />
-                {totalItems > 0 && (
-                  <span className="ms-1.5 text-xs font-mono font-semibold text-accent">
-                    {totalItems}
-                  </span>
-                )}
+                <AnimatePresence mode="wait">
+                  {totalItems > 0 && (
+                    <motion.span
+                      key={totalItems}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.6, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                      className="ms-1.5 text-xs font-mono font-semibold text-accent"
+                    >
+                      {totalItems}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </button>
 
               {/* User Account Button / Dropdown */}

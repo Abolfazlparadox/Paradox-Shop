@@ -6,6 +6,7 @@ import { useOrders } from '@/features/orders/queries/useOrders';
 import { OrderCard } from '@/features/orders/components/OrderCard';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { OrderStatus } from '@/types/api';
 import { Package, ShoppingBag } from 'lucide-react';
 
@@ -84,8 +85,10 @@ export default function OrdersHistoryPage() {
       {/* Orders List */}
       {!isLoading && filteredOrders.length > 0 && (
         <div className="space-y-3">
-          {filteredOrders.map((order) => (
-            <OrderCard key={order.id} order={order} />
+          {filteredOrders.map((order, idx) => (
+            <ScrollReveal key={order.id} variant="fade-up" delay={idx * 0.05}>
+              <OrderCard order={order} />
+            </ScrollReveal>
           ))}
         </div>
       )}

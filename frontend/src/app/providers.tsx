@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
+import { ToastContainer } from '@/components/ui/ToastContainer';
+import { GlobalAppLoader } from '@/components/layout/GlobalAppLoader';
+import { SmoothScroll } from '@/components/layout/SmoothScroll';
+import { CustomCursor } from '@/components/ui/CustomCursor';
+import { ScrollProgress } from '@/components/layout/ScrollProgress';
+import { BackToTop } from '@/components/layout/BackToTop';
 
 function makeQueryClient() {
   return new QueryClient({
@@ -59,7 +65,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <StoreInitializer />
+      <GlobalAppLoader />
+      <SmoothScroll />
+      <CustomCursor />
+      <ScrollProgress />
+      <BackToTop />
       {children}
+      <ToastContainer />
       {process.env.NODE_ENV === 'development' && (
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
       )}

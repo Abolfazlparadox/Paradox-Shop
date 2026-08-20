@@ -7,6 +7,7 @@ import { Container } from '@/components/ui/Container';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
+import { notify } from '@/stores/notifications';
 import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 function LoginForm() {
@@ -26,6 +27,7 @@ function LoginForm() {
 
     try {
       await login({ email, password });
+      notify.success('Authentication Successful', 'Welcome back to Paradox Shop.');
       router.push(redirectUrl);
     } catch (err: any) {
       const detail =
@@ -34,6 +36,7 @@ function LoginForm() {
         err.message ||
         'Authentication failed. Please verify your credentials.';
       setErrorMessage(detail);
+      notify.error('Sign In Failed', detail);
     }
   };
 

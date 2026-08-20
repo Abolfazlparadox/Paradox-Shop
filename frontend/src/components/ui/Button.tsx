@@ -26,19 +26,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'relative inline-flex items-center justify-center font-medium transition-all duration-200 focus-ring disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none active:scale-[0.98]';
+      'group relative inline-flex items-center justify-center font-medium transition-all duration-200 ease-out-cubic focus-ring disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none active:scale-[0.97]';
 
     const variants = {
       primary:
-        'bg-accent text-accent-fg hover:opacity-90 shadow-sm border border-transparent',
+        'bg-accent text-accent-fg hover:opacity-90 hover:shadow-glow shadow-subtle border border-transparent',
       secondary:
-        'bg-bg-elevated text-fg-primary hover:bg-border-subtle border border-border-subtle shadow-subtle',
+        'bg-bg-elevated text-fg-primary hover:bg-border-subtle hover:border-border-accent border border-border-subtle shadow-subtle',
       outline:
-        'bg-transparent text-fg-primary border border-border-accent hover:border-fg-primary hover:bg-bg-secondary',
+        'bg-transparent text-fg-primary border border-border-accent hover:border-fg-primary hover:bg-bg-secondary hover:shadow-subtle',
       ghost:
         'bg-transparent text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary',
       danger:
-        'bg-status-error text-white hover:opacity-90 border border-transparent shadow-sm',
+        'bg-status-error text-white hover:opacity-90 border border-transparent shadow-subtle',
     };
 
     const sizes = {
@@ -51,17 +51,27 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        data-cursor="action"
         disabled={disabled || isLoading}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
         {...props}
       >
         {isLoading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
-        {!isLoading && leftIcon && <span className="shrink-0">{leftIcon}</span>}
+        {!isLoading && leftIcon && (
+          <span className="shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5">
+            {leftIcon}
+          </span>
+        )}
         {children}
-        {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+        {!isLoading && rightIcon && (
+          <span className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5">
+            {rightIcon}
+          </span>
+        )}
       </button>
     );
   }
 );
 
 Button.displayName = 'Button';
+

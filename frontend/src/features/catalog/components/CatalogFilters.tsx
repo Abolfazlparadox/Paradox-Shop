@@ -40,6 +40,7 @@ export function CatalogFilters({
         </span>
         {hasActiveFilters && (
           <button
+            type="button"
             onClick={onReset}
             className="text-[11px] font-mono text-fg-muted hover:text-fg-primary flex items-center gap-1 focus-ring rounded-sm transition-colors cursor-pointer"
           >
@@ -56,6 +57,7 @@ export function CatalogFilters({
         </span>
         <div className="flex flex-col space-y-1">
           <button
+            type="button"
             onClick={() => onFilterChange({ category: undefined, page: 1 })}
             className={cn(
               'flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors text-start cursor-pointer focus-ring',
@@ -72,6 +74,7 @@ export function CatalogFilters({
             return (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => onFilterChange({ category: cat.slug, page: 1 })}
                 className={cn(
                   'flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors text-start cursor-pointer focus-ring',
@@ -98,6 +101,7 @@ export function CatalogFilters({
           Curated Highlights
         </span>
         <button
+          type="button"
           onClick={() =>
             onFilterChange({
               is_featured: filters.is_featured ? undefined : true,

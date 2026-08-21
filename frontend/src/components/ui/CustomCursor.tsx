@@ -175,18 +175,18 @@ export function CustomCursor() {
         animate={{
           scale: getFollowerScale(),
           opacity: getFollowerOpacity(),
-          borderColor: cursorState === 'disabled' ? 'rgba(239, 68, 68, 0.6)' : 'currentColor',
+          borderColor: cursorState === 'disabled' ? 'rgba(239, 68, 68, 0.6)' : 'rgba(255, 255, 255, 0.8)',
         }}
         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-accent pointer-events-none mix-blend-difference flex items-center justify-center text-[8px] font-mono font-bold tracking-tighter"
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-white/80 pointer-events-none mix-blend-difference flex items-center justify-center text-[8px] font-mono font-bold tracking-tighter"
       >
         {cursorState === 'view' && (
-          <span className="text-[7px] text-accent tracking-tighter uppercase font-mono">
+          <span className="text-[7px] text-white tracking-tighter uppercase font-mono">
             VIEW
           </span>
         )}
         {cursorState === 'drag' && (
-          <span className="text-[9px] text-accent tracking-tighter">
+          <span className="text-[9px] text-white tracking-tighter">
             ↕
           </span>
         )}

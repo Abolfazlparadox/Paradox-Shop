@@ -14,12 +14,14 @@ import { getMediaUrl } from '@/lib/utils/media';
 export interface ProductCardProps {
   product: ProductListItem;
   onAddToCart?: (product: ProductListItem) => void;
+  priority?: boolean;
   className?: string;
 }
 
 export function ProductCard({
   product,
   onAddToCart,
+  priority = false,
   className,
 }: ProductCardProps) {
   const isOutOfStock = product.total_stock !== undefined && product.total_stock <= 0;
@@ -40,6 +42,7 @@ export function ProductCard({
             src={imageUrl}
             alt={product.name}
             fill
+            priority={priority}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
           />

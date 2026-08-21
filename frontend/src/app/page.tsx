@@ -167,6 +167,7 @@ export default function HomePage() {
                 <ScrollReveal key={product.id} variant="fade-up" delay={idx * 0.1}>
                   <ProductCard
                     product={product}
+                    priority={idx < 3}
                     onAddToCart={(p) => addToCartMutation.mutate(p)}
                   />
                 </ScrollReveal>

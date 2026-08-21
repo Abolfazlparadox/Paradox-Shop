@@ -9,6 +9,7 @@ import { Badge } from './Badge';
 import { Button } from './Button';
 import { ProductListItem } from '@/types/api';
 import { ShoppingBag, Eye } from 'lucide-react';
+import { getMediaUrl } from '@/lib/utils/media';
 
 export interface ProductCardProps {
   product: ProductListItem;
@@ -22,6 +23,7 @@ export function ProductCard({
   className,
 }: ProductCardProps) {
   const isOutOfStock = product.total_stock !== undefined && product.total_stock <= 0;
+  const imageUrl = getMediaUrl(product.primary_image);
 
   return (
     <article
@@ -33,9 +35,9 @@ export function ProductCard({
     >
       {/* Product Image Stage */}
       <div className="relative aspect-[4/5] w-full bg-bg-secondary overflow-hidden flex items-center justify-center">
-        {product.primary_image ? (
+        {imageUrl ? (
           <Image
-            src={product.primary_image}
+            src={imageUrl}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

@@ -3,15 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
+export type CursorState = 'default' | 'link' | 'button' | 'view' | 'text' | 'drag' | 'disabled';
+
 export function CustomCursor() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [cursorState, setCursorState] = useState<'default' | 'pointer' | 'text' | 'action'>('default');
+  const [cursorState, setCursorState] = useState<CursorState>('default');
   const [isVisible, setIsVisible] = useState(false);
 
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
 
-  // Smooth springs for the outer trailing ring
+  // Smooth springs for outer trailing follower ring
   const springConfig = { damping: 28, stiffness: 350, mass: 0.5 };
   const ringX = useSpring(mouseX, springConfig);
   const ringY = useSpring(mouseY, springConfig);
@@ -23,10 +25,12 @@ export function CustomCursor() {
 
     if (!hasFinePointer || prefersReducedMotion) {
       setIsEnabled(false);
+      document.documentElement.classList.remove('has-custom-cursor');
       return;
     }
 
     setIsEnabled(true);
+    document.documentElement.classList.add('has-custom-cursor');
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
@@ -46,22 +50,52 @@ export function CustomCursor() {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      const interactive = target.closest(
-        'button, a, input, select, textarea, [role="button"], [data-cursor], .group'
-      );
-
-      if (interactive) {
-        const cursorAttr = interactive.getAttribute('data-cursor');
-        if (cursorAttr === 'action') {
-          setCursorState('action');
-        } else if (interactive.tagName === 'INPUT' || interactive.tagName === 'TEXTAREA') {
-          setCursorState('text');
-        } else {
-          setCursorState('pointer');
-        }
-      } else {
-        setCursorState('default');
+      // Check for disabled elements
+      const disabledEl = target.closest('button:disabled, [aria-disabled="true"], input:disabled, select:disabled');
+      if (disabledEl) {
+        setCursorState('disabled');
+        return;
       }
+
+      // Check for custom data-cursor attributes
+      const customEl = target.closest('[data-cursor]');
+      if (customEl) {
+        const attr = customEl.getAttribute('data-cursor') as CursorState;
+        if (attr && ['link', 'button', 'view', 'text', 'drag', 'disabled'].includes(attr)) {
+          setCursorState(attr);
+          return;
+        }
+      }
+
+      // Check for text inputs
+      const textInput = target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"]');
+      if (textInput) {
+        setCursorState('text');
+        return;
+      }
+
+      // Check for buttons
+      const buttonEl = target.closest('button, [role="button"], input[type="submit"], input[type="button"]');
+      if (buttonEl) {
+        setCursorState('button');
+        return;
+      }
+
+      // Check for links
+      const linkEl = target.closest('a, [role="link"]');
+      if (linkEl) {
+        setCursorState('link');
+        return;
+      }
+
+      // Check for draggable elements
+      const dragEl = target.closest('[draggable="true"], .cursor-grab, .cursor-move');
+      if (dragEl) {
+        setCursorState('drag');
+        return;
+      }
+
+      setCursorState('default');
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -70,6 +104,7 @@ export function CustomCursor() {
     document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
+      document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseover', handleElementHover);
       document.removeEventListener('mouseleave', handleMouseLeave);
@@ -79,8 +114,45 @@ export function CustomCursor() {
 
   if (!isEnabled || !isVisible) return null;
 
+  // Visual scaling and styling based on active state
+  const getFollowerScale = () => {
+    switch (cursorState) {
+      case 'link':
+        return 1.8;
+      case 'button':
+        return 2.2;
+      case 'view':
+        return 2.6;
+      case 'drag':
+        return 2.0;
+      case 'text':
+        return 0.5;
+      case 'disabled':
+        return 0.8;
+      case 'default':
+      default:
+        return 1;
+    }
+  };
+
+  const getFollowerOpacity = () => {
+    switch (cursorState) {
+      case 'text':
+        return 0.2;
+      case 'disabled':
+        return 0.35;
+      case 'view':
+      case 'button':
+      case 'link':
+        return 0.85;
+      case 'default':
+      default:
+        return 0.55;
+    }
+  };
+
   return (
-    <>
+    <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden select-none">
       {/* Inner Precision Dot */}
       <motion.div
         style={{
@@ -89,7 +161,7 @@ export function CustomCursor() {
           translateX: '-50%',
           translateY: '-50%',
         }}
-        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-accent pointer-events-none z-50 mix-blend-difference"
+        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-accent pointer-events-none mix-blend-difference"
       />
 
       {/* Outer Contextual Follower Ring */}
@@ -101,12 +173,24 @@ export function CustomCursor() {
           translateY: '-50%',
         }}
         animate={{
-          scale: cursorState === 'pointer' ? 1.8 : cursorState === 'action' ? 2.2 : cursorState === 'text' ? 0.6 : 1,
-          opacity: cursorState === 'text' ? 0.3 : 0.65,
+          scale: getFollowerScale(),
+          opacity: getFollowerOpacity(),
+          borderColor: cursorState === 'disabled' ? 'rgba(239, 68, 68, 0.6)' : 'currentColor',
         }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-accent pointer-events-none z-50 mix-blend-difference"
-      />
-    </>
+        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-accent pointer-events-none mix-blend-difference flex items-center justify-center text-[8px] font-mono font-bold tracking-tighter"
+      >
+        {cursorState === 'view' && (
+          <span className="text-[7px] text-accent tracking-tighter uppercase font-mono">
+            VIEW
+          </span>
+        )}
+        {cursorState === 'drag' && (
+          <span className="text-[9px] text-accent tracking-tighter">
+            ↕
+          </span>
+        )}
+      </motion.div>
+    </div>
   );
 }

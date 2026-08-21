@@ -7,6 +7,7 @@ import { CartItem } from '@/types/api';
 import { Price } from '@/components/ui/Price';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { getMediaUrl } from '@/lib/utils/media';
 
 export interface CartItemRowProps {
   item: CartItem;
@@ -25,6 +26,7 @@ export function CartItemRow({
 }: CartItemRowProps) {
   const isOutOfStock = item.variant ? item.variant.stock <= 0 : false;
   const maxStock = item.variant?.stock || 99;
+  const itemImg = getMediaUrl(item.product?.primary_image);
 
   return (
     <div
@@ -37,10 +39,10 @@ export function CartItemRow({
       {/* Product Image & Title */}
       <div className="flex items-center gap-4 min-w-0">
         <div className="relative w-16 h-20 rounded-md bg-bg-secondary border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center font-mono text-[10px] text-fg-muted">
-          {item.product?.primary_image ? (
+          {itemImg ? (
             <Image
-              src={item.product.primary_image}
-              alt={item.product.name}
+              src={itemImg}
+              alt={item.product?.name || 'Artifact'}
               fill
               className="object-cover object-center"
             />

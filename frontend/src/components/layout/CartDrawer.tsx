@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '@/lib/api/endpoints';
 import { Cart } from '@/types/api';
 import { notify } from '@/stores/notifications';
+import { getMediaUrl } from '@/lib/utils/media';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
 
 export function CartDrawer() {
@@ -22,6 +23,8 @@ export function CartDrawer() {
     queryFn: cartApi.getCart,
     enabled: isCartDrawerOpen,
   });
+
+  const totalCount = cart?.items_count ?? cart?.total_items ?? 0;
 
   const updateMutation = useMutation({
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
@@ -52,7 +55,7 @@ export function CartDrawer() {
     <Drawer
       isOpen={isCartDrawerOpen}
       onClose={() => setCartDrawerOpen(false)}
-      title={`Shopping Cart (${cart?.total_items || 0})`}
+      title={`Shopping Cart (${totalCount})`}
       side="right"
     >
       <div className="flex flex-col h-full justify-between">
@@ -87,14 +90,16 @@ export function CartDrawer() {
         {/* Items List */}
         {!isLoading && !isEmpty && (
           <div className="flex-1 overflow-y-auto divide-y divide-border-subtle pe-1">
-            {items.map((item) => (
+            {items.map((item) => {
+              const itemImg = getMediaUrl(item.product?.primary_image);
+              return (
               <div key={item.id} className="py-4 flex gap-3 group">
                 {/* Product Thumbnail */}
                 <div className="relative w-16 h-16 rounded-md bg-bg-secondary border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center font-mono text-[10px] text-fg-muted">
-                  {item.product?.primary_image ? (
+                  {itemImg ? (
                     <Image
-                      src={item.product.primary_image}
-                      alt={item.product.name}
+                      src={itemImg}
+                      alt={item.product?.name || 'Artifact'}
                       fill
                       className="object-cover object-center"
                     />
@@ -162,7 +167,8 @@ export function CartDrawer() {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
 

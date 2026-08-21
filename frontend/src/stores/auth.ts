@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { setApiAccessToken } from '@/lib/api/client';
 import { authApi } from '@/lib/api/endpoints';
+import { parseApiError } from '@/lib/api/error-handler';
 import { LoginRequest, TokenPair, UserProfile, UserRegistrationRequest } from '@/types/api';
 
 interface AuthState {
@@ -61,23 +62,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Automatically merge guest session cart into user cart
       if (typeof window !== 'undefined') {
-        const guestSession = localStorage.getItem('pdx_session_key');
-        if (guestSession) {
-          try {
-            const { cartApi } = await import('@/lib/api/endpoints');
-            await cartApi.mergeCart({ session_key: guestSession });
-            localStorage.removeItem('pdx_session_key');
-          } catch {
-            // Non-blocking merge error
-          }
+        const guestSession = localStorage.getItem('pdx_session_key') || '';
+        try {
+          const { cartApi } = await import('@/lib/api/endpoints');
+          await cartApi.mergeCart({ session_key: guestSession });
+          localStorage.removeItem('pdx_session_key');
+        } catch {
+          // Non-blocking merge error
         }
       }
 
       set({ user: profile, isLoading: false });
       return tokens;
     } catch (err: any) {
-      const message = err.response?.data?.detail || err.message || 'Login failed.';
-      set({ isLoading: false, error: message });
+      const parsed = parseApiError(err, 'login');
+      set({ isLoading: false, error: parsed.message });
       throw err;
     }
   },
@@ -89,8 +88,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Auto login after registration
       await get().login({ email: data.email, password: data.password });
     } catch (err: any) {
-      const message = err.response?.data?.detail || err.message || 'Registration failed.';
-      set({ isLoading: false, error: message });
+      const parsed = parseApiError(err, 'register');
+      set({ isLoading: false, error: parsed.message });
       throw err;
     }
   },

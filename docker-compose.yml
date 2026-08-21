@@ -92,6 +92,9 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      INTERNAL_API_URL: http://backend:8000/api/v1
+      INTERNAL_BACKEND_URL: http://backend:8000
     depends_on:
       - backend
 

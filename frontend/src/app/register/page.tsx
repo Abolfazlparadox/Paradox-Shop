@@ -7,8 +7,9 @@ import { Container } from '@/components/ui/Container';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
+import { parseApiError } from '@/lib/api/error-handler';
 import { notify } from '@/stores/notifications';
-import { Mail, Lock, User, Phone, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Phone, AlertCircle, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 
 function RegisterForm() {
   const router = useRouter();
@@ -24,9 +25,27 @@ function RegisterForm() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [throttleSeconds, setThrottleSeconds] = useState<number | null>(null);
+
+  // Active throttle countdown timer
+  React.useEffect(() => {
+    if (throttleSeconds === null || throttleSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setThrottleSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          setErrorMessage(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [throttleSeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (throttleSeconds && throttleSeconds > 0) return;
+
     setErrorMessage(null);
 
     if (password !== passwordConfirm) {
@@ -51,19 +70,11 @@ function RegisterForm() {
       notify.success('Account Created', 'Your account has been registered successfully.');
       router.push(redirectUrl);
     } catch (err: any) {
-      const data = err.response?.data;
-      let msg = 'Registration failed. Please check the form.';
-      if (data) {
-        if (typeof data === 'string') msg = data;
-        else if (data.detail) msg = data.detail;
-        else if (data.errors) {
-          const firstKey = Object.keys(data.errors)[0];
-          const firstErr = data.errors[firstKey];
-          msg = Array.isArray(firstErr) ? `${firstKey}: ${firstErr[0]}` : String(firstErr);
-        }
+      const parsed = parseApiError(err, 'register');
+      setErrorMessage(parsed.message);
+      if (parsed.isThrottled && parsed.retryAfterSeconds) {
+        setThrottleSeconds(parsed.retryAfterSeconds);
       }
-      setErrorMessage(msg);
-      notify.error('Registration Failed', msg);
     }
   };
 
@@ -164,10 +175,13 @@ function RegisterForm() {
           type="submit"
           size="lg"
           isLoading={isLoading}
+          disabled={isLoading || Boolean(throttleSeconds && throttleSeconds > 0)}
           className="w-full text-xs font-semibold mt-3"
           rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          Create Account & Sign In
+          {throttleSeconds && throttleSeconds > 0
+            ? `Retry in ${throttleSeconds}s`
+            : 'Create Account & Sign In'}
         </Button>
       </form>
 

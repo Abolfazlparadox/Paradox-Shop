@@ -97,8 +97,14 @@ class MergeCartView(APIView):
         serializer = MergeCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        session_key = (
+            serializer.validated_data.get("session_key")
+            or getattr(request.session, "session_key", None)
+            or ""
+        )
+
         cart = CartService.merge_guest_cart(
-            user=request.user, session_key=serializer.validated_data["session_key"]
+            user=request.user, session_key=session_key
         )
         cart = CartSelector.get_cart_with_items(cart.id)
         return Response(CartSerializer(cart).data)

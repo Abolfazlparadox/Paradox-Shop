@@ -7,17 +7,12 @@ export function GlobalAppLoader() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Dismiss as soon as window/document is ready and store is initialized
-    const handleLoad = () => {
+    // Dismiss as an initial overlay on client mount without blocking LCP or waiting for external assets
+    const frameId = requestAnimationFrame(() => {
       setIsLoaded(true);
-    };
+    });
 
-    if (document.readyState === 'complete') {
-      setIsLoaded(true);
-    } else {
-      window.addEventListener('load', handleLoad);
-      return () => window.removeEventListener('load', handleLoad);
-    }
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   return (
@@ -26,32 +21,28 @@ export function GlobalAppLoader() {
         <motion.div
           key="global-app-loader"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg-primary select-none pointer-events-none"
         >
           <div className="relative flex flex-col items-center gap-6">
             {/* Penrose-Inspired Impossible Monolith Geometry */}
             <div className="relative w-20 h-20 flex items-center justify-center">
-              {/* Subtle ambient glow */}
               <div className="absolute inset-0 rounded-full bg-accent/5 blur-xl animate-pulse" />
 
               <svg
                 viewBox="0 0 100 100"
                 className="w-16 h-16 text-fg-primary stroke-current fill-none stroke-[1.5]"
               >
-                {/* Exterior Non-Euclidean Triangle */}
                 <polygon
                   points="50,10 90,80 10,80"
                   className="stroke-accent opacity-80"
                 />
-                {/* Interior Intersecting Geometry */}
                 <polygon
                   points="50,28 76,74 24,74"
                   strokeDasharray="3 3"
                   className="stroke-fg-muted opacity-50"
                 />
-                {/* Center Core Node */}
                 <circle cx="50" cy="56" r="2.5" className="fill-accent" />
               </svg>
             </div>

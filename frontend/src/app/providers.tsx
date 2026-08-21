@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
 import { ToastContainer } from '@/components/ui/ToastContainer';
@@ -11,6 +10,15 @@ import { SmoothScroll } from '@/components/layout/SmoothScroll';
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { ScrollProgress } from '@/components/layout/ScrollProgress';
 import { BackToTop } from '@/components/layout/BackToTop';
+
+const Devtools =
+  process.env.NODE_ENV === 'development'
+    ? lazy(() =>
+        import('@tanstack/react-query-devtools').then((d) => ({
+          default: d.ReactQueryDevtools,
+        }))
+      )
+    : null;
 
 function makeQueryClient() {
   return new QueryClient({
@@ -72,8 +80,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <BackToTop />
       {children}
       <ToastContainer />
-      {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
+      {Devtools && (
+        <Suspense fallback={null}>
+          <Devtools initialIsOpen={false} buttonPosition="bottom-right" />
+        </Suspense>
       )}
     </QueryClientProvider>
   );

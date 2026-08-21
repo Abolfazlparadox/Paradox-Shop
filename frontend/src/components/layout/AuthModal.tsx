@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
 import { useUIStore } from '@/stores/ui';
-import { Mail, Lock, User, Phone, AlertCircle } from 'lucide-react';
+import { parseApiError } from '@/lib/api/error-handler';
+import { Mail, Lock, User, Phone, AlertCircle, Clock } from 'lucide-react';
 
 export function AuthModal() {
   const { activeModal, closeModal } = useUIStore();
@@ -26,9 +27,27 @@ export function AuthModal() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [throttleSeconds, setThrottleSeconds] = useState<number | null>(null);
+
+  // Active throttle countdown timer
+  React.useEffect(() => {
+    if (throttleSeconds === null || throttleSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setThrottleSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          setErrorMessage(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [throttleSeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (throttleSeconds && throttleSeconds > 0) return;
+
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -50,12 +69,11 @@ export function AuthModal() {
       }
       closeModal();
     } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.detail ||
-          err.response?.data?.errors?.email?.[0] ||
-          err.message ||
-          'Authentication failed.'
-      );
+      const parsed = parseApiError(err, tab);
+      setErrorMessage(parsed.message);
+      if (parsed.isThrottled && parsed.retryAfterSeconds) {
+        setThrottleSeconds(parsed.retryAfterSeconds);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -170,9 +188,14 @@ export function AuthModal() {
             type="submit"
             size="lg"
             isLoading={isLoading}
+            disabled={isLoading || Boolean(throttleSeconds && throttleSeconds > 0)}
             className="w-full mt-2"
           >
-            {tab === 'login' ? 'Sign In' : 'Create Account'}
+            {throttleSeconds && throttleSeconds > 0
+              ? `Retry in ${throttleSeconds}s`
+              : tab === 'login'
+              ? 'Sign In'
+              : 'Create Account'}
           </Button>
         </form>
       </div>

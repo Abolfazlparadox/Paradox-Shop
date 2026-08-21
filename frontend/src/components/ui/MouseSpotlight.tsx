@@ -1,49 +1,61 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils/cn';
 
 export interface MouseSpotlightProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   size?: number;
-  intensity?: number; // 0 to 1
   className?: string;
 }
 
 export function MouseSpotlight({
   children,
-  size = 450,
-  intensity = 0.08,
+  size = 550,
   className,
   ...props
 }: MouseSpotlightProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
-  const [opacity, setOpacity] = useState(0);
+  const spotlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check reduced motion
+    // Check reduced motion & coarse pointers
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+    const isTouchDevice = window.matchMedia('(pointer: coarse) or (hover: none)').matches;
+    if (prefersReducedMotion || isTouchDevice) return;
 
     const el = containerRef.current;
-    if (!el) return;
+    const spot = spotlightRef.current;
+    if (!el || !spot) return;
+
+    let rafId: number | null = null;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      setPosition({ x, y });
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        spot.style.setProperty('--spot-x', `${x}px`);
+        spot.style.setProperty('--spot-y', `${y}px`);
+        rafId = null;
+      });
     };
 
-    const handleMouseEnter = () => setOpacity(1);
-    const handleMouseLeave = () => setOpacity(0);
+    const handleMouseEnter = () => {
+      spot.style.opacity = '1';
+    };
+
+    const handleMouseLeave = () => {
+      spot.style.opacity = '0';
+    };
 
     el.addEventListener('mousemove', handleMouseMove, { passive: true });
     el.addEventListener('mouseenter', handleMouseEnter);
     el.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       el.removeEventListener('mousemove', handleMouseMove);
       el.removeEventListener('mouseenter', handleMouseEnter);
       el.removeEventListener('mouseleave', handleMouseLeave);
@@ -56,12 +68,12 @@ export function MouseSpotlight({
       className={cn('relative overflow-hidden', className)}
       {...props}
     >
-      {/* Dynamic Radial Spotlight Layer */}
+      {/* High-Performance Theme-Aware Radial Spotlight Layer */}
       <div
-        className="pointer-events-none absolute inset-0 transition-opacity duration-300 z-0"
+        ref={spotlightRef}
+        className="pointer-events-none absolute inset-0 transition-opacity duration-300 z-0 opacity-0"
         style={{
-          opacity,
-          background: `radial-gradient(${size}px circle at ${position.x}px ${position.y}px, var(--accent-glow), transparent 75%)`,
+          background: `radial-gradient(${size}px circle at var(--spot-x, -1000px) var(--spot-y, -1000px), var(--spotlight-glow), transparent 70%)`,
         }}
       />
       <div className="relative z-10">{children}</div>

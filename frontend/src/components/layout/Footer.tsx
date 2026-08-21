@@ -130,11 +130,17 @@ export function Footer() {
               PARADOX SHOP © 2026. IMPOSSIBLE MINIMALISM. ALL RIGHTS RESERVED.
             </div>
             <div className="flex items-center gap-4 text-[11px]">
+              <Link href="/sitemap-page" className="hover:text-fg-primary transition-colors">
+                SITEMAP
+              </Link>
+              <span>•</span>
+              <Link href="/sitemap.xml" target="_blank" className="hover:text-fg-primary transition-colors">
+                XML
+              </Link>
+              <span>•</span>
               <span>REST API v1</span>
               <span>•</span>
-              <span>RIAL BASE CURRENCY</span>
-              <span>•</span>
-              <span>POSTGRESQL + CELERY</span>
+              <span>RIAL CURRENCY</span>
             </div>
           </div>
         </ScrollReveal>

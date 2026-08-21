@@ -7,8 +7,9 @@ import { Container } from '@/components/ui/Container';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
+import { parseApiError } from '@/lib/api/error-handler';
 import { notify } from '@/stores/notifications';
-import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
@@ -20,9 +21,27 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [throttleSeconds, setThrottleSeconds] = useState<number | null>(null);
+
+  // Active throttle countdown timer
+  React.useEffect(() => {
+    if (throttleSeconds === null || throttleSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setThrottleSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          setErrorMessage(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [throttleSeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (throttleSeconds && throttleSeconds > 0) return;
+
     setErrorMessage(null);
 
     try {
@@ -30,13 +49,11 @@ function LoginForm() {
       notify.success('Authentication Successful', 'Welcome back to Paradox Shop.');
       router.push(redirectUrl);
     } catch (err: any) {
-      const detail =
-        err.response?.data?.detail ||
-        err.response?.data?.errors?.non_field_errors?.[0] ||
-        err.message ||
-        'Authentication failed. Please verify your credentials.';
-      setErrorMessage(detail);
-      notify.error('Sign In Failed', detail);
+      const parsed = parseApiError(err, 'login');
+      setErrorMessage(parsed.message);
+      if (parsed.isThrottled && parsed.retryAfterSeconds) {
+        setThrottleSeconds(parsed.retryAfterSeconds);
+      }
     }
   };
 
@@ -95,10 +112,13 @@ function LoginForm() {
           type="submit"
           size="lg"
           isLoading={isLoading}
+          disabled={isLoading || Boolean(throttleSeconds && throttleSeconds > 0)}
           className="w-full text-xs font-semibold mt-2"
           rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          Sign In to Account
+          {throttleSeconds && throttleSeconds > 0
+            ? `Retry in ${throttleSeconds}s`
+            : 'Sign In to Account'}
         </Button>
       </form>
 

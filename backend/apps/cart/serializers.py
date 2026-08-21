@@ -46,7 +46,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "items_count", "subtotal", "created_at", "updated_at"]
+        fields = ["id", "session_key", "items", "items_count", "subtotal", "created_at", "updated_at"]
 
     def get_items_count(self, obj) -> int:
         return sum(item.quantity for item in obj.items.all())
@@ -73,4 +73,4 @@ class UpdateCartItemSerializer(serializers.Serializer):
 class MergeCartSerializer(serializers.Serializer):
     """Validates the payload for merging a guest session Cart into the authenticated user's Cart."""
 
-    session_key = serializers.CharField()
+    session_key = serializers.CharField(required=False, allow_blank=True, default="")

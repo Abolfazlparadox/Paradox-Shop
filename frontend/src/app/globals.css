@@ -20,6 +20,7 @@
     --accent: #09090b;
     --accent-fg: #ffffff;
     --accent-glow: rgba(0, 0, 0, 0.08);
+    --spotlight-glow: rgba(0, 0, 0, 0.035);
 
     --status-success: #10b981;
     --status-warning: #f59e0b;
@@ -51,6 +52,7 @@
     --accent: #ffffff;
     --accent-fg: #050505;
     --accent-glow: rgba(255, 255, 255, 0.12);
+    --spotlight-glow: rgba(255, 255, 255, 0.08);
 
     --status-success: #10b981;
     --status-warning: #f59e0b;
@@ -164,5 +166,25 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Desktop Custom Cursor Hide Rules */
+@media (pointer: fine) and (hover: hover) {
+  html.has-custom-cursor,
+  html.has-custom-cursor body,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button,
+  html.has-custom-cursor [role="button"],
+  html.has-custom-cursor [data-cursor],
+  html.has-custom-cursor .cursor-pointer {
+    cursor: none !important;
+  }
+
+  html.has-custom-cursor input,
+  html.has-custom-cursor textarea,
+  html.has-custom-cursor select,
+  html.has-custom-cursor [contenteditable="true"] {
+    cursor: text !important;
   }
 }

@@ -67,48 +67,16 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   clearToasts: () => set({ toasts: [] }),
 }));
 
+import { parseApiError } from '@/lib/api/error-handler';
+
 /**
  * Format unknown server errors into clean, human-readable strings.
  */
 export function formatErrorMessage(err: unknown, fallback = 'An unexpected system error occurred.'): string {
   if (!err) return fallback;
-
   if (typeof err === 'string') return err;
-
-  const anyErr = err as any;
-
-  if (anyErr?.response?.data) {
-    const data = anyErr.response.data;
-    if (typeof data === 'string') return data;
-    if (typeof data.detail === 'string') return data.detail;
-    if (typeof data.message === 'string') return data.message;
-    if (data.errors) {
-      if (typeof data.errors === 'string') return data.errors;
-      if (typeof data.errors === 'object') {
-        const keys = Object.keys(data.errors);
-        if (keys.length > 0) {
-          const firstKey = keys[0];
-          const val = data.errors[firstKey];
-          if (Array.isArray(val) && val.length > 0) {
-            return `${firstKey}: ${val[0]}`;
-          }
-          return `${firstKey}: ${String(val)}`;
-        }
-      }
-    }
-    if (Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
-      return data.non_field_errors[0];
-    }
-  }
-
-  if (anyErr?.message) {
-    if (anyErr.message.includes('Network Error')) {
-      return 'Network connection unreachable. Please verify connectivity.';
-    }
-    return anyErr.message;
-  }
-
-  return fallback;
+  const parsed = parseApiError(err);
+  return parsed.message || fallback;
 }
 
 /**

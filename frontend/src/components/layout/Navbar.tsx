@@ -83,7 +83,7 @@ export function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const totalItems = cart?.total_items || 0;
+  const totalItems = cart?.items_count ?? cart?.total_items ?? 0;
 
   return (
     <>

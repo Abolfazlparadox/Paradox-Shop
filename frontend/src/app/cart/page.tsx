@@ -138,7 +138,7 @@ export default function CartPage() {
               <div className="lg:col-span-4">
                 <CartSummary
                   subtotal={cart?.subtotal || '0'}
-                  totalItems={cart?.total_items || 0}
+                  totalItems={cart?.items_count ?? cart?.total_items ?? 0}
                   isLoading={updateMutation.isPending || removeMutation.isPending}
                 />
               </div>

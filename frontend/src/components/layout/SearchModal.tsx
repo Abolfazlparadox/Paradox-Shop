@@ -11,6 +11,7 @@ import { Search, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
+import { getMediaUrl } from '@/lib/utils/media';
 
 export interface SearchModalProps {
   isOpen: boolean;
@@ -137,7 +138,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <div className="relative w-12 h-12 rounded-sm bg-bg-secondary border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center font-mono text-[10px] text-fg-muted">
                     {product.primary_image ? (
                       <Image
-                        src={product.primary_image}
+                        src={getMediaUrl(product.primary_image)}
                         alt={product.name}
                         fill
                         className="object-cover object-center"

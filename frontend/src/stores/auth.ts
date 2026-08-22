@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { setApiAccessToken } from '@/lib/api/client';
 import { authApi } from '@/lib/api/endpoints';
 import { parseApiError } from '@/lib/api/error-handler';
-import { LoginRequest, TokenPair, UserProfile, UserRegistrationRequest } from '@/types/api';
+import { LoginRequest, RegisterResponse, TokenPair, UserProfile, UserRegistrationRequest, VerifyEmailRequest, VerifyEmailResponse } from '@/types/api';
 
 interface AuthState {
   user: UserProfile | null;
@@ -13,7 +13,8 @@ interface AuthState {
 
   // Actions
   login: (credentials: LoginRequest) => Promise<TokenPair>;
-  register: (data: UserRegistrationRequest) => Promise<void>;
+  register: (data: UserRegistrationRequest) => Promise<RegisterResponse>;
+  verifyEmail: (data: VerifyEmailRequest) => Promise<VerifyEmailResponse>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<UserProfile | null>;
   setTokens: (tokens: TokenPair) => void;
@@ -84,11 +85,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (data: UserRegistrationRequest) => {
     set({ isLoading: true, error: null });
     try {
-      await authApi.register(data);
-      // Auto login after registration
-      await get().login({ email: data.email, password: data.password });
+      const response = await authApi.register(data);
+      set({ isLoading: false });
+      return response;
     } catch (err: any) {
       const parsed = parseApiError(err, 'register');
+      set({ isLoading: false, error: parsed.message });
+      throw err;
+    }
+  },
+
+  verifyEmail: async (data: VerifyEmailRequest) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await authApi.verifyEmail(data);
+      get().setTokens({ access: res.access, refresh: res.refresh });
+
+      // Automatically merge guest session cart into user cart
+      if (typeof window !== 'undefined') {
+        const guestSession = localStorage.getItem('pdx_session_key') || '';
+        try {
+          const { cartApi } = await import('@/lib/api/endpoints');
+          await cartApi.mergeCart({ session_key: guestSession });
+          localStorage.removeItem('pdx_session_key');
+        } catch {
+          // Non-blocking merge error
+        }
+      }
+
+      set({ user: res.user, isAuthenticated: true, isLoading: false });
+      return res;
+    } catch (err: any) {
+      const parsed = parseApiError(err, 'verify-email');
       set({ isLoading: false, error: parsed.message });
       throw err;
     }

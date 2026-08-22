@@ -9,20 +9,33 @@ from .permissions import IsOwner
 from .selectors import AddressSelector, UserSelector
 from .serializers import (
     AddressSerializer,
+    ConfirmPhoneSerializer,
     EmailTokenObtainPairSerializer,
     LogoutSerializer,
     PasswordChangeSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    RequestPhoneVerificationSerializer,
+    ResendOTPSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
+    VerifyEmailSerializer,
 )
 from .services import AddressService, UserService
 
 User = get_user_model()
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
 @extend_schema(tags=["Users"])
 class RegisterView(generics.CreateAPIView):
-    """Registers a new User account and returns the created user's profile representation."""
+    """Registers a new User account with is_active=False and dispatches an initial email verification OTP."""
 
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
@@ -33,17 +46,180 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
+        client_ip = get_client_ip(request)
 
-        user = UserService.register_user(
+        user, cooldown, ttl = UserService.register_user(
             email=validated_data["email"],
             password=validated_data["password"],
             first_name=validated_data.get("first_name", ""),
             last_name=validated_data.get("last_name", ""),
             phone_number=validated_data.get("phone_number"),
+            client_ip=client_ip,
         )
 
-        output = UserProfileSerializer(UserSelector.get_user_with_profile(user.id))
-        return Response(output.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "detail": "Account created. A 6-digit verification code has been dispatched to your email.",
+                "email": user.email,
+                "requires_verification": True,
+                "cooldown": cooldown,
+                "ttl": ttl,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=["Users"])
+class VerifyEmailView(generics.GenericAPIView):
+    """Validates the 6-digit OTP to activate user account and issues JWT tokens."""
+
+    serializer_class = VerifyEmailSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        otp = serializer.validated_data["otp"]
+
+        user, tokens = UserService.verify_email_otp(email=email, otp=otp)
+        user_data = UserProfileSerializer(UserSelector.get_user_with_profile(user.id)).data
+
+        return Response(
+            {
+                "detail": "Email verified successfully.",
+                "access": tokens["access"],
+                "refresh": tokens["refresh"],
+                "user": user_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Users"])
+class ResendOTPView(generics.GenericAPIView):
+    """Resends a 6-digit OTP code for email verification or password reset with rate limiting."""
+
+    serializer_class = ResendOTPSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        otp_type = serializer.validated_data.get("type", "verify")
+        client_ip = get_client_ip(request)
+
+        cooldown, ttl = UserService.resend_otp(email=email, otp_type=otp_type, client_ip=client_ip)
+
+        return Response(
+            {
+                "detail": "Verification code resent successfully.",
+                "cooldown": cooldown,
+                "ttl": ttl,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Users"])
+class VerifyPhoneView(generics.GenericAPIView):
+    """Requests an SMS OTP to verify mobile number in user profile."""
+
+    serializer_class = RequestPhoneVerificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone_number = serializer.validated_data["phone_number"]
+        client_ip = get_client_ip(request)
+
+        cooldown, ttl = UserService.request_phone_verification(
+            user=request.user,
+            phone_number=phone_number,
+            client_ip=client_ip,
+        )
+
+        return Response(
+            {
+                "detail": "Mobile verification code sent.",
+                "cooldown": cooldown,
+                "ttl": ttl,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Users"])
+class ConfirmPhoneView(generics.GenericAPIView):
+    """Validates the mobile OTP code and marks phone_verified=True."""
+
+    serializer_class = ConfirmPhoneSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        otp = serializer.validated_data["otp"]
+
+        user = UserService.confirm_phone_verification(user=request.user, otp=otp)
+        user_data = UserProfileSerializer(UserSelector.get_user_with_profile(user.id)).data
+
+        return Response(
+            {
+                "detail": "Mobile number verified successfully.",
+                "user": user_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Users"])
+class PasswordResetRequestView(generics.GenericAPIView):
+    """Initiates password reset by sending an OTP to the user's email."""
+
+    serializer_class = PasswordResetRequestSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        client_ip = get_client_ip(request)
+
+        cooldown, ttl = UserService.request_password_reset(email=email, client_ip=client_ip)
+
+        return Response(
+            {
+                "detail": "If your email is registered, a password reset code has been dispatched.",
+                "cooldown": cooldown,
+                "ttl": ttl,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Users"])
+class PasswordResetConfirmView(generics.GenericAPIView):
+    """Validates reset OTP and sets a new password for the user."""
+
+    serializer_class = PasswordResetConfirmSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        otp = serializer.validated_data["otp"]
+        new_password = serializer.validated_data["new_password"]
+
+        UserService.confirm_password_reset(email=email, otp=otp, new_password=new_password)
+
+        return Response(
+            {"detail": "Password has been successfully reset. You can now sign in."},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(tags=["Users"])

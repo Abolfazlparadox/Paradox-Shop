@@ -40,6 +40,8 @@ export interface UserProfileDetail {
   national_id?: string | null;
   date_of_birth?: string | null;
   gender?: Gender | null;
+  email_verified?: boolean;
+  phone_verified?: boolean;
   is_email_verified?: boolean;
 }
 
@@ -54,6 +56,73 @@ export interface UserRegistrationRequest {
   first_name?: string;
   last_name?: string;
   phone_number?: string | null;
+}
+
+export interface RegisterResponse {
+  detail: string;
+  email: string;
+  requires_verification: boolean;
+  cooldown: number;
+  ttl: number;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyEmailResponse {
+  detail: string;
+  access: string;
+  refresh: string;
+  user: UserProfile;
+}
+
+export interface ResendOTPRequest {
+  email: string;
+  type?: 'verify' | 'reset';
+}
+
+export interface ResendOTPResponse {
+  detail: string;
+  cooldown: number;
+  ttl: number;
+}
+
+export interface RequestPhoneVerificationRequest {
+  phone_number: string;
+}
+
+export interface RequestPhoneVerificationResponse {
+  detail: string;
+  cooldown: number;
+  ttl: number;
+}
+
+export interface ConfirmPhoneRequest {
+  otp: string;
+}
+
+export interface ConfirmPhoneResponse {
+  detail: string;
+  user: UserProfile;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetResponse {
+  detail: string;
+  cooldown: number;
+  ttl: number;
+}
+
+export interface PasswordResetConfirmRequest {
+  email: string;
+  otp: string;
+  new_password: string;
+  new_password_confirm: string;
 }
 
 export interface LoginRequest {

@@ -162,3 +162,59 @@ class LogoutSerializer(serializers.Serializer):
     """Validates the payload for logging out (blacklisting a refresh token)."""
 
     refresh = serializers.CharField(required=True)
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    """Validates the email verification payload."""
+
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(required=True, min_length=6, max_length=6)
+
+
+class ResendOTPSerializer(serializers.Serializer):
+    """Validates the request to resend an OTP code."""
+
+    email = serializers.EmailField(required=True)
+    type = serializers.ChoiceField(choices=["verify", "reset"], default="verify")
+
+
+class RequestPhoneVerificationSerializer(serializers.Serializer):
+    """Validates the mobile number to be verified."""
+
+    phone_number = serializers.CharField(required=True, max_length=20)
+
+    def validate_phone_number(self, value):
+        cleaned = value.strip()
+        if not cleaned:
+            raise serializers.ValidationError("Phone number cannot be empty.")
+        return cleaned
+
+
+class ConfirmPhoneSerializer(serializers.Serializer):
+    """Validates the OTP code sent to user's mobile."""
+
+    otp = serializers.CharField(required=True, min_length=6, max_length=6)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Validates the email for password reset request."""
+
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Validates the password reset confirmation payload."""
+
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(required=True, min_length=6, max_length=6)
+    new_password = serializers.CharField(
+        required=True, write_only=True, validators=[validate_password]
+    )
+    new_password_confirm = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs.pop("new_password_confirm"):
+            raise serializers.ValidationError(
+                {"new_password_confirm": "New passwords do not match."}
+            )
+        return attrs

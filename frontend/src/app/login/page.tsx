@@ -96,17 +96,27 @@ function LoginForm() {
           className="text-xs h-10"
         />
 
-        <Input
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          leftIcon={<Lock className="w-4 h-4 text-fg-muted" />}
-          autoComplete="current-password"
-          required
-          className="text-xs h-10"
-        />
+        <div>
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            leftIcon={<Lock className="w-4 h-4 text-fg-muted" />}
+            autoComplete="current-password"
+            required
+            className="text-xs h-10"
+          />
+          <div className="flex justify-end mt-1.5">
+            <Link
+              href="/forgot-password"
+              className="text-[11px] font-mono text-fg-muted hover:text-accent transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </div>
 
         <Button
           type="submit"

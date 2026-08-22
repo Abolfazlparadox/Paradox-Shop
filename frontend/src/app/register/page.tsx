@@ -59,7 +59,7 @@ function RegisterForm() {
     }
 
     try {
-      await register({
+      const res = await register({
         email,
         password,
         password_confirm: passwordConfirm,
@@ -67,8 +67,9 @@ function RegisterForm() {
         last_name: lastName,
         phone_number: phoneNumber.trim() ? phoneNumber.trim() : null,
       });
-      notify.success('Account Created', 'Your account has been registered successfully.');
-      router.push(redirectUrl);
+      notify.success('Verification Code Dispatched', res.detail || 'Please enter the 6-digit verification code sent to your email.');
+      const target = `/verify-email?email=${encodeURIComponent(email)}${redirectUrl !== '/' ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+      router.push(target);
     } catch (err: any) {
       const parsed = parseApiError(err, 'register');
       setErrorMessage(parsed.message);

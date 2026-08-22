@@ -4,6 +4,7 @@ import pytest
 
 from apps.orders.tasks import send_order_confirmation_email, send_order_status_notification
 from apps.payments.tasks import send_payment_receipt_notification
+from apps.users.otp_service import OTPService
 from apps.users.services import UserService
 from apps.users.tasks import send_welcome_email
 
@@ -23,16 +24,21 @@ class TestNotificationTasks:
     @pytest.mark.django_db(transaction=True)
     def test_user_registration_dispatches_welcome_email(self):
         """
-        Verify that UserService.register_user queues the send_welcome_email Celery task
-        safely with correct arguments on transaction commit.
+        Verify that UserService.verify_email_otp queues the send_welcome_email Celery task
+        safely with correct arguments on transaction commit once user email is verified.
         """
         with patch("apps.users.tasks.send_welcome_email.delay") as mock_delay:
-            user = UserService.register_user(
+            user, _, _ = UserService.register_user(
                 email="new_member@example.com",
                 password="SecurePassword123!",
                 first_name="Jane",
                 last_name="Doe",
             )
+            # Retrieve OTP from Redis and verify email to trigger welcome email
+            r = OTPService.get_redis_client()
+            otp = r.get(f"otp:verify:{user.id}")
+            UserService.verify_email_otp(email="new_member@example.com", otp=otp)
+
             mock_delay.assert_called_once_with(str(user.id), "new_member@example.com", "Jane Doe")
 
     def test_send_order_confirmation_email_task_execution(self):

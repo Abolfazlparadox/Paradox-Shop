@@ -18,8 +18,9 @@ class TestUserRegistration:
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["email"] == "newuser@example.com"
-        assert data["first_name"] == "Ali"
-        assert "profile" in data
+        assert data["requires_verification"] is True
+        assert "cooldown" in data
+        assert "ttl" in data
 
     def test_registration_duplicate_email(self, api_client, create_user):
         create_user(email="existing@example.com")

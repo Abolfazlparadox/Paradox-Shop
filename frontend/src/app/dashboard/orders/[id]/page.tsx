@@ -62,9 +62,10 @@ export default function OrderDetailPage() {
     );
   }
 
-  const isPending = order.status === 'PENDING';
-  const isCancellable = ['PENDING', 'PROCESSING'].includes(order.status);
-  const isDelivered = order.status === 'DELIVERED';
+  const normalizedStatus = (order.status || '').toUpperCase();
+  const isPending = normalizedStatus === 'PENDING';
+  const isCancellable = ['PENDING', 'PROCESSING'].includes(normalizedStatus);
+  const isDelivered = normalizedStatus === 'DELIVERED';
 
   const handleCancelOrder = async () => {
     setCancelError(null);
@@ -89,8 +90,8 @@ export default function OrderDetailPage() {
               <h2 className="text-lg font-bold font-mono text-fg-primary">
                 #{order.order_number}
               </h2>
-              <Badge variant={order.status === 'DELIVERED' ? 'success' : order.status === 'PENDING' ? 'warning' : 'mono'} size="sm">
-                {order.status}
+              <Badge variant={isDelivered ? 'success' : isPending ? 'warning' : 'mono'} size="sm">
+                {normalizedStatus}
               </Badge>
             </div>
             <span className="text-xs font-mono text-fg-muted">

@@ -27,7 +27,7 @@ export default function OrdersHistoryPage() {
 
   const filteredOrders = activeTab === 'ALL'
     ? allOrders
-    : allOrders.filter((o) => o.status === (activeTab as OrderStatus));
+    : allOrders.filter((o) => (o.status || '').toUpperCase() === activeTab);
 
   return (
     <div className="space-y-6">

@@ -16,8 +16,10 @@ export interface OrderCardProps {
 }
 
 export function OrderCard({ order, className }: OrderCardProps) {
-  const getBadgeVariant = (status: OrderStatus) => {
-    switch (status) {
+  const normalizedStatus = (order.status || '').toUpperCase() as OrderStatus;
+
+  const getBadgeVariant = (status: string) => {
+    switch (status.toUpperCase()) {
       case 'PENDING':
         return 'warning';
       case 'PROCESSING':
@@ -34,7 +36,7 @@ export function OrderCard({ order, className }: OrderCardProps) {
     }
   };
 
-  const isPending = order.status === 'PENDING';
+  const isPending = normalizedStatus === 'PENDING';
 
   return (
     <div
@@ -60,8 +62,8 @@ export function OrderCard({ order, className }: OrderCardProps) {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Badge variant={getBadgeVariant(order.status)} size="sm">
-            {order.status}
+          <Badge variant={getBadgeVariant(normalizedStatus)} size="sm">
+            {normalizedStatus}
           </Badge>
         </div>
       </div>

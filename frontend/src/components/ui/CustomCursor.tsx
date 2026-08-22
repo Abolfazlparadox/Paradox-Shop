@@ -9,6 +9,7 @@ export function CustomCursor() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [cursorState, setCursorState] = useState<CursorState>('default');
   const [isVisible, setIsVisible] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
@@ -31,6 +32,18 @@ export function CustomCursor() {
 
     setIsEnabled(true);
     document.documentElement.classList.add('has-custom-cursor');
+
+    // Theme detection and live observer
+    const updateTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
@@ -104,6 +117,7 @@ export function CustomCursor() {
     document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
+      observer.disconnect();
       document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseover', handleElementHover);
@@ -114,21 +128,21 @@ export function CustomCursor() {
 
   if (!isEnabled || !isVisible) return null;
 
-  // Visual scaling and styling based on active state
+  // Visual scaling based on active state (balanced & proportionate proportions)
   const getFollowerScale = () => {
     switch (cursorState) {
       case 'link':
-        return 1.8;
+        return 1.25;
       case 'button':
-        return 2.2;
+        return 1.35;
       case 'view':
-        return 2.6;
+        return 1.55;
       case 'drag':
-        return 2.0;
+        return 1.3;
       case 'text':
-        return 0.5;
+        return 0.35;
       case 'disabled':
-        return 0.8;
+        return 0.75;
       case 'default':
       default:
         return 1;
@@ -140,15 +154,32 @@ export function CustomCursor() {
       case 'text':
         return 0.2;
       case 'disabled':
-        return 0.35;
+        return 0.5;
       case 'view':
       case 'button':
       case 'link':
-        return 0.85;
+        return 0.95;
       case 'default':
       default:
-        return 0.55;
+        return 0.7;
     }
+  };
+
+  const getBorderColor = () => {
+    if (cursorState === 'disabled') {
+      return isDark ? 'rgba(248, 113, 113, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+    }
+    return isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(9, 9, 11, 0.75)';
+  };
+
+  const getBackgroundColor = () => {
+    if (cursorState === 'view') {
+      return isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+    }
+    if (cursorState === 'button' || cursorState === 'link') {
+      return isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+    }
+    return 'rgba(0, 0, 0, 0)';
   };
 
   return (
@@ -161,7 +192,9 @@ export function CustomCursor() {
           translateX: '-50%',
           translateY: '-50%',
         }}
-        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-accent pointer-events-none mix-blend-difference"
+        className={`fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none transition-colors duration-200 ${
+          isDark ? 'bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]' : 'bg-zinc-950 shadow-[0_0_4px_rgba(0,0,0,0.3)]'
+        }`}
       />
 
       {/* Outer Contextual Follower Ring */}
@@ -175,18 +208,27 @@ export function CustomCursor() {
         animate={{
           scale: getFollowerScale(),
           opacity: getFollowerOpacity(),
-          borderColor: cursorState === 'disabled' ? 'rgba(239, 68, 68, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+          borderColor: getBorderColor(),
+          backgroundColor: getBackgroundColor(),
         }}
         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-white/80 pointer-events-none mix-blend-difference flex items-center justify-center text-[8px] font-mono font-bold tracking-tighter"
+        className="fixed top-0 left-0 w-7 h-7 rounded-full border pointer-events-none flex items-center justify-center backdrop-blur-[0.5px]"
       >
         {cursorState === 'view' && (
-          <span className="text-[7px] text-white tracking-tighter uppercase font-mono">
+          <span
+            className={`text-[6.5px] font-mono font-bold tracking-widest uppercase select-none transition-colors ${
+              isDark ? 'text-white' : 'text-zinc-950'
+            }`}
+          >
             VIEW
           </span>
         )}
         {cursorState === 'drag' && (
-          <span className="text-[9px] text-white tracking-tighter">
+          <span
+            className={`text-[9px] font-bold select-none transition-colors ${
+              isDark ? 'text-white' : 'text-zinc-950'
+            }`}
+          >
             ↕
           </span>
         )}

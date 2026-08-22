@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -195,3 +196,42 @@ class ProductAttributeValue(UUIDPrimaryKeyMixin):
     def __str__(self):
         val = self.value_text or self.value_number or self.value_boolean
         return f"{self.product.name} - {self.attribute.name}: {val}"
+
+
+class ProductComment(UUIDPrimaryKeyMixin, TimestampMixin):
+    """
+    Threaded product discussion and inquiry entity.
+    Regular verified users can create root comments, while parent replies are admin-only.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name=_("product"),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="product_comments",
+        verbose_name=_("user"),
+    )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="replies",
+        verbose_name=_("parent comment"),
+    )
+    content = models.TextField(_("content"))
+    is_approved = models.BooleanField(_("is approved"), default=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("Product Comment")
+        verbose_name_plural = _("Product Comments")
+        ordering = ["created_at"]
+
+    def __str__(self):
+        parent_str = f" (Reply to {self.parent_id})" if self.parent_id else ""
+        return f"Comment by {self.user.email} on {self.product.name}{parent_str}"

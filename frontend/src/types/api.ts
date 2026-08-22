@@ -33,6 +33,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   phone_number?: string | null;
+  is_staff?: boolean;
 }
 
 export interface UserProfileDetail {
@@ -309,6 +310,28 @@ export interface ProductFilterParams {
   ordering?: string;
   page?: number;
   page_size?: number;
+}
+
+export interface ProductCommentReply {
+  id: string;
+  author_name: string;
+  is_staff_reply: boolean;
+  content: string;
+  created_at: string;
+}
+
+export interface ProductComment {
+  id: string;
+  author_name: string;
+  is_staff_reply: boolean;
+  content: string;
+  created_at: string;
+  replies: ProductCommentReply[];
+}
+
+export interface CreateProductCommentRequest {
+  content: string;
+  parent?: string | null;
 }
 
 // ==========================================

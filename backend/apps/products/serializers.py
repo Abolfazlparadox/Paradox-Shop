@@ -127,3 +127,116 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "attribute_values",
             "created_at",
         ]
+
+
+class ProductCommentReplySerializer(serializers.ModelSerializer):
+    """Serializer for admin reply comments attached to a parent root comment."""
+
+    author_name = serializers.SerializerMethodField()
+    is_staff_reply = serializers.BooleanField(source="user.is_staff", read_only=True)
+
+    class Meta:
+        from .models import ProductComment
+
+        model = ProductComment
+        fields = [
+            "id",
+            "author_name",
+            "is_staff_reply",
+            "content",
+            "created_at",
+        ]
+
+    def get_author_name(self, obj) -> str:
+        if obj.user.is_staff:
+            name = obj.user.first_name.strip() if obj.user.first_name else ""
+            return f"{name} (Atelier Support)" if name else "Paradox Support"
+        if obj.user.first_name:
+            last = f" {obj.user.last_name[:1]}." if obj.user.last_name else ""
+            return f"{obj.user.first_name}{last}"
+        local = obj.user.email.split("@")[0]
+        return f"{local[:3]}***" if len(local) >= 3 else "Verified Client"
+
+
+class ProductCommentSerializer(serializers.ModelSerializer):
+    """
+    Public Threaded Product Comment representation with nested approved replies.
+    Strictly excludes sensitive user credentials (email, phone, user UUID).
+    """
+
+    author_name = serializers.SerializerMethodField()
+    is_staff_reply = serializers.BooleanField(source="user.is_staff", read_only=True)
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        from .models import ProductComment
+
+        model = ProductComment
+        fields = [
+            "id",
+            "author_name",
+            "is_staff_reply",
+            "content",
+            "created_at",
+            "replies",
+        ]
+
+    def get_author_name(self, obj) -> str:
+        if obj.user.is_staff:
+            name = obj.user.first_name.strip() if obj.user.first_name else ""
+            return f"{name} (Atelier Support)" if name else "Paradox Support"
+        if obj.user.first_name:
+            last = f" {obj.user.last_name[:1]}." if obj.user.last_name else ""
+            return f"{obj.user.first_name}{last}"
+        local = obj.user.email.split("@")[0]
+        return f"{local[:3]}***" if len(local) >= 3 else "Verified Client"
+
+    @extend_schema_field(ProductCommentReplySerializer(many=True))
+    def get_replies(self, obj):
+        approved_replies = [r for r in obj.replies.all() if r.is_approved]
+        return ProductCommentReplySerializer(approved_replies, many=True).data
+
+
+class ProductCommentCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating root comments (verified users) or replies (staff only)."""
+
+    content = serializers.CharField(
+        min_length=3,
+        max_length=1000,
+        error_messages={
+            "min_length": "Comment must be at least 3 characters long.",
+            "max_length": "Comment cannot exceed 1000 characters.",
+        },
+    )
+
+    class Meta:
+        from .models import ProductComment
+
+        model = ProductComment
+        fields = ["id", "parent", "content"]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        parent = attrs.get("parent")
+        product = self.context.get("product")
+
+        if parent:
+            # 1. Staff permission gate for replies
+            if not bool(request and request.user and request.user.is_staff):
+                raise serializers.ValidationError(
+                    {"parent": "Only staff administrators are permitted to reply to comments."}
+                )
+
+            # 2. Parent must belong to the exact same product
+            if product and parent.product_id != product.id:
+                raise serializers.ValidationError(
+                    {"parent": "Parent comment does not belong to this product."}
+                )
+
+            # 3. Maximum 1-level deep hierarchy: Cannot reply to a reply
+            if parent.parent_id is not None:
+                raise serializers.ValidationError(
+                    {"parent": "Nested replies to existing replies are not permitted."}
+                )
+
+        return attrs

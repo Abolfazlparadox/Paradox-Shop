@@ -79,3 +79,117 @@ class ProductDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return ProductSelector.get_product_detail_queryset()
+
+
+@extend_schema(tags=["Products"])
+class ProductCommentListCreateView(generics.ListCreateAPIView):
+    """
+    List approved comments for a Product (public) or submit a new comment (verified users).
+    Staff members can provide a `parent` ID in POST payload to publish an official reply.
+    """
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            from .permissions import IsVerifiedUser
+
+            return [IsVerifiedUser()]
+        return [AllowAny()]
+
+    def get_throttles(self):
+        if self.request.method == "POST":
+            from .throttling import CommentRateThrottle
+
+            return [CommentRateThrottle()]
+        return []
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            from .serializers import ProductCommentCreateSerializer
+
+            return ProductCommentCreateSerializer
+        from .serializers import ProductCommentSerializer
+
+        return ProductCommentSerializer
+
+    def _get_product(self):
+        from django.shortcuts import get_object_or_404
+        from .models import Product
+
+        product_id = self.kwargs.get("product_id")
+        if product_id:
+            return get_object_or_404(Product, id=product_id)
+        slug = self.kwargs.get("slug")
+        return get_object_or_404(Product, slug=slug)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request.method == "POST":
+            context["product"] = self._get_product()
+        return context
+
+    def get_queryset(self):
+        from django.db.models import Prefetch
+        from .models import ProductComment
+
+        product = self._get_product()
+        replies_prefetch = Prefetch(
+            "replies",
+            queryset=ProductComment.objects.filter(is_approved=True).select_related("user"),
+        )
+        return (
+            ProductComment.objects.filter(product=product, parent__isnull=True, is_approved=True)
+            .select_related("user")
+            .prefetch_related(replies_prefetch)
+            .order_by("-created_at")
+        )
+
+    def perform_create(self, serializer):
+        product = self._get_product()
+        serializer.save(user=self.request.user, product=product)
+
+    def create(self, request, *args, **kwargs):
+        from rest_framework import status
+        from rest_framework.response import Response
+        from .serializers import ProductCommentSerializer
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        instance = serializer.instance
+
+        # Return full privacy-safe serialized payload
+        output_serializer = ProductCommentSerializer(instance, context={"request": request})
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+@extend_schema(tags=["Products"])
+class ProductCommentListViewBySlug(generics.ListAPIView):
+    """
+    Public listing of approved threaded comments for a Product looked up by its Slug.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get_serializer_class(self):
+        from .serializers import ProductCommentSerializer
+
+        return ProductCommentSerializer
+
+    def get_queryset(self):
+        from django.db.models import Prefetch
+        from django.shortcuts import get_object_or_404
+        from .models import Product, ProductComment
+
+        slug = self.kwargs.get("slug")
+        product = get_object_or_404(Product, slug=slug)
+        replies_prefetch = Prefetch(
+            "replies",
+            queryset=ProductComment.objects.filter(is_approved=True).select_related("user"),
+        )
+        return (
+            ProductComment.objects.filter(product=product, parent__isnull=True, is_approved=True)
+            .select_related("user")
+            .prefetch_related(replies_prefetch)
+            .order_by("-created_at")
+        )

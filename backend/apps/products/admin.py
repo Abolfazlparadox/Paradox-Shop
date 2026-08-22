@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import Brand, Product, ProductAttributeValue, ProductImage, ProductVariant
+from .models import (
+    Brand,
+    Product,
+    ProductAttributeValue,
+    ProductComment,
+    ProductImage,
+    ProductVariant,
+)
 
 
 @admin.register(Brand)
@@ -108,3 +115,17 @@ class ProductAttributeValueAdmin(admin.ModelAdmin):
     list_display = ("product", "attribute", "value_text", "value_number", "value_boolean")
     search_fields = ("product__name", "attribute__name")
     autocomplete_fields = ["product", "attribute"]
+
+
+@admin.register(ProductComment)
+class ProductCommentAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the ProductComment model.
+    """
+
+    list_display = ("id", "product", "user", "parent", "is_approved", "created_at")
+    list_filter = ("is_approved", "created_at", "product")
+    search_fields = ("content", "user__email", "product__name")
+    autocomplete_fields = ["product", "user", "parent"]
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)

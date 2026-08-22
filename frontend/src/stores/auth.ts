@@ -33,6 +33,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     setApiAccessToken(tokens.access);
     if (typeof window !== 'undefined') {
       localStorage.setItem('pdx_refresh_token', tokens.refresh);
+      document.cookie = `pdx_auth_token=${tokens.access}; path=/; max-age=604800; SameSite=Lax`;
     }
     set({
       accessToken: tokens.access,
@@ -45,6 +46,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     setApiAccessToken(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('pdx_refresh_token');
+      document.cookie = 'pdx_auth_token=; path=/; max-age=0';
+      document.cookie = 'pdx_is_staff=; path=/; max-age=0';
     }
     set({
       user: null,
@@ -60,6 +63,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const tokens = await authApi.login(credentials);
       get().setTokens(tokens);
       const profile = await authApi.getProfile();
+
+      if (typeof window !== 'undefined' && (profile.is_staff || profile.is_superuser)) {
+        document.cookie = 'pdx_is_staff=true; path=/; max-age=604800; SameSite=Lax';
+      }
 
       // Automatically merge guest session cart into user cart
       if (typeof window !== 'undefined') {

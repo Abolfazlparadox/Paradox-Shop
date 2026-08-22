@@ -24,6 +24,7 @@ import {
   Layers,
   LogOut,
   ShieldCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -249,6 +250,22 @@ export function Navbar() {
                         </div>
                         <div className="text-[10px] font-mono text-fg-muted truncate">{user?.email}</div>
                       </div>
+
+                      {(user?.is_staff || user?.is_superuser) && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/10 border border-accent/20 rounded-md transition-colors shadow-sm mb-1"
+                        >
+                          <div className="flex items-center gap-2">
+                            <LayoutDashboard className="w-3.5 h-3.5 text-accent" />
+                            <span>Admin Console</span>
+                          </div>
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent text-accent-fg">
+                            Staff
+                          </span>
+                        </Link>
+                      )}
 
                       <Link
                         href="/dashboard/orders"

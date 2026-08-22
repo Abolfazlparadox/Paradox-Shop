@@ -51,13 +51,26 @@ class ProductAttributeValueInline(admin.TabularInline):
     classes = ["collapse"]
 
 
+class ProductCommentInline(admin.TabularInline):
+    """
+    Inline admin for viewing and managing comments directly on a Product.
+    """
+
+    model = ProductComment
+    extra = 0
+    fields = ("user", "parent", "content", "is_approved", "created_at")
+    readonly_fields = ("created_at",)
+    autocomplete_fields = ["user", "parent"]
+    classes = ["collapse"]
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """
     Admin configuration for the Product model.
     """
 
-    inlines = [ProductVariantInline, ProductImageInline, ProductAttributeValueInline]
+    inlines = [ProductVariantInline, ProductImageInline, ProductAttributeValueInline, ProductCommentInline]
 
     list_display = (
         "name",

@@ -39,7 +39,9 @@ class UserService:
             phone_number=phone_number,
             is_active=False,
         )
-        UserProfile.objects.create(user=user, email_verified=False, phone_verified=False)
+        UserProfile.objects.get_or_create(
+            user=user, defaults={"email_verified": False, "phone_verified": False}
+        )
         logger.info("User registered (inactive pending OTP): user_id=%s email=%s", user.id, user.email)
 
         _, cooldown, ttl = OTPService.send_email_verification_otp(user, client_ip=client_ip)
@@ -65,7 +67,7 @@ class UserService:
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-        profile = user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.email_verified = True
         profile.save(update_fields=["email_verified"])
 
@@ -98,7 +100,8 @@ class UserService:
             raise ValidationError({"email": "No account found with this email address."})
 
         if otp_type == "verify":
-            if user.is_active and getattr(user.profile, "email_verified", False):
+            profile = getattr(user, "profile", None)
+            if user.is_active and profile and profile.email_verified:
                 raise ValidationError({"detail": "This account is already verified."})
             _, cooldown, ttl = OTPService.send_email_verification_otp(user, client_ip=client_ip)
         elif otp_type == "reset":
@@ -134,7 +137,7 @@ class UserService:
         user.phone_number = verified_phone
         user.save(update_fields=["phone_number"])
 
-        profile = user.profile
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.phone_verified = True
         profile.save(update_fields=["phone_verified"])
 

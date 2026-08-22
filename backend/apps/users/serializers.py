@@ -75,10 +75,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "phone_number",
+            "is_staff",
+            "is_superuser",
             "profile",
             "created_at",
         ]
-        read_only_fields = ["id", "email", "created_at"]
+        read_only_fields = ["id", "email", "is_staff", "is_superuser", "created_at"]
 
     def validate_phone_number(self, value):
         if value:

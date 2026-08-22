@@ -62,10 +62,20 @@ export function CreateReviewModal({
       if (data) {
         if (typeof data === 'string') msg = data;
         else if (data.detail) msg = data.detail;
-        else if (data.errors) {
+        else if (data.review) {
+          msg = Array.isArray(data.review) ? data.review[0] : String(data.review);
+        } else if (data.product_id) {
+          msg = Array.isArray(data.product_id) ? data.product_id[0] : String(data.product_id);
+        } else if (data.rating) {
+          msg = Array.isArray(data.rating) ? data.rating[0] : String(data.rating);
+        } else if (data.errors) {
           const firstKey = Object.keys(data.errors)[0];
           const firstErr = data.errors[firstKey];
           msg = Array.isArray(firstErr) ? `${firstKey}: ${firstErr[0]}` : String(firstErr);
+        } else if (typeof data === 'object') {
+          const firstKey = Object.keys(data)[0];
+          const firstVal = data[firstKey];
+          msg = Array.isArray(firstVal) ? `${firstVal[0]}` : String(firstVal);
         }
       }
       setErrorMessage(msg);

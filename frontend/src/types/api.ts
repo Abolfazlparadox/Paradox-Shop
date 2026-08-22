@@ -398,6 +398,9 @@ export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | '
 
 export interface OrderItem {
   id: string;
+  product: string;
+  product_id?: string;
+  variant?: string | null;
   product_name: string;
   variant_sku?: string | null;
   variant_name?: string | null;

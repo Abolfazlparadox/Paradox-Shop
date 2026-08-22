@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
 from common.models import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
@@ -144,3 +146,12 @@ class Address(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
 
     def __str__(self):
         return f"{self.title} - {self.recipient_name} ({self.user.email})"
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """
+    Ensure every User always has an associated UserProfile row.
+    """
+    if created:
+        UserProfile.objects.get_or_create(user=instance)

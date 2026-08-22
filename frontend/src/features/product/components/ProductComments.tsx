@@ -47,10 +47,10 @@ export function ProductComments({ productId, className }: ProductCommentsProps) 
   const [replyContent, setReplyContent] = useState('');
   const [replyErrorMessage, setReplyErrorMessage] = useState<string | null>(null);
 
+  const isStaff = Boolean(user?.is_staff || (user as any)?.is_superuser);
   const isEmailVerified = Boolean(
-    user?.profile?.email_verified || (user as any)?.email_verified || (user as any)?.is_verified
+    isStaff || user?.profile?.email_verified || (user as any)?.email_verified || (user as any)?.is_verified
   );
-  const isStaff = Boolean(user?.is_staff);
 
   // Throttle countdown effect
   useEffect(() => {
@@ -160,9 +160,17 @@ export function ProductComments({ productId, className }: ProductCommentsProps) 
           // 3. Verified User Comment Form
           <form onSubmit={handleRootSubmit} className="space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-[11px] text-fg-secondary font-medium uppercase tracking-wider">
-                Ask a Technical Inquiry
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] text-fg-secondary font-medium uppercase tracking-wider">
+                  Ask a Technical Inquiry
+                </span>
+                {isStaff && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-accent text-accent-fg uppercase tracking-wider">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    Staff Account
+                  </span>
+                )}
+              </div>
               <span className={cn('font-mono text-[11px]', rootContent.length > 900 ? 'text-status-warning' : 'text-fg-muted')}>
                 {rootContent.length} / 1000
               </span>

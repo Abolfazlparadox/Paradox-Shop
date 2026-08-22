@@ -173,7 +173,12 @@ export default function OrderDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setReviewProduct({ id: item.id, name: item.product_name })}
+                      onClick={() =>
+                        setReviewProduct({
+                          id: item.product || (item as any).product_id || item.id,
+                          name: item.product_name,
+                        })
+                      }
                       leftIcon={<Star className="w-3 h-3 text-amber-400" />}
                       className="text-xs h-8"
                     >

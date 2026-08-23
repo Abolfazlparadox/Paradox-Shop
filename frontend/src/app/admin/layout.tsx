@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AdminAuthGuard>
-      <div className="min-h-screen bg-[#060913] text-slate-100 flex selection:bg-cyan-500 selection:text-black antialiased font-sans">
+      <div className="min-h-screen bg-bg-primary text-fg-primary flex selection:bg-accent selection:text-accent-fg antialiased font-sans transition-colors">
         {/* Persistent Collapsible Sidebar */}
         <AdminSidebar />
 

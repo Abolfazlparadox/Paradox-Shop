@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -71,11 +69,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-bg-primary text-fg-primary font-sans antialiased flex flex-col justify-between selection:bg-accent selection:text-accent-fg">
-        <Providers>
-          <Navbar />
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

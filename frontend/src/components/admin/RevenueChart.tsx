@@ -3,8 +3,12 @@
 import React, { useState } from 'react';
 import { RevenueDataPoint } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils/format';
+import { useUIStore } from '@/stores/ui';
 
 export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark';
+
   const [period, setPeriod] = useState<'30D' | '6M' | '1Y'>('30D');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -52,31 +56,31 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
   const hoveredPoint = hoveredIndex !== null ? points[hoveredIndex] : null;
 
   return (
-    <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-xl space-y-6 shadow-2xl relative select-none">
+    <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle backdrop-blur-xl space-y-6 shadow-sm dark:shadow-2xl relative select-none transition-colors">
       {/* Chart Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold font-display text-white tracking-tight flex items-center gap-2">
+          <h3 className="text-base font-bold font-display text-fg-primary tracking-tight flex items-center gap-2">
             <span>Revenue Trajectory & Forecast</span>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
               YoY +18.4%
             </span>
           </h3>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-fg-secondary font-mono mt-0.5">
             Real-time gross transactional volume vs algorithmically projected target
           </p>
         </div>
 
         {/* Period Selector Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-800 rounded-xl self-start sm:self-auto font-mono text-xs">
+        <div className="flex items-center gap-1 p-1 bg-bg-secondary border border-border-subtle rounded-xl self-start sm:self-auto font-mono text-xs">
           {(['30D', '6M', '1Y'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                 period === p
-                  ? 'bg-cyan-400 text-slate-950 font-bold shadow-[0_0_10px_rgba(0,245,212,0.3)]'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-cyan-500 dark:bg-cyan-400 text-white dark:text-slate-950 font-bold shadow-[0_0_10px_rgba(0,245,212,0.3)]'
+                  : 'text-fg-secondary hover:text-fg-primary'
               }`}
             >
               {p}
@@ -94,12 +98,12 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
         >
           <defs>
             <linearGradient id="areaGradientCyan" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00F5D4" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#00F5D4" stopOpacity="0.0" />
+              <stop offset="0%" stopColor={isDark ? '#00F5D4' : '#06B6D4'} stopOpacity={isDark ? 0.3 : 0.25} />
+              <stop offset="100%" stopColor={isDark ? '#00F5D4' : '#06B6D4'} stopOpacity={0.0} />
             </linearGradient>
             <linearGradient id="lineGlow" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#05D5B0" />
-              <stop offset="100%" stopColor="#00F5D4" />
+              <stop offset="0%" stopColor={isDark ? '#05D5B0' : '#0891B2'} />
+              <stop offset="100%" stopColor={isDark ? '#00F5D4' : '#06B6D4'} />
             </linearGradient>
           </defs>
 
@@ -113,14 +117,14 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
                   y1={y}
                   x2={width - paddingX}
                   y2={y}
-                  stroke="#1E293B"
+                  stroke={isDark ? '#1E293B' : '#E2E8F0'}
                   strokeDasharray="4 4"
                   strokeWidth="1"
                 />
                 <text
                   x={paddingX - 8}
                   y={y + 3}
-                  fill="#64748B"
+                  fill={isDark ? '#64748B' : '#94A3B8'}
                   fontSize="9"
                   fontFamily="monospace"
                   textAnchor="end"
@@ -138,7 +142,7 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
           <path
             d={projectedLine}
             fill="none"
-            stroke="#6366F1"
+            stroke={isDark ? '#6366F1' : '#4F46E5'}
             strokeWidth="2"
             strokeDasharray="5 5"
             strokeLinecap="round"
@@ -175,7 +179,7 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
                     y1={paddingY}
                     x2={p.x}
                     y2={height - paddingY}
-                    stroke="#00F5D4"
+                    stroke={isDark ? '#00F5D4' : '#0891B2'}
                     strokeWidth="1"
                     strokeDasharray="2 2"
                   />
@@ -186,7 +190,7 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
                   cx={p.x}
                   cy={p.yProjected}
                   r={isHovered ? 4 : 2.5}
-                  fill="#6366F1"
+                  fill={isDark ? '#6366F1' : '#4F46E5'}
                 />
 
                 {/* Revenue point */}
@@ -194,8 +198,8 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
                   cx={p.x}
                   cy={p.yRevenue}
                   r={isHovered ? 6 : 4}
-                  fill="#00F5D4"
-                  stroke="#070C18"
+                  fill={isDark ? '#00F5D4' : '#06B6D4'}
+                  stroke={isDark ? '#070C18' : '#ffffff'}
                   strokeWidth={2}
                   className="transition-all duration-150"
                 />
@@ -204,7 +208,7 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
                 <text
                   x={p.x}
                   y={height - 2}
-                  fill={isHovered ? '#00F5D4' : '#64748B'}
+                  fill={isHovered ? (isDark ? '#00F5D4' : '#0891B2') : (isDark ? '#64748B' : '#94A3B8')}
                   fontSize="10"
                   fontFamily="monospace"
                   textAnchor="middle"
@@ -220,22 +224,22 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
         {/* Floating Tooltip */}
         {hoveredPoint && (
           <div
-            className="absolute -top-3 pointer-events-none p-3 rounded-xl bg-slate-950/95 border border-cyan-500/40 shadow-[0_0_25px_rgba(0,245,212,0.2)] font-mono text-xs space-y-1 z-20 backdrop-blur-md"
+            className="absolute -top-3 pointer-events-none p-3 rounded-xl bg-bg-elevated border border-cyan-500/40 shadow-2xl font-mono text-xs space-y-1 z-20 backdrop-blur-md"
             style={{
               left: `${Math.max(10, Math.min(80, (hoveredPoint.x / width) * 100))}%`,
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="text-[10px] uppercase text-slate-400">{hoveredPoint.date}</div>
-            <div className="text-cyan-300 font-bold flex items-center justify-between gap-4">
+            <div className="text-[10px] uppercase text-fg-muted">{hoveredPoint.date}</div>
+            <div className="text-cyan-600 dark:text-cyan-300 font-bold flex items-center justify-between gap-4">
               <span>Actual:</span>
               <span>{formatCurrency(hoveredPoint.revenue)}</span>
             </div>
-            <div className="text-indigo-300 flex items-center justify-between gap-4">
+            <div className="text-indigo-600 dark:text-indigo-300 flex items-center justify-between gap-4">
               <span>Target:</span>
               <span>{formatCurrency(hoveredPoint.projected)}</span>
             </div>
-            <div className="text-[10px] text-slate-400 pt-0.5 border-t border-slate-800">
+            <div className="text-[10px] text-fg-muted pt-0.5 border-t border-border-subtle">
               {hoveredPoint.orders} Orders Completed
             </div>
           </div>
@@ -243,14 +247,14 @@ export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
       </div>
 
       {/* Legend Footer */}
-      <div className="flex items-center justify-center gap-6 pt-2 border-t border-slate-800/60 text-xs font-mono">
+      <div className="flex items-center justify-center gap-6 pt-2 border-t border-border-subtle/60 text-xs font-mono">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#00F5D4]" />
-          <span className="text-slate-300">Recorded Revenue</span>
+          <span className="w-3 h-3 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00F5D4]" />
+          <span className="text-fg-secondary">Recorded Revenue</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366F1]" />
-          <span className="text-slate-400">Algorithmic Forecast</span>
+          <span className="text-fg-muted">Algorithmic Forecast</span>
         </div>
       </div>
     </div>

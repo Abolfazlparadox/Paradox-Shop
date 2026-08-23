@@ -68,9 +68,9 @@ export default function AdminCommentsPage() {
   });
 
   const sentimentStyles: Record<SentimentType, { label: string; bg: string; text: string }> = {
-    POSITIVE: { label: 'Positive', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-    NEUTRAL: { label: 'Inquiry', bg: 'bg-slate-500/10', text: 'text-slate-300' },
-    NEGATIVE: { label: 'Critical', bg: 'bg-rose-500/10', text: 'text-rose-400' },
+    POSITIVE: { label: 'Positive Tone', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+    NEUTRAL: { label: 'Neutral Inquiry', bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400' },
+    NEGATIVE: { label: 'Concern / Flaw', bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400' },
   };
 
   return (
@@ -78,12 +78,12 @@ export default function AdminCommentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white tracking-tight flex items-center gap-2.5">
-            <MessageSquare className="w-6 h-6 text-rose-400" />
-            <span>Q&A & Review Moderation Desk</span>
+          <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
+            <MessageSquare className="w-6 h-6 text-rose-500 dark:text-rose-400" />
+            <span>Q&A & Comment Moderation</span>
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Approve client product inquiries, assess sentiments, and dispatch official staff responses
+          <p className="text-xs text-fg-secondary font-mono mt-0.5">
+            Audit technical inquiries, moderate public discussion, and publish official staff replies
           </p>
         </div>
 
@@ -91,7 +91,7 @@ export default function AdminCommentsPage() {
           variant="outline"
           size="sm"
           onClick={loadComments}
-          className="text-xs font-mono border-slate-800 hover:bg-slate-800 text-slate-300"
+          className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
           leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />}
         >
           Refresh
@@ -99,37 +99,38 @@ export default function AdminCommentsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl flex items-center gap-2 font-mono text-xs overflow-x-auto">
-        {(['ALL', 'PENDING', 'APPROVED', 'STAFF'] as const).map((tab) => (
+      <div className="flex items-center gap-1 p-2 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl font-mono text-xs overflow-x-auto transition-colors">
+        {[
+          { id: 'ALL', label: `All Inquiries (${comments.length})` },
+          { id: 'PENDING', label: `Needs Review (${comments.filter((c) => !c.is_approved).length})` },
+          { id: 'APPROVED', label: 'Approved Reviews' },
+          { id: 'STAFF', label: 'Staff Official Replies' },
+        ].map((tab) => (
           <button
-            key={tab}
-            onClick={() => setFilter(tab)}
+            key={tab.id}
+            onClick={() => setFilter(tab.id as any)}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap',
-              filter === tab
-                ? 'bg-rose-500/10 text-rose-300 font-bold border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer',
+              filter === tab.id
+                ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/30'
+                : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary border border-transparent'
             )}
           >
-            {tab === 'ALL' && `All Discussions (${comments.length})`}
-            {tab === 'PENDING' && `Pending Approval (${comments.filter((c) => !c.is_approved).length})`}
-            {tab === 'APPROVED' && 'Approved Reviews'}
-            {tab === 'STAFF' && 'Staff Replies'}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Comments List */}
+      {/* Comments Master List */}
       {isLoading ? (
-        <SkeletonTable rows={4} />
+        <SkeletonTable rows={5} />
       ) : filteredComments.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 font-mono text-xs text-slate-400">
-          <MessageSquare className="w-8 h-8 text-slate-600 mx-auto" />
-          <div className="text-white font-bold">No discussions in this queue</div>
-          <p className="text-slate-500">All customer questions are currently moderated.</p>
+        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
+          <MessageSquare className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
+          <p>No comments match active moderation filter.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredComments.map((c) => {
             const sentiment = sentimentStyles[c.sentiment];
 
@@ -137,65 +138,52 @@ export default function AdminCommentsPage() {
               <div
                 key={c.id}
                 className={cn(
-                  'p-5 rounded-2xl bg-slate-900/80 border transition-all space-y-4 shadow-xl backdrop-blur-xl',
+                  'p-5 rounded-2xl bg-bg-elevated border transition-all space-y-3 shadow-sm dark:shadow-xl',
                   c.is_staff_reply
-                    ? 'border-cyan-500/30 bg-cyan-950/20'
+                    ? 'border-cyan-500/30 bg-cyan-500/5'
                     : c.is_approved
-                    ? 'border-slate-800'
-                    : 'border-amber-500/30 bg-amber-950/10'
+                    ? 'border-border-subtle'
+                    : 'border-amber-500/30 bg-amber-500/5'
                 )}
               >
-                {/* Comment Top Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border-subtle/60 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold font-display text-white text-sm">
+                    <span className="font-bold text-fg-primary font-display flex items-center gap-1.5">
+                      {c.is_staff_reply && <Shield className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />}
                       {c.author_name}
                     </span>
-                    {c.is_staff_reply && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950">
-                        <Shield className="w-2.5 h-2.5" />
-                        Official Atelier
-                      </span>
-                    )}
-                    <span className="text-slate-400">•</span>
-                    <span className="text-slate-400">On: {c.product_name}</span>
+                    <span className="text-fg-muted font-mono text-[10px]">•</span>
+                    <span className="text-fg-secondary font-mono text-[11px]">{c.product_name}</span>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider',
-                        sentiment.bg,
-                        sentiment.text
-                      )}
-                    >
+                  <div className="flex items-center gap-2 font-mono text-[10px]">
+                    <span className={cn('px-2 py-0.5 rounded-full font-bold', sentiment.bg, sentiment.text)}>
                       {sentiment.label}
                     </span>
-                    <span className="text-[11px] text-slate-400">{formatDate(c.created_at)}</span>
+                    <span className="text-fg-muted">{formatDate(c.created_at)}</span>
                   </div>
                 </div>
 
-                {/* Comment Content */}
-                <p className="text-slate-200 text-xs sm:text-sm leading-relaxed font-sans">
+                <p className="text-xs text-fg-primary leading-relaxed font-sans">
                   &ldquo;{c.content}&rdquo;
                 </p>
 
-                {/* Action Buttons Footer */}
-                <div className="pt-2 flex items-center justify-between border-t border-slate-800/60 font-mono text-xs">
-                  <div className="text-[11px] text-slate-400">
-                    {c.replies_count > 0 ? `${c.replies_count} Threaded Replies` : 'No replies yet'}
+                {/* Bottom Controls */}
+                <div className="flex items-center justify-between pt-1 text-xs font-mono">
+                  <div className="text-[11px] text-fg-muted">
+                    {c.replies_count ? `${c.replies_count} Threaded Responses` : 'No replies yet'}
                   </div>
 
                   <div className="flex items-center gap-2">
                     {!c.is_staff_reply && (
                       <Button
-                        size="sm"
                         variant="outline"
+                        size="sm"
                         onClick={() => setReplyingComment(c)}
-                        leftIcon={<Reply className="w-3.5 h-3.5 text-cyan-400" />}
-                        className="text-[11px] font-mono border-slate-700 text-cyan-300 hover:bg-slate-800"
+                        className="text-[11px] font-mono border-border-subtle hover:bg-bg-secondary text-fg-primary px-2.5 py-1 h-auto flex items-center gap-1"
                       >
-                        Reply as Staff
+                        <Reply className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
+                        <span>Staff Reply</span>
                       </Button>
                     )}
 
@@ -203,22 +191,24 @@ export default function AdminCommentsPage() {
                       <>
                         <button
                           onClick={() => handleModerate(c.id, false)}
-                          className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-mono transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[11px] font-bold border border-rose-500/20 transition-colors"
                         >
                           Reject
                         </button>
                         <button
                           onClick={() => handleModerate(c.id, true)}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold transition-colors cursor-pointer"
+                          className="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 transition-colors"
                         >
                           Approve
                         </button>
                       </>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Approved
-                      </span>
+                      <button
+                        onClick={() => handleModerate(c.id, false)}
+                        className="px-2.5 py-1 rounded-lg text-fg-muted hover:text-rose-600 dark:hover:text-rose-400 text-[11px] transition-colors"
+                      >
+                        Unpublish
+                      </button>
                     )}
                   </div>
                 </div>
@@ -228,7 +218,7 @@ export default function AdminCommentsPage() {
         </div>
       )}
 
-      {/* Reply Modal */}
+      {/* Staff Reply Modal */}
       <AdminReplyModal
         comment={replyingComment}
         isOpen={Boolean(replyingComment)}

@@ -55,160 +55,166 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col text-slate-200 my-8 max-h-[90vh]">
+      <div className="w-full max-w-3xl rounded-2xl bg-bg-elevated border border-border-subtle shadow-2xl overflow-hidden flex flex-col text-fg-primary my-8 max-h-[90vh]">
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-secondary/60">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">
-              PX
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+              <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-sm font-bold font-display text-white flex items-center gap-2">
-                <span>Order {order.order_number}</span>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  {order.payment_status}
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold font-display text-fg-primary">
+                  Order {order.order_number}
+                </h3>
+                <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">
+                  {order.status}
                 </span>
               </div>
-              <div className="text-[10px] font-mono text-slate-400">
+              <p className="text-xs text-fg-muted font-mono">
                 Placed on {formatDate(order.created_at)}
-              </div>
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={handlePrintInvoice}
-              className="text-xs font-mono border-slate-800 hover:bg-slate-800 text-slate-300"
-              leftIcon={<Printer className="w-3.5 h-3.5" />}
+              disabled={isPrinting}
+              className="p-2 rounded-xl bg-bg-secondary hover:bg-bg-secondary/80 border border-border-subtle text-fg-secondary hover:text-fg-primary transition-colors cursor-pointer"
+              title="Print Order Invoice"
             >
-              {isPrinting ? 'Generating...' : 'Print Invoice'}
-            </Button>
+              <Printer className="w-4 h-4" />
+            </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-fg-muted hover:text-fg-primary hover:bg-bg-secondary transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
-          {/* Order Lifecycle Control */}
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold block">
-                  Lifecycle Status Transition
-                </span>
-                <p className="text-[11px] text-slate-400">
-                  Select new status and synchronize fulfillment state
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value as AdminOrderStatus)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-cyan-300 focus:outline-none cursor-pointer"
-                >
-                  <option value="PENDING">PENDING</option>
-                  <option value="PROCESSING">PROCESSING</option>
-                  <option value="SHIPPED">SHIPPED</option>
-                  <option value="DELIVERED">DELIVERED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                  <option value="REFUNDED">REFUNDED</option>
-                </select>
-
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={handleSaveStatus}
-                  isLoading={isUpdating}
-                  className="text-xs font-mono bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold"
-                >
-                  Apply Change
-                </Button>
-              </div>
+        {/* Modal Scrollable Body */}
+        <div className="p-6 space-y-6 overflow-y-auto">
+          {/* Quick Status Control Bar */}
+          <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold text-fg-primary">Fulfillment State</div>
+              <div className="text-[11px] text-fg-muted">Update workflow progression for dispatch</div>
             </div>
 
-            {order.tracking_code && (
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-800/60 text-xs font-mono">
-                <Truck className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-slate-400">Courier Tracking Code:</span>
-                <span className="text-white font-bold">{order.tracking_code}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as AdminOrderStatus)}
+                className="px-3 py-1.5 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="PROCESSING">PROCESSING</option>
+                <option value="SHIPPED">SHIPPED</option>
+                <option value="DELIVERED">DELIVERED</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="REFUNDED">REFUNDED</option>
+              </select>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveStatus}
+                isLoading={isUpdating}
+                className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
+              >
+                Apply State
+              </Button>
+            </div>
           </div>
 
-          {/* Grid: Customer & Delivery Address */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            {/* Customer Details */}
-            <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
-                <User className="w-4 h-4" />
-                <span className="uppercase tracking-wider">Patron Profile</span>
+          {/* Grid Information Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Customer Dossier */}
+            <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold font-display text-fg-primary pb-2 border-b border-border-subtle">
+                <User className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
+                <span>Patron Identity</span>
               </div>
-              <div className="space-y-1 text-slate-300">
-                <div className="text-white font-bold font-display text-sm">{order.customer.name}</div>
-                <div>Email: {order.customer.email}</div>
-                <div>Phone: {order.customer.phone}</div>
-                <div className="text-[10px] text-slate-400">Client ID: {order.customer.id}</div>
+              <div className="space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between">
+                  <span className="text-fg-muted">Full Name:</span>
+                  <span className="text-fg-primary font-semibold">{order.customer.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-fg-muted">Email:</span>
+                  <span className="text-cyan-600 dark:text-cyan-300">{order.customer.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-fg-muted">Contact:</span>
+                  <span className="text-fg-primary">{order.customer.phone}</span>
+                </div>
               </div>
             </div>
 
-            {/* Shipping Destination */}
-            <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
-                <MapPin className="w-4 h-4" />
-                <span className="uppercase tracking-wider">Destination Address</span>
+            {/* Delivery Destination */}
+            <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold font-display text-fg-primary pb-2 border-b border-border-subtle">
+                <MapPin className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
+                <span>Delivery Address</span>
               </div>
-              <div className="space-y-1 text-slate-300">
-                <div className="text-white font-bold">{order.shipping_address.recipient_name}</div>
-                <div>
+              <div className="space-y-1 text-xs">
+                <div className="font-medium text-fg-primary">
+                  {order.shipping_address.recipient_name} ({order.shipping_address.recipient_phone})
+                </div>
+                <div className="text-fg-secondary">
                   {order.shipping_address.province}, {order.shipping_address.city}
                 </div>
-                <div className="text-slate-400 text-[11px] leading-relaxed">
+                <div className="text-fg-muted text-[11px]">
                   {order.shipping_address.address_line}
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-fg-muted text-[10px] font-mono">
                   Postal Code: {order.shipping_address.postal_code}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Line Items Table */}
-          <div className="space-y-2 font-mono">
+          {/* Purchased Line Items */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
-                <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
-                Artifact Breakdown ({order.items.length} Lines)
+              <span className="text-xs font-bold font-display text-fg-primary">
+                Order Items ({order.items.length})
+              </span>
+              <span className="text-[11px] font-mono text-fg-muted">
+                Method: {order.payment_method}
               </span>
             </div>
 
-            <div className="rounded-xl border border-slate-800 overflow-hidden">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px]">
-                    <th className="py-2.5 px-3">Item & SKU</th>
-                    <th className="py-2.5 px-3 text-center">Qty</th>
-                    <th className="py-2.5 px-3 text-end">Unit Price</th>
-                    <th className="py-2.5 px-3 text-end">Line Total</th>
+            <div className="rounded-xl border border-border-subtle overflow-hidden">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-bg-secondary text-fg-muted font-mono text-[10px] uppercase">
+                  <tr>
+                    <th className="px-4 py-2.5">Artifact</th>
+                    <th className="px-4 py-2.5">SKU / Variant</th>
+                    <th className="px-4 py-2.5 text-center">Qty</th>
+                    <th className="px-4 py-2.5 text-right">Price</th>
+                    <th className="px-4 py-2.5 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-950/30 text-slate-300">
+                <tbody className="divide-y divide-border-subtle">
                   {order.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="py-3 px-3">
-                        <div className="font-semibold font-display text-white">{item.product_name}</div>
-                        <div className="text-[10px] text-slate-400">{item.sku}</div>
+                    <tr key={item.id} className="hover:bg-bg-secondary/40">
+                      <td className="px-4 py-3 font-semibold text-fg-primary">
+                        {item.product_name}
                       </td>
-                      <td className="py-3 px-3 text-center">{item.quantity}</td>
-                      <td className="py-3 px-3 text-end">{formatCurrency(item.unit_price)}</td>
-                      <td className="py-3 px-3 text-end font-bold text-white">
+                      <td className="px-4 py-3 font-mono text-[11px] text-fg-muted">
+                        {item.sku} {item.variant_name ? `• ${item.variant_name}` : ''}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-center text-fg-primary">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-right text-fg-secondary">
+                        {formatCurrency(item.unit_price)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-right font-bold text-fg-primary">
                         {formatCurrency(item.total_price)}
                       </td>
                     </tr>
@@ -218,42 +224,43 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
             </div>
           </div>
 
-          {/* Financial Summary Breakdown */}
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2 text-xs font-mono max-w-sm ms-auto">
-            <div className="flex items-center justify-between text-slate-400">
-              <span>Subtotal:</span>
-              <span className="text-slate-200">{formatCurrency(order.subtotal)}</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-400">
-              <span>Shipping & Insurance:</span>
-              <span className="text-slate-200">{order.shipping_cost === 0 ? 'Complimentary' : formatCurrency(order.shipping_cost)}</span>
-            </div>
-            {order.discount_amount > 0 && (
-              <div className="flex items-center justify-between text-emerald-400">
-                <span>Atelier VIP Discount:</span>
-                <span>-{formatCurrency(order.discount_amount)}</span>
+          {/* Financial Summary */}
+          <div className="flex justify-end">
+            <div className="w-full sm:w-72 p-4 rounded-xl bg-bg-secondary/60 border border-border-subtle space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-fg-secondary">
+                <span>Items Subtotal:</span>
+                <span>{formatCurrency((order.total || order.total_amount || 0) - (order.shipping_fee || order.shipping_cost || 0) + (order.discount_amount || 0))}</span>
               </div>
-            )}
-            <div className="flex items-center justify-between text-sm font-bold text-cyan-300 pt-2 border-t border-slate-800">
-              <span>Total Settlement:</span>
-              <span>{formatCurrency(order.total)}</span>
+              {order.discount_amount ? (
+                <div className="flex justify-between text-status-success">
+                  <span>Voucher Discount:</span>
+                  <span>-{formatCurrency(order.discount_amount)}</span>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-fg-secondary">
+                <span>Shipping Fee:</span>
+                <span>{formatCurrency(order.shipping_fee || order.shipping_cost || 0)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-fg-primary pt-2 border-t border-border-subtle">
+                <span>Net Total:</span>
+                <span className="text-cyan-600 dark:text-cyan-400">{formatCurrency(order.total || order.total_amount || 0)}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="px-6 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
-          <div className="flex items-center gap-2">
-            <FileText className="w-3.5 h-3.5 text-slate-400" />
-            <span>Audit Trail Verified</span>
-          </div>
+        {/* Modal Bottom Actions */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-bg-secondary/60">
+          <span className="text-[11px] font-mono text-fg-muted">
+            Tracking ID: <span className="text-fg-primary font-bold">{order.id}</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
             onClick={onClose}
-            className="text-xs border-slate-800 hover:bg-slate-800 text-slate-200"
+            className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary"
           >
-            Dismiss
+            Close Inspector
           </Button>
         </div>
       </div>

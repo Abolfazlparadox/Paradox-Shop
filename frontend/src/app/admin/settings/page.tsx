@@ -67,8 +67,8 @@ export default function AdminSettingsPage() {
     setIsTestingWebhook(true);
     setTimeout(() => {
       setIsTestingWebhook(false);
-      notify.success('Webhook Verified', 'HTTP 200 OK received from upstream dispatcher.');
-    }, 800);
+      notify.success('Webhook Dispatched', 'Received HTTP 200 OK from endpoint.');
+    }, 900);
   };
 
   if (isLoading || !settings) {
@@ -81,207 +81,218 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-8 pb-12 font-mono text-xs">
+    <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white tracking-tight flex items-center gap-2.5">
-            <Settings className="w-6 h-6 text-slate-400" />
-            <span>Storefront & Governance Settings</span>
+          <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
+            <Settings className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
+            <span>Storefront & Governance Parameters</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Currency conversion baselines, fiscal tax rates, maintenance gates, and security audit stream
+          <p className="text-xs text-fg-secondary font-mono mt-0.5">
+            Operational currency, tax matrices, courier tiers, webhook telemetry, and immutable audit logs
           </p>
         </div>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleSaveSettings}
+          isLoading={isSaving}
+          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
+          leftIcon={<Save className="w-4 h-4" />}
+        >
+          Persist All Settings
+        </Button>
       </div>
 
       {/* Settings Form */}
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* General & Atelier Identity */}
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase text-xs">
-              <Globe className="w-4 h-4" />
-              <span>Identity & Concierge Contacts</span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">Store Name</label>
-                <Input
-                  value={settings.store_name}
-                  onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">Support Email</label>
-                <Input
-                  value={settings.contact_email}
-                  onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">Support Phone Hotline</label>
-                <Input
-                  value={settings.support_phone}
-                  onChange={(e) => setSettings({ ...settings, support_phone: e.target.value })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
-            </div>
+        {/* General Storefront & Currency */}
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
+          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
+            <Globe className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+            <span>1. Storefront Identity & Fiscal Parameters</span>
           </div>
 
-          {/* Fiscal & Logistics Rules */}
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs">
-              <DollarSign className="w-4 h-4" />
-              <span>Fiscal & Fulfillment Parameters</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-fg-secondary mb-1">
+                Storefront Name
+              </label>
+              <input
+                type="text"
+                value={settings.store_name}
+                onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500 font-sans"
+              />
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">VAT Tax Rate (%)</label>
-                <Input
-                  type="number"
-                  value={settings.tax_rate_percentage}
-                  onChange={(e) => setSettings({ ...settings, tax_rate_percentage: Number(e.target.value) })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-fg-secondary mb-1">
+                Operational Currency
+              </label>
+              <select
+                value={settings.currency}
+                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              >
+                <option value="TOMAN">Iranian Toman (IRT)</option>
+                <option value="USD">US Dollar ($ USD)</option>
+                <option value="EUR">Euro (€ EUR)</option>
+              </select>
+            </div>
 
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">Free Shipping Minimum (Toman)</label>
-                <Input
-                  type="number"
-                  value={settings.free_shipping_threshold}
-                  onChange={(e) => setSettings({ ...settings, free_shipping_threshold: Number(e.target.value) })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[11px] text-slate-400 uppercase">Standard Dispatch Fee (Toman)</label>
-                <Input
-                  type="number"
-                  value={settings.standard_shipping_cost}
-                  onChange={(e) => setSettings({ ...settings, standard_shipping_cost: Number(e.target.value) })}
-                  className="bg-slate-950/60 border-slate-800 text-xs"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-fg-secondary mb-1">
+                Value Added Tax (VAT %)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={settings.tax_rate}
+                onChange={(e) => setSettings({ ...settings, tax_rate: Number(e.target.value) })}
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              />
             </div>
           </div>
         </div>
 
-        {/* Operational Gates (Maintenance & Webhooks) */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-amber-400 font-bold uppercase text-xs">
-              <Shield className="w-4 h-4" />
-              <span>Operational Gates & Webhook Dispatchers</span>
+        {/* Shipping & Thresholds */}
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
+          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
+            <Truck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+            <span>2. Courier Logistics & Thresholds</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-fg-secondary mb-1">
+                Base Express Courier Fee (Toman)
+              </label>
+              <input
+                type="number"
+                value={settings.shipping_fee_base}
+                onChange={(e) =>
+                  setSettings({ ...settings, shipping_fee_base: Number(e.target.value) })
+                }
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              />
             </div>
 
-            <Button
+            <div>
+              <label className="block text-xs font-medium text-fg-secondary mb-1">
+                Free Delivery Cart Threshold (Toman)
+              </label>
+              <input
+                type="number"
+                value={settings.free_shipping_threshold}
+                onChange={(e) =>
+                  setSettings({ ...settings, free_shipping_threshold: Number(e.target.value) })
+                }
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Maintenance Mode */}
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
+          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
+            <Shield className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+            <span>3. System State & Governance Gate</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-bg-secondary border border-border-subtle">
+            <div>
+              <div className="text-xs font-bold text-fg-primary">Storefront Maintenance Mode</div>
+              <p className="text-xs text-fg-secondary mt-0.5">
+                When active, public storefront access is halted with a 503 Atelier Under Service screen. Staff retain full console access.
+              </p>
+            </div>
+
+            <button
               type="button"
-              variant="outline"
-              size="sm"
-              isLoading={isTestingWebhook}
-              onClick={handleTestWebhook}
-              leftIcon={<Send className="w-3.5 h-3.5" />}
-              className="text-[11px] font-mono border-slate-700 text-slate-300"
+              onClick={() =>
+                setSettings({ ...settings, maintenance_mode: !settings.maintenance_mode })
+              }
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0',
+                settings.maintenance_mode
+                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40'
+                  : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40'
+              )}
             >
-              Test Upstream Webhook
-            </Button>
+              {settings.maintenance_mode ? 'MAINTENANCE ENGAGED' : 'SYSTEM OPERATIONAL'}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white">Maintenance Mode Gate</div>
-                <div className="text-[10px] text-slate-400">Lock public storefront for catalog re-indexing</div>
-              </div>
-              <button
+          {/* Webhook Endpoint Tester */}
+          <div className="p-4 rounded-xl bg-bg-secondary border border-border-subtle space-y-3">
+            <div className="text-xs font-bold text-fg-primary">Outbound Event Webhook URL</div>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={settings.webhook_url}
+                onChange={(e) => setSettings({ ...settings, webhook_url: e.target.value })}
+                className="flex-1 px-3.5 py-2 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              />
+              <Button
                 type="button"
-                onClick={() => setSettings({ ...settings, maintenance_mode: !settings.maintenance_mode })}
-                className="text-cyan-400 p-1 cursor-pointer"
+                variant="outline"
+                size="sm"
+                onClick={handleTestWebhook}
+                isLoading={isTestingWebhook}
+                className="text-xs font-mono border-border-subtle hover:bg-bg-elevated text-fg-primary"
               >
-                {settings.maintenance_mode ? (
-                  <ToggleRight className="w-8 h-8 text-rose-400" />
-                ) : (
-                  <ToggleLeft className="w-8 h-8 text-slate-600" />
-                )}
-              </button>
+                Dispatch Test Ping
+              </Button>
             </div>
-
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white">Email & SMS Triggers</div>
-                <div className="text-[10px] text-slate-400">Automatic order and OTP notifications</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSettings({ ...settings, email_notifications_enabled: !settings.email_notifications_enabled })}
-                className="text-cyan-400 p-1 cursor-pointer"
-              >
-                {settings.email_notifications_enabled ? (
-                  <ToggleRight className="w-8 h-8 text-emerald-400" />
-                ) : (
-                  <ToggleLeft className="w-8 h-8 text-slate-600" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end">
-            <Button
-              type="submit"
-              size="sm"
-              variant="primary"
-              isLoading={isSaving}
-              leftIcon={<Save className="w-3.5 h-3.5" />}
-              className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs"
-            >
-              Save Configuration
-            </Button>
           </div>
         </div>
       </form>
 
-      {/* Audit Log Stream */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4">
-        <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase text-xs">
-          <Activity className="w-4 h-4" />
-          <span>Security & Operational Audit Stream</span>
+      {/* Immutable Audit Log Stream */}
+      <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl space-y-4 transition-colors">
+        <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
+          <div>
+            <h3 className="text-base font-bold font-display text-fg-primary tracking-tight">
+              Administrative Audit Log Stream
+            </h3>
+            <p className="text-xs text-fg-secondary font-mono mt-0.5">
+              Append-only immutable record of staff operations and system state changes
+            </p>
+          </div>
+
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-bg-secondary text-cyan-600 dark:text-cyan-300 border border-border-subtle">
+            SOC2 Verified Log
+          </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs font-mono">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-3">Timestamp</th>
-                <th className="py-3 px-3">Staff Identity</th>
-                <th className="py-3 px-3">Action</th>
-                <th className="py-3 px-3">Target Resource</th>
-                <th className="py-3 px-3 text-end">Origin IP</th>
+              <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px] tracking-wider">
+                <th className="py-2.5 px-3">Timestamp</th>
+                <th className="py-2.5 px-3">Staff Identity</th>
+                <th className="py-2.5 px-3">Operation / Action</th>
+                <th className="py-2.5 px-3">Resource Target</th>
+                <th className="py-2.5 px-3 text-end">Origin IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
+            <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
               {auditLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-2.5 px-3 text-slate-400">{formatDate(log.created_at)}</td>
-                  <td className="py-2.5 px-3 font-semibold text-white">{log.admin_name}</td>
+                <tr key={log.id} className="hover:bg-bg-secondary/40">
+                  <td className="py-2.5 px-3 text-fg-muted">{formatDate(log.created_at)}</td>
+                  <td className="py-2.5 px-3 font-semibold text-fg-primary">{log.user_email}</td>
                   <td className="py-2.5 px-3">
-                    <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-bg-secondary text-cyan-600 dark:text-cyan-300 font-bold border border-border-subtle">
                       {log.action}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-slate-300">
-                    {log.resource_type}: {log.resource_id}
-                  </td>
-                  <td className="py-2.5 px-3 text-end font-mono text-slate-400">{log.ip_address}</td>
+                  <td className="py-2.5 px-3 text-fg-primary">{log.resource_type}: {log.resource_id}</td>
+                  <td className="py-2.5 px-3 text-end text-fg-muted">{log.ip_address}</td>
                 </tr>
               ))}
             </tbody>

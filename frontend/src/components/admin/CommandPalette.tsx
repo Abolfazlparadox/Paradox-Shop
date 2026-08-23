@@ -46,7 +46,7 @@ export function CommandPalette({
       id: 'nav-dash',
       title: 'Analytics Dashboard',
       category: 'Navigation',
-      icon: <LayoutDashboard className="w-4 h-4 text-cyan-400" />,
+      icon: <LayoutDashboard className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
       url: '/admin',
       shortcut: 'G D',
     },
@@ -54,7 +54,7 @@ export function CommandPalette({
       id: 'nav-orders',
       title: 'Manage Orders',
       category: 'Navigation',
-      icon: <ShoppingBag className="w-4 h-4 text-indigo-400" />,
+      icon: <ShoppingBag className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />,
       url: '/admin/orders',
       shortcut: 'G O',
     },
@@ -62,7 +62,7 @@ export function CommandPalette({
       id: 'nav-products',
       title: 'Catalog & Products',
       category: 'Navigation',
-      icon: <Package className="w-4 h-4 text-emerald-400" />,
+      icon: <Package className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
       url: '/admin/products',
       shortcut: 'G P',
     },
@@ -70,7 +70,7 @@ export function CommandPalette({
       id: 'nav-cust',
       title: 'Customer Directory',
       category: 'Navigation',
-      icon: <Users className="w-4 h-4 text-amber-400" />,
+      icon: <Users className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
       url: '/admin/customers',
       shortcut: 'G C',
     },
@@ -78,7 +78,7 @@ export function CommandPalette({
       id: 'nav-analytics',
       title: 'Deep Analytics Hub',
       category: 'Navigation',
-      icon: <BarChart3 className="w-4 h-4 text-cyan-400" />,
+      icon: <BarChart3 className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
       url: '/admin/analytics',
       shortcut: 'G A',
     },
@@ -86,7 +86,7 @@ export function CommandPalette({
       id: 'nav-mod',
       title: 'Comments & Moderation Queue',
       category: 'Navigation',
-      icon: <MessageSquare className="w-4 h-4 text-rose-400" />,
+      icon: <MessageSquare className="w-4 h-4 text-rose-500 dark:text-rose-400" />,
       url: '/admin/comments',
       shortcut: 'G M',
     },
@@ -94,7 +94,7 @@ export function CommandPalette({
       id: 'nav-mkt',
       title: 'Coupons & Marketing Campaigns',
       category: 'Navigation',
-      icon: <Tag className="w-4 h-4 text-yellow-400" />,
+      icon: <Tag className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />,
       url: '/admin/marketing',
     },
     {
@@ -109,21 +109,21 @@ export function CommandPalette({
       id: 'act-new-prod',
       title: 'Create New Atelier Product',
       category: 'Actions',
-      icon: <Plus className="w-4 h-4 text-emerald-400" />,
+      icon: <Plus className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
       url: '/admin/products?action=new',
     },
     {
       id: 'act-new-coupon',
       title: 'Issue New Discount Coupon',
       category: 'Actions',
-      icon: <Tag className="w-4 h-4 text-amber-400" />,
+      icon: <Tag className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
       url: '/admin/marketing?action=new',
     },
     {
       id: 'link-store',
       title: 'Open Public Storefront',
       category: 'Quick Links',
-      icon: <ExternalLink className="w-4 h-4 text-slate-400" />,
+      icon: <ExternalLink className="w-4 h-4 text-fg-muted dark:text-slate-400" />,
       url: '/',
     },
   ];
@@ -181,17 +181,17 @@ export function CommandPalette({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-28 p-4 bg-black/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-28 p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: -10 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col text-slate-200"
+        className="w-full max-w-2xl rounded-2xl bg-bg-elevated border border-border-subtle shadow-2xl overflow-hidden flex flex-col text-fg-primary"
       >
         {/* Search Bar Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-800 bg-slate-950/40">
-          <Search className="w-4 h-4 text-cyan-400 shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-subtle bg-bg-secondary/40">
+          <Search className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
           <input
             type="text"
             autoFocus
@@ -201,20 +201,20 @@ export function CommandPalette({
               setSelectedIndex(0);
             }}
             placeholder="Search commands, navigate views, or trigger actions..."
-            className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
+            className="w-full bg-transparent text-sm text-fg-primary placeholder-fg-muted focus:outline-none font-sans"
           />
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-white p-1 rounded transition-colors"
+            className="text-fg-muted hover:text-fg-primary p-1 rounded transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 divide-y divide-slate-800/40">
+        <div className="max-h-80 overflow-y-auto p-2 divide-y divide-border-subtle/40">
           {filtered.length === 0 ? (
-            <div className="py-10 text-center text-xs text-slate-500 font-mono">
+            <div className="py-10 text-center text-xs text-fg-muted font-mono">
               No matching administrative commands or resources found.
             </div>
           ) : (
@@ -225,19 +225,19 @@ export function CommandPalette({
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all ${
                   selectedIndex === idx
-                    ? 'bg-cyan-500/10 border border-cyan-500/20 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800/40 border border-transparent'
+                    ? 'bg-cyan-500/10 border border-cyan-500/20 text-fg-primary shadow-sm'
+                    : 'text-fg-secondary hover:bg-bg-secondary border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="p-2 rounded-lg bg-bg-secondary border border-border-subtle">
                     {item.icon}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold font-display tracking-wide text-white">
+                    <div className="text-xs font-semibold font-display tracking-wide text-fg-primary">
                       {item.title}
                     </div>
-                    <div className="text-[10px] font-mono text-slate-400">
+                    <div className="text-[10px] font-mono text-fg-muted">
                       {item.category}
                     </div>
                   </div>
@@ -245,11 +245,11 @@ export function CommandPalette({
 
                 <div className="flex items-center gap-2">
                   {item.shortcut && (
-                    <span className="hidden sm:inline-block text-[10px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">
+                    <span className="hidden sm:inline-block text-[10px] font-mono text-fg-muted px-1.5 py-0.5 rounded bg-bg-secondary border border-border-subtle">
                       {item.shortcut}
                     </span>
                   )}
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 opacity-60" />
+                  <ArrowRight className="w-3.5 h-3.5 text-fg-muted opacity-60" />
                 </div>
               </button>
             ))
@@ -257,13 +257,13 @@ export function CommandPalette({
         </div>
 
         {/* Palette Footer */}
-        <div className="px-4 py-2.5 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
+        <div className="px-4 py-2.5 bg-bg-secondary/60 border-t border-border-subtle flex items-center justify-between text-[11px] font-mono text-fg-muted">
           <div className="flex items-center gap-3">
-            <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">↑↓</kbd> Navigate</span>
-            <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">↵</kbd> Select</span>
-            <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">ESC</kbd> Close</span>
+            <span><kbd className="px-1 py-0.5 rounded bg-bg-elevated border border-border-subtle text-fg-secondary">↑↓</kbd> Navigate</span>
+            <span><kbd className="px-1 py-0.5 rounded bg-bg-elevated border border-border-subtle text-fg-secondary">↵</kbd> Select</span>
+            <span><kbd className="px-1 py-0.5 rounded bg-bg-elevated border border-border-subtle text-fg-secondary">ESC</kbd> Close</span>
           </div>
-          <div className="flex items-center gap-1.5 text-cyan-400">
+          <div className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400">
             <Shield className="w-3 h-3" />
             <span>Paradox Atelier OS</span>
           </div>

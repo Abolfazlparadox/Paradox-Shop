@@ -106,7 +106,7 @@ function AdminOrdersContent() {
       o.customer.email,
       o.status,
       o.payment_status,
-      o.total,
+      o.total_amount,
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -131,12 +131,12 @@ function AdminOrdersContent() {
   ];
 
   const statusBadges: Record<AdminOrderStatus, { bg: string; text: string; border: string }> = {
-    PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
-    PROCESSING: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20' },
-    SHIPPED: { bg: 'bg-sky-500/10', text: 'text-sky-400', border: 'border-sky-500/20' },
-    DELIVERED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
-    CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
-    REFUNDED: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20' },
+    PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+    PROCESSING: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
+    SHIPPED: { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
+    DELIVERED: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
+    CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
+    REFUNDED: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
   };
 
   return (
@@ -144,11 +144,11 @@ function AdminOrdersContent() {
       {/* Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white tracking-tight flex items-center gap-2.5">
-            <ShoppingBag className="w-6 h-6 text-cyan-400" />
+          <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
+            <ShoppingBag className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
             <span>Orders Dispatch & Fulfillment</span>
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-fg-secondary font-mono mt-0.5">
             Manage fulfillment workflows, courier manifests, and financial settlements
           </p>
         </div>
@@ -158,7 +158,7 @@ function AdminOrdersContent() {
             variant="outline"
             size="sm"
             onClick={loadOrders}
-            className="text-xs font-mono border-slate-800 hover:bg-slate-800 text-slate-300"
+            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
             leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />}
           >
             Refresh
@@ -168,7 +168,7 @@ function AdminOrdersContent() {
             variant="outline"
             size="sm"
             onClick={handleExportCSV}
-            className="text-xs font-mono border-slate-800 hover:bg-slate-800 text-slate-300"
+            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
             leftIcon={<Download className="w-3.5 h-3.5" />}
           >
             Export Manifest
@@ -177,172 +177,198 @@ function AdminOrdersContent() {
       </div>
 
       {/* Filter Bar & Status Tabs */}
-      <div className="space-y-4 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
-            {statusTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={cn(
-                  'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap',
-                  statusFilter === tab.id
-                    ? 'bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/30 shadow-[0_0_15px_rgba(0,245,212,0.15)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      <div className="space-y-4 p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl transition-colors">
+        {/* Status Category Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-2 sm:pb-0 scrollbar-none font-mono text-xs">
+          {statusTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={cn(
+                'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer',
+                statusFilter === tab.id
+                  ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/30'
+                  : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary border border-transparent'
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Search & Bulk Operations Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-border-subtle/60">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="w-4 h-4 text-fg-muted absolute start-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by order ID, customer..."
-              className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
+              placeholder="Filter by Order #, Patron or Email..."
+              className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary placeholder-fg-muted focus:outline-none focus:border-cyan-500 font-sans"
             />
           </div>
-        </div>
 
-        {/* Batch Operations Bar */}
-        {selectedOrderIds.length > 0 && (
-          <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-cyan-200">
-            <div className="flex items-center gap-2">
-              <span className="font-bold">{selectedOrderIds.length}</span> orders selected for batch transition:
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                isLoading={isBulkUpdating}
+          {/* Bulk Action Controls */}
+          {selectedOrderIds.length > 0 && (
+            <div className="flex items-center gap-2 p-1 bg-bg-secondary rounded-xl border border-cyan-500/30 text-xs font-mono w-full sm:w-auto">
+              <span className="px-2 text-cyan-600 dark:text-cyan-300 font-bold">
+                {selectedOrderIds.length} Selected:
+              </span>
+              <button
+                onClick={() => handleBulkStatus('PROCESSING')}
+                disabled={isBulkUpdating}
+                className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 transition-colors"
+              >
+                Mark Processing
+              </button>
+              <button
                 onClick={() => handleBulkStatus('SHIPPED')}
-                className="text-[11px] font-mono border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300"
+                disabled={isBulkUpdating}
+                className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-600 dark:text-sky-300 border border-sky-500/30 transition-colors"
               >
-                Mark Dispatched
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                isLoading={isBulkUpdating}
+                Dispatch
+              </button>
+              <button
                 onClick={() => handleBulkStatus('DELIVERED')}
-                className="text-[11px] font-mono border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300"
+                disabled={isBulkUpdating}
+                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-colors"
               >
-                Mark Delivered
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setSelectedOrderIds([])}
-                className="text-[11px] font-mono border-slate-700 text-slate-400 hover:text-white"
-              >
-                Clear Selection
-              </Button>
+                Deliver
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Master Data Table */}
       {isLoading ? (
         <SkeletonTable rows={6} />
       ) : orders.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 font-mono text-xs text-slate-400">
-          <ShoppingBag className="w-8 h-8 text-slate-600 mx-auto" />
-          <div className="text-white font-bold">No orders found</div>
-          <p className="text-slate-500">No transactions match the selected filters or query.</p>
+        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
+          <ShoppingBag className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
+          <p>No acquisitions match current filtration parameters.</p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden shadow-2xl backdrop-blur-xl">
+        <div className="rounded-2xl bg-bg-elevated border border-border-subtle overflow-hidden shadow-sm dark:shadow-xl transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
+              <thead className="bg-bg-secondary text-fg-muted uppercase text-[10px] tracking-wider border-b border-border-subtle">
+                <tr>
                   <th className="py-3.5 px-4 w-10">
                     <button
                       onClick={handleSelectAll}
-                      className="text-slate-400 hover:text-white cursor-pointer"
+                      className="text-fg-muted hover:text-fg-primary flex items-center cursor-pointer"
                     >
                       {selectedOrderIds.length === orders.length ? (
-                        <CheckSquare className="w-4 h-4 text-cyan-400" />
+                        <CheckSquare className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                       ) : (
                         <Square className="w-4 h-4" />
                       )}
                     </button>
                   </th>
-                  <th className="py-3.5 px-3">Order Number</th>
-                  <th className="py-3.5 px-3">Date</th>
-                  <th className="py-3.5 px-3">Client</th>
-                  <th className="py-3.5 px-3">Items</th>
-                  <th className="py-3.5 px-3">Settlement</th>
-                  <th className="py-3.5 px-3">Lifecycle Status</th>
+                  <th className="py-3.5 px-4">Order Record</th>
+                  <th className="py-3.5 px-4">Patron & Destination</th>
+                  <th className="py-3.5 px-4">Artifacts</th>
+                  <th className="py-3.5 px-4">Gross Total</th>
+                  <th className="py-3.5 px-4">Fulfillment Status</th>
                   <th className="py-3.5 px-4 text-end">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
                 {orders.map((order) => {
                   const isSelected = selectedOrderIds.includes(order.id);
-                  const badge = statusBadges[order.status];
+                  const badge = statusBadges[order.status] || statusBadges.PENDING;
 
                   return (
                     <tr
                       key={order.id}
                       className={cn(
-                        'hover:bg-slate-800/40 transition-colors',
+                        'hover:bg-bg-secondary/40 transition-colors',
                         isSelected && 'bg-cyan-500/5'
                       )}
                     >
-                      <td className="py-3 px-4">
+                      {/* Checkbox */}
+                      <td className="py-3.5 px-4">
                         <button
                           onClick={() => handleToggleSelect(order.id)}
-                          className="text-slate-400 hover:text-white cursor-pointer"
+                          className="text-fg-muted hover:text-fg-primary flex items-center cursor-pointer"
                         >
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-cyan-400" />
+                            <CheckSquare className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                           ) : (
                             <Square className="w-4 h-4" />
                           )}
                         </button>
                       </td>
-                      <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
-                        <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{order.order_number}</span>
+
+                      {/* Order Number & Timestamp */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-fg-primary flex items-center gap-1.5">
+                          <ShoppingBag className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 shrink-0" />
+                          <span>{order.order_number}</span>
+                        </div>
+                        <div className="text-[10px] text-fg-muted">{formatDate(order.created_at)}</div>
                       </td>
-                      <td className="py-3 px-3 text-slate-400">{formatDate(order.created_at)}</td>
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-white font-display">{order.customer.name}</div>
-                        <div className="text-[10px] text-slate-400">{order.customer.email}</div>
+
+                      {/* Customer Name & City */}
+                      <td className="py-3.5 px-4">
+                        <div className="text-fg-primary font-semibold font-display">
+                          {order.customer.name}
+                        </div>
+                        <div className="text-[10px] text-fg-muted truncate max-w-[150px]">
+                          {order.shipping_address.city}, {order.shipping_address.province}
+                        </div>
                       </td>
-                      <td className="py-3 px-3 text-slate-300">{order.items_count} units</td>
-                      <td className="py-3 px-3 font-bold text-cyan-300">
-                        {formatCurrency(order.total)}
+
+                      {/* Items Preview */}
+                      <td className="py-3.5 px-4">
+                        <div className="text-fg-primary truncate max-w-[170px]">
+                          {order.items[0]?.product_name}
+                        </div>
+                        {order.items.length > 1 && (
+                          <div className="text-[10px] text-fg-muted">
+                            +{order.items.length - 1} additional artifacts
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 px-3">
-                        <span
+
+                      {/* Financial Total */}
+                      <td className="py-3.5 px-4 font-bold text-cyan-600 dark:text-cyan-300">
+                        {formatCurrency(order.total_amount)}
+                      </td>
+
+                      {/* Status Dropdown */}
+                      <td className="py-3.5 px-4">
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusUpdate(order.id, e.target.value as AdminOrderStatus)}
                           className={cn(
-                            'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border',
+                            'text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border bg-bg-secondary focus:outline-none cursor-pointer',
                             badge.bg,
                             badge.text,
                             badge.border
                           )}
                         >
-                          {order.status}
-                        </span>
+                          <option value="PENDING">Pending</option>
+                          <option value="PROCESSING">Processing</option>
+                          <option value="SHIPPED">Shipped</option>
+                          <option value="DELIVERED">Delivered</option>
+                          <option value="CANCELLED">Cancelled</option>
+                          <option value="REFUNDED">Refunded</option>
+                        </select>
                       </td>
-                      <td className="py-3 px-4 text-end">
-                        <button
+
+                      {/* Inspect Button */}
+                      <td className="py-3.5 px-4 text-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setInspectingOrder(order)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition-colors cursor-pointer"
+                          className="text-[11px] font-mono border-border-subtle hover:bg-bg-secondary text-fg-primary px-2.5 py-1 h-auto"
                         >
                           <span>Inspect</span>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -353,7 +379,7 @@ function AdminOrdersContent() {
         </div>
       )}
 
-      {/* Inspect Modal */}
+      {/* Order Detail Modal */}
       <OrderDetailModal
         order={inspectingOrder}
         onClose={() => setInspectingOrder(null)}
@@ -365,7 +391,7 @@ function AdminOrdersContent() {
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense fallback={<SkeletonTable rows={6} />}>
+    <Suspense fallback={<SkeletonTable rows={8} />}>
       <AdminOrdersContent />
     </Suspense>
   );

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { AdminCoupon } from '@/types/admin';
 import { X, Tag, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { notify } from '@/stores/notifications';
 
 interface CouponBuilderModalProps {
@@ -50,128 +49,132 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col text-slate-200">
+      <div className="w-full max-w-lg rounded-2xl bg-bg-elevated border border-border-subtle shadow-2xl overflow-hidden flex flex-col text-fg-primary">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-secondary/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center font-mono font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center font-mono font-bold text-xs">
               <Tag className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-bold font-display text-white">Create Promotional Code</div>
-              <div className="text-[10px] font-mono text-slate-400">Configure discount rules and redemption limits</div>
+              <div className="text-sm font-bold font-display text-fg-primary">Issue Discount Code</div>
+              <div className="text-[10px] font-mono text-fg-muted">Generate cryptographic promotion</div>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-fg-muted hover:text-fg-primary hover:bg-bg-secondary transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 font-mono text-xs">
-          <div className="space-y-1">
-            <label className="block text-[11px] uppercase tracking-wider text-slate-300">
-              Coupon Identifier / Code
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-mono text-fg-muted mb-1">
+              Promotional Coupon Code *
             </label>
-            <Input
+            <input
+              type="text"
               required
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="PARADOX-SUMMER26"
-              className="bg-slate-950/60 border-slate-800 text-xs font-mono font-bold tracking-widest text-cyan-300 uppercase"
+              placeholder="e.g. VIP-SUMMER-20"
+              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono font-bold uppercase text-fg-primary focus:outline-none focus:border-cyan-500 tracking-wider"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-[11px] uppercase tracking-wider text-slate-300">
-                Discount Type
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-mono text-fg-muted mb-1">
+                Discount Model
               </label>
               <select
                 value={discountType}
-                onChange={(e) => setDiscountType(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
+                onChange={(e) => setDiscountType(e.target.value as 'PERCENTAGE' | 'FIXED')}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
               >
                 <option value="PERCENTAGE">Percentage (%)</option>
                 <option value="FIXED">Fixed Amount (Toman)</option>
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[11px] uppercase tracking-wider text-slate-300">
-                Discount Value {discountType === 'PERCENTAGE' ? '(%)' : '(Toman)'}
+            <div>
+              <label className="block text-xs font-mono text-fg-muted mb-1">
+                {discountType === 'PERCENTAGE' ? 'Discount Value (%)' : 'Amount (Toman)'} *
               </label>
-              <Input
+              <input
                 type="number"
+                min="1"
                 required
                 value={discountValue}
                 onChange={(e) => setDiscountValue(Number(e.target.value))}
-                className="bg-slate-950/60 border-slate-800 text-xs font-mono"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-[11px] uppercase tracking-wider text-slate-300">
-                Min Order Value (Toman)
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-mono text-fg-muted mb-1">
+                Minimum Cart Value
               </label>
-              <Input
+              <input
                 type="number"
+                min="0"
+                step="100000"
                 value={minOrderValue}
                 onChange={(e) => setMinOrderValue(Number(e.target.value))}
-                className="bg-slate-950/60 border-slate-800 text-xs font-mono"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[11px] uppercase tracking-wider text-slate-300">
-                Total Usage Limit
+            <div>
+              <label className="block text-xs font-mono text-fg-muted mb-1">
+                Max Usage Limit
               </label>
-              <Input
+              <input
                 type="number"
+                min="1"
                 value={usageLimit}
                 onChange={(e) => setUsageLimit(Number(e.target.value))}
-                className="bg-slate-950/60 border-slate-800 text-xs font-mono"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="block text-[11px] uppercase tracking-wider text-slate-300">
+          <div>
+            <label className="block text-xs font-mono text-fg-muted mb-1">
               Expiration Date (Optional)
             </label>
-            <Input
+            <input
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="bg-slate-950/60 border-slate-800 text-xs font-mono"
+              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
             />
           </div>
 
-          {/* Footer */}
-          <div className="pt-4 flex items-center justify-end gap-2 border-t border-slate-800/60">
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border-subtle">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="border-slate-800 text-slate-300"
+              className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              size="sm"
               variant="primary"
+              size="sm"
               isLoading={isSaving}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold"
+              className="text-xs bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 font-semibold"
             >
-              Activate Campaign
+              Activate Coupon
             </Button>
           </div>
         </form>

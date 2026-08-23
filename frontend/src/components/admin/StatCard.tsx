@@ -26,10 +26,10 @@ export function StatCard({
   const isPositive = change >= 0;
 
   const colorStyles = {
-    cyan: 'border-cyan-500/20 shadow-[0_0_20px_rgba(0,245,212,0.08)] text-cyan-400',
-    indigo: 'border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.08)] text-indigo-400',
-    emerald: 'border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.08)] text-emerald-400',
-    amber: 'border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.08)] text-amber-400',
+    cyan: 'border-cyan-500/20 shadow-[0_0_20px_rgba(0,245,212,0.08)] text-cyan-600 dark:text-cyan-400',
+    indigo: 'border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.08)] text-indigo-600 dark:text-indigo-400',
+    emerald: 'border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.08)] text-emerald-600 dark:text-emerald-400',
+    amber: 'border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.08)] text-amber-600 dark:text-amber-400',
   };
 
   // Generate simple SVG sparkline polyline
@@ -46,21 +46,21 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'p-5 rounded-2xl bg-slate-900/80 border backdrop-blur-xl transition-all duration-300 hover:border-slate-700 hover:scale-[1.01] space-y-3 relative overflow-hidden',
+        'p-5 rounded-2xl bg-bg-elevated border border-border-subtle backdrop-blur-xl transition-all duration-300 hover:border-border-accent hover:scale-[1.01] space-y-3 relative overflow-hidden shadow-sm dark:shadow-2xl',
         colorStyles[color]
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-medium">
+        <span className="text-xs font-mono uppercase tracking-wider text-fg-secondary font-medium">
           {title}
         </span>
-        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+        <div className="p-2 rounded-xl bg-bg-secondary border border-border-subtle">
           {icon}
         </div>
       </div>
 
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-2xl font-bold font-display text-white tracking-tight tabular-nums">
+        <h3 className="text-2xl font-bold font-display text-fg-primary tracking-tight tabular-nums">
           {value}
         </h3>
 
@@ -79,19 +79,19 @@ export function StatCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60 text-[11px] font-mono">
+      <div className="flex items-center gap-2 pt-1 border-t border-border-subtle/60 text-[11px] font-mono">
         <span
           className={cn(
             'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold',
             isPositive
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+              ? 'bg-status-success/10 text-status-success border border-status-success/20'
+              : 'bg-status-error/10 text-status-error border border-status-error/20'
           )}
         >
           {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
           {Math.abs(change)}%
         </span>
-        <span className="text-slate-400">{changeLabel}</span>
+        <span className="text-fg-muted">{changeLabel}</span>
       </div>
     </div>
   );

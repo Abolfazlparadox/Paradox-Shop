@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { AcquisitionChannel } from '@/types/admin';
 import { formatCurrency } from '@/lib/utils/format';
+import { useUIStore } from '@/stores/ui';
 
 export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark';
+
   const [hoveredChannel, setHoveredChannel] = useState<AcquisitionChannel | null>(null);
 
   if (!data || data.length === 0) return null;
-
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
   // SVG Donut calculation (circumference based)
   const size = 180;
@@ -20,12 +22,12 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
   let cumulativePercent = 0;
 
   return (
-    <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-xl space-y-4 shadow-2xl flex flex-col justify-between select-none">
+    <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle backdrop-blur-xl space-y-4 shadow-sm dark:shadow-2xl flex flex-col justify-between select-none transition-colors">
       <div>
-        <h3 className="text-base font-bold font-display text-white tracking-tight">
+        <h3 className="text-base font-bold font-display text-fg-primary tracking-tight">
           Acquisition Channels
         </h3>
-        <p className="text-xs text-slate-400 font-mono mt-0.5">
+        <p className="text-xs text-fg-secondary font-mono mt-0.5">
           Revenue contribution by patron acquisition source
         </p>
       </div>
@@ -42,7 +44,7 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
             cy={size / 2}
             r={radius}
             fill="transparent"
-            stroke="#1E293B"
+            stroke={isDark ? '#1E293B' : '#E2E8F0'}
             strokeWidth={strokeWidth}
           />
 
@@ -75,16 +77,16 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
 
         {/* Center Informational Display */}
         <div className="absolute flex flex-col items-center justify-center pointer-events-none text-center">
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+          <span className="text-[10px] font-mono text-fg-muted uppercase tracking-wider">
             {hoveredChannel ? hoveredChannel.name : 'Gross Inflow'}
           </span>
-          <span className="text-base font-bold font-display text-white tabular-nums">
+          <span className="text-base font-bold font-display text-fg-primary tabular-nums">
             {hoveredChannel
               ? formatCurrency(hoveredChannel.value)
               : '184.5M Toman'}
           </span>
           {hoveredChannel && (
-            <span className="text-[10px] font-mono text-cyan-400 font-bold">
+            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
               {hoveredChannel.percentage}% Share
             </span>
           )}
@@ -92,7 +94,7 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
       </div>
 
       {/* Breakdown Legend Grid */}
-      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 font-mono text-xs">
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-subtle/60 font-mono text-xs">
         {data.map((item) => {
           const isHovered = hoveredChannel?.name === item.name;
 
@@ -104,8 +106,8 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
               onMouseLeave={() => setHoveredChannel(null)}
               className={`flex items-center justify-between p-1.5 rounded-lg border transition-all text-left cursor-pointer ${
                 isHovered
-                  ? 'bg-slate-800 border-cyan-500/40 shadow-sm'
-                  : 'bg-slate-950/40 border-slate-800/40 hover:bg-slate-900'
+                  ? 'bg-bg-secondary border-cyan-500/40 shadow-sm'
+                  : 'bg-bg-secondary/40 border-border-subtle/40 hover:bg-bg-secondary'
               }`}
             >
               <div className="flex items-center gap-1.5 truncate">
@@ -113,9 +115,9 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
                   className="w-2 h-2 rounded-full shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-[11px] text-slate-300 truncate">{item.name}</span>
+                <span className="text-[11px] text-fg-secondary truncate">{item.name}</span>
               </div>
-              <span className="text-[11px] font-bold text-white shrink-0 ms-1">
+              <span className="text-[11px] font-bold text-fg-primary shrink-0 ms-1">
                 {item.percentage}%
               </span>
             </button>

@@ -62,153 +62,160 @@ function AdminMarketingContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white tracking-tight flex items-center gap-2.5">
-            <Tag className="w-6 h-6 text-amber-400" />
-            <span>Promotional Engine & Marketing Vault</span>
+          <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
+            <Tag className="w-6 h-6 text-amber-500 dark:text-amber-400" />
+            <span>Promotional Coupons & Marketing Vault</span>
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Architect discount codes, VIP allowances, seasonal campaigns, and storefront alert banners
+          <p className="text-xs text-fg-secondary font-mono mt-0.5">
+            Configure discount codes, campaign banners, and VIP redemption limits
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setIsBuilderOpen(true)}
-          className="text-xs font-mono bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold"
-          leftIcon={<Plus className="w-4 h-4" />}
-        >
-          Issue Promo Code
-        </Button>
-      </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadCoupons}
+            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
+            leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />}
+          >
+            Refresh
+          </Button>
 
-      {/* Campaign Banner Highlight */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/20 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 font-mono">
-        <div className="space-y-1.5 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[10px] uppercase font-bold border border-amber-500/30">
-            <Megaphone className="w-3 h-3" />
-            Storefront Broadcast Campaign
-          </div>
-          <h3 className="text-lg font-bold font-display text-white">
-            &ldquo;Atelier Autumn Solstice Horology Preview&rdquo;
-          </h3>
-          <p className="text-xs text-slate-400">
-            Global announcement bar active across all product catalog pages. Click-through rate: <span className="text-amber-400 font-bold">14.8%</span>.
-          </p>
-        </div>
-
-        <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-1">
-          <span className="text-[10px] text-slate-400 uppercase">Primary Discount</span>
-          <div className="text-sm font-bold text-amber-300 font-mono">CODE: PARADOX-VIP</div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsBuilderOpen(true)}
+            className="text-xs font-mono bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 font-semibold"
+            leftIcon={<Plus className="w-4 h-4" />}
+          >
+            Create Coupon
+          </Button>
         </div>
       </div>
 
-      {/* Coupons Table */}
-      <div className="space-y-4 font-mono text-xs">
+      {/* Broadcast Campaign Active Banner Card */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-bg-elevated to-bg-secondary border border-amber-500/30 backdrop-blur-xl shadow-sm dark:shadow-xl space-y-3 transition-colors">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold font-display text-white tracking-tight">
-            Active Discount Codes ({coupons.length})
-          </h3>
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-mono text-xs font-bold uppercase tracking-wider">
+            <Megaphone className="w-4 h-4" />
+            <span>Active Global Broadcast Banner</span>
+          </div>
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            Broadcasting Live
+          </span>
         </div>
 
-        {isLoading ? (
-          <SkeletonTable rows={3} />
-        ) : coupons.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-slate-400">
-            <Tag className="w-8 h-8 text-slate-600 mx-auto" />
-            <div className="text-white font-bold">No promotional codes</div>
-          </div>
-        ) : (
-          <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden shadow-2xl backdrop-blur-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
-                    <th className="py-3.5 px-4">Coupon Code</th>
-                    <th className="py-3.5 px-3">Benefit</th>
-                    <th className="py-3.5 px-3">Min Order</th>
-                    <th className="py-3.5 px-3">Redemptions</th>
-                    <th className="py-3.5 px-3">Expiry</th>
-                    <th className="py-3.5 px-3">Status</th>
-                    <th className="py-3.5 px-4 text-end">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                  {coupons.map((c) => {
-                    const usagePercent = Math.min(100, (c.usage_count / (c.usage_limit || 1)) * 100);
+        <p className="text-sm font-display text-fg-primary font-bold">
+          &ldquo;Complimentary express courier dispatch on horology artifacts exceeding 10,000,000 Toman.&rdquo;
+        </p>
 
-                    return (
-                      <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-amber-300 tracking-wider">
-                          {c.code}
-                        </td>
-
-                        <td className="py-3.5 px-3 font-semibold text-white">
-                          {c.discount_type === 'PERCENTAGE'
-                            ? `${c.discount_value}% OFF`
-                            : `${formatCurrency(c.discount_value)} OFF`}
-                        </td>
-
-                        <td className="py-3.5 px-3 text-slate-400">
-                          {c.min_order_value ? formatCurrency(c.min_order_value) : 'None'}
-                        </td>
-
-                        <td className="py-3.5 px-3">
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[10px]">
-                              <span>{c.usage_count}</span>
-                              <span className="text-slate-400">/ {c.usage_limit}</span>
-                            </div>
-                            <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-amber-400 rounded-full"
-                                style={{ width: `${usagePercent}%` }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-3 text-slate-400">
-                          {c.expires_at ? formatDate(c.expires_at) : 'Perpetual'}
-                        </td>
-
-                        <td className="py-3.5 px-3">
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border',
-                              c.is_active
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                            )}
-                          >
-                            {c.is_active ? 'Active' : 'Disabled'}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4 text-end">
-                          <button
-                            onClick={() => handleToggleActive(c.id)}
-                            className={cn(
-                              'px-2.5 py-1 rounded-lg text-xs font-mono transition-colors',
-                              c.is_active
-                                ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                            )}
-                          >
-                            {c.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-4 text-xs font-mono text-fg-muted pt-2 border-t border-border-subtle/60">
+          <span>CTR: <strong className="text-fg-primary">4.8%</strong></span>
+          <span>Redemptions: <strong className="text-fg-primary">82 Orders</strong></span>
+          <span>Revenue Influenced: <strong className="text-cyan-600 dark:text-cyan-300">42,000,000 Toman</strong></span>
+        </div>
       </div>
 
-      {/* Builder Modal */}
+      {/* Coupons Master Table */}
+      {isLoading ? (
+        <SkeletonTable rows={4} />
+      ) : coupons.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
+          <Tag className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
+          <p>No active promotional discount vouchers.</p>
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-bg-elevated border border-border-subtle overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-bg-secondary text-fg-muted uppercase text-[10px] tracking-wider border-b border-border-subtle">
+                <tr>
+                  <th className="py-3.5 px-4">Coupon Code</th>
+                  <th className="py-3.5 px-4">Discount Model</th>
+                  <th className="py-3.5 px-4">Minimum Order</th>
+                  <th className="py-3.5 px-4">Usage / Cap</th>
+                  <th className="py-3.5 px-4">Expiration</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
+                {coupons.map((c) => (
+                  <tr key={c.id} className="hover:bg-bg-secondary/40 transition-colors">
+                    {/* Code */}
+                    <td className="py-3.5 px-4 font-bold text-fg-primary">
+                      <span className="px-2.5 py-1 rounded-lg bg-bg-secondary border border-border-subtle text-amber-600 dark:text-amber-400 font-mono tracking-wider">
+                        {c.code}
+                      </span>
+                    </td>
+
+                    {/* Model & Value */}
+                    <td className="py-3.5 px-4 font-bold text-fg-primary">
+                      {c.discount_type === 'PERCENTAGE'
+                        ? `${c.discount_value}% OFF`
+                        : `${formatCurrency(c.discount_value)} OFF`}
+                    </td>
+
+                    {/* Min Order */}
+                    <td className="py-3.5 px-4 text-fg-secondary">
+                      {c.min_order_value ? formatCurrency(c.min_order_value) : 'None'}
+                    </td>
+
+                    {/* Usage Progress */}
+                    <td className="py-3.5 px-4">
+                      <div>
+                        {c.usage_count} / {c.usage_limit || '∞'} used
+                      </div>
+                      {c.usage_limit && (
+                        <div className="w-24 h-1.5 rounded-full bg-bg-secondary overflow-hidden mt-1">
+                          <div
+                            className="h-full bg-amber-500 rounded-full"
+                            style={{
+                              width: `${Math.min(100, (c.usage_count / c.usage_limit) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Expiration */}
+                    <td className="py-3.5 px-4 text-fg-muted">
+                      {c.expires_at ? formatDate(c.expires_at) : 'Perpetual'}
+                    </td>
+
+                    {/* Status Toggle */}
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={cn(
+                          'text-[10px] font-mono px-2 py-0.5 rounded-full font-bold',
+                          c.is_active
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                        )}
+                      >
+                        {c.is_active ? 'Active' : 'Paused'}
+                      </span>
+                    </td>
+
+                    {/* Action Toggle */}
+                    <td className="py-3.5 px-4 text-end">
+                      <button
+                        onClick={() => handleToggleActive(c.id)}
+                        className="px-2.5 py-1 rounded-lg bg-bg-secondary hover:bg-bg-secondary/80 border border-border-subtle text-[11px] text-fg-primary transition-colors cursor-pointer"
+                      >
+                        {c.is_active ? 'Pause' : 'Resume'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Coupon Builder Modal */}
       <CouponBuilderModal
         isOpen={isBuilderOpen}
         onClose={() => setIsBuilderOpen(false)}
@@ -220,7 +227,7 @@ function AdminMarketingContent() {
 
 export default function AdminMarketingPage() {
   return (
-    <Suspense fallback={<SkeletonTable rows={3} />}>
+    <Suspense fallback={<SkeletonTable rows={6} />}>
       <AdminMarketingContent />
     </Suspense>
   );

@@ -58,12 +58,14 @@ export interface AdminOrder {
   };
   status: AdminOrderStatus;
   items: AdminOrderItem[];
-  items_count: number;
-  subtotal: number;
-  shipping_cost: number;
-  discount_amount: number;
+  items_count?: number;
+  subtotal?: number;
+  shipping_cost?: number;
+  shipping_fee?: number;
+  discount_amount?: number;
   total: number;
-  payment_method: 'GATEWAY' | 'CARD_TO_CARD' | 'CRYPTO' | 'COD';
+  total_amount?: number;
+  payment_method: string;
   payment_status: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
   shipping_address: AdminOrderAddress;
   notes?: string;
@@ -222,17 +224,21 @@ export interface StoreCurrency {
 
 export interface SystemSettings {
   store_name: string;
-  store_url: string;
-  contact_email: string;
-  support_phone: string;
-  currencies: StoreCurrency[];
-  default_currency: string;
-  tax_rate_percentage: number;
-  free_shipping_threshold: number;
-  standard_shipping_cost: number;
+  store_url?: string;
+  contact_email?: string;
+  support_phone?: string;
+  currency?: string;
+  currencies?: StoreCurrency[];
+  default_currency?: string;
+  tax_rate?: number;
+  tax_rate_percentage?: number;
+  shipping_fee_base?: number;
+  standard_shipping_cost?: number;
+  free_shipping_threshold?: number;
   maintenance_mode: boolean;
-  allow_guest_checkout: boolean;
-  email_notifications_enabled: boolean;
+  allow_guest_checkout?: boolean;
+  email_notifications_enabled?: boolean;
+  webhook_url?: string;
   telegram_bot_token?: string;
   telegram_chat_id?: string;
   updated_at: string;
@@ -240,8 +246,9 @@ export interface SystemSettings {
 
 export interface AuditLogEntry {
   id: string;
-  admin_name: string;
-  admin_email: string;
+  admin_name?: string;
+  admin_email?: string;
+  user_email?: string;
   action: string;
   resource_type: string;
   resource_id: string;

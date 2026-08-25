@@ -1,14 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { adminApi } from '@/lib/api/admin';
-import { AdminAnalytics, AdminOrder, AdminOrderStatus, AdminComment } from '@/types/admin';
+import {
+  useAdminComments,
+  useAdminDashboard,
+  useAdminOrders,
+  useModerateComment,
+  useUpdateOrderStatus,
+} from '@/hooks/useAdminData';
 import { StatCard } from '@/components/admin/StatCard';
 import { RevenueChart } from '@/components/admin/RevenueChart';
 import { TrafficDonutChart } from '@/components/admin/TrafficDonutChart';
 import { SkeletonCard, SkeletonChart, SkeletonTable } from '@/components/admin/SkeletonLoader';
-import { formatCurrency, formatDate } from '@/lib/utils/format';
+import { formatCurrency } from '@/lib/utils/format';
 import { notify } from '@/stores/notifications';
 import {
   DollarSign,
@@ -17,12 +22,6 @@ import {
   Activity,
   ArrowRight,
   Sparkles,
-  Package,
-  CheckCircle2,
-  Clock,
-  Truck,
-  XCircle,
-  MessageSquare,
   ShieldCheck,
   ExternalLink,
   Plus,
@@ -30,49 +29,37 @@ import {
 import { cn } from '@/lib/utils/cn';
 
 export default function AdminDashboardPage() {
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
-  const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
-  const [pendingComments, setPendingComments] = useState<AdminComment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: dashboardData, isLoading: isDashboardLoading } = useAdminDashboard();
+  const { data: recentOrders = [], isLoading: isOrdersLoading } = useAdminOrders();
+  const { data: comments = [], isLoading: isCommentsLoading } = useAdminComments();
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const [analyticsData, ordersData, commentsData] = await Promise.all([
-          adminApi.getAnalytics(),
-          adminApi.getOrders(),
-          adminApi.getComments(),
-        ]);
-        setAnalytics(analyticsData);
-        setRecentOrders(ordersData.slice(0, 5));
-        setPendingComments(commentsData.filter((c) => !c.is_approved));
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadDashboardData();
-  }, []);
+  const updateStatusMutation = useUpdateOrderStatus();
+  const moderateCommentMutation = useModerateComment();
 
-  const handleStatusChange = async (orderId: string, newStatus: AdminOrderStatus) => {
+  const pendingComments = comments.filter((c) => !c.is_approved);
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      const updated = await adminApi.updateOrderStatus(orderId, newStatus);
-      setRecentOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
-      notify.success('Status Synchronized', `Order ${updated.order_number} shifted to ${newStatus}.`);
-    } catch {
-      notify.error('Update Failed', 'Unable to mutate order lifecycle state.');
+      await updateStatusMutation.mutateAsync({ id: orderId, status: newStatus.toLowerCase() });
+      notify.success('Status Synchronized', `Order shifted to ${newStatus}.`);
+    } catch (err: any) {
+      notify.error('Update Failed', err?.response?.data?.status || 'Unable to mutate order lifecycle state.');
     }
   };
 
   const handleModerateComment = async (commentId: string, isApproved: boolean) => {
-    await adminApi.moderateComment(commentId, isApproved);
-    setPendingComments((prev) => prev.filter((c) => c.id !== commentId));
-    notify.success(
-      isApproved ? 'Inquiry Approved' : 'Inquiry Dismissed',
-      `Discussion item marked as ${isApproved ? 'published' : 'rejected'}.`
-    );
+    try {
+      await moderateCommentMutation.mutateAsync({ id: commentId, is_approved: isApproved });
+      notify.success(
+        isApproved ? 'Inquiry Approved' : 'Inquiry Dismissed',
+        `Discussion item marked as ${isApproved ? 'published' : 'rejected'}.`
+      );
+    } catch {
+      notify.error('Moderation Error', 'Failed to update comment status.');
+    }
   };
 
-  if (isLoading || !analytics) {
+  if (isDashboardLoading || !dashboardData) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -94,15 +81,15 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const kpis = analytics.kpis;
+  const kpis = dashboardData.kpis;
 
-  const statusBadges: Record<AdminOrderStatus, { label: string; bg: string; text: string; border: string }> = {
-    PENDING: { label: 'Pending', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-    PROCESSING: { label: 'Processing', bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
-    SHIPPED: { label: 'Dispatched', bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
-    DELIVERED: { label: 'Delivered', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-    CANCELLED: { label: 'Cancelled', bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
-    REFUNDED: { label: 'Refunded', bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
+  const statusBadges: Record<string, { label: string; bg: string; text: string; border: string }> = {
+    pending: { label: 'Pending', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+    processing: { label: 'Processing', bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
+    shipped: { label: 'Dispatched', bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
+    delivered: { label: 'Delivered', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
+    cancelled: { label: 'Cancelled', bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
+    refunded: { label: 'Refunded', bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
   };
 
   return (
@@ -118,7 +105,7 @@ export default function AdminDashboardPage() {
             Commercial Intelligence Console
           </h1>
           <p className="text-xs text-fg-secondary leading-relaxed">
-            Live telemetry monitoring transactional throughput, order fulfillment velocity, inventory reserves, and client sentiments across Paradox Atelier.
+            Live PostgreSQL telemetry monitoring transactional throughput, order fulfillment velocity, inventory reserves, and client sentiments across Paradox Atelier.
           </p>
         </div>
 
@@ -153,7 +140,7 @@ export default function AdminDashboardPage() {
                 Monthly Target
               </span>
               <span className="text-xs font-bold font-mono text-cyan-600 dark:text-cyan-300">
-                184.5M / 220M
+                {formatCurrency(kpis.monthly_revenue)}
               </span>
             </div>
           </div>
@@ -207,10 +194,10 @@ export default function AdminDashboardPage() {
       {/* 3. Analytics Visualizer Grid (Area + Donut) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-8 flex flex-col">
-          <RevenueChart data={analytics.revenue_chart} />
+          <RevenueChart data={dashboardData.revenue_chart} />
         </div>
         <div className="lg:col-span-4 flex flex-col">
-          <TrafficDonutChart data={analytics.acquisition_channels} />
+          <TrafficDonutChart data={dashboardData.acquisition_channels} />
         </div>
       </div>
 
@@ -237,67 +224,75 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead>
-                <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-2">Order ID</th>
-                  <th className="py-3 px-2">Patron</th>
-                  <th className="py-3 px-2">Total Amount</th>
-                  <th className="py-3 px-2">Status</th>
-                  <th className="py-3 px-2 text-end">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
-                {recentOrders.map((order) => {
-                  const badge = statusBadges[order.status] || statusBadges.PENDING;
-                  return (
-                    <tr key={order.id} className="hover:bg-bg-secondary/40 transition-colors">
-                      <td className="py-3 px-2 font-bold text-fg-primary flex items-center gap-1.5">
-                        <ShoppingBag className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
-                        {order.order_number}
-                      </td>
-                      <td className="py-3 px-2">
-                        <div className="text-fg-primary font-semibold font-display truncate max-w-[130px]">
-                          {order.customer.name}
-                        </div>
-                        <div className="text-[10px] text-fg-muted truncate">{order.customer.email}</div>
-                      </td>
-                      <td className="py-3 px-2 font-bold text-cyan-600 dark:text-cyan-300">
-                        {formatCurrency(order.total_amount)}
-                      </td>
-                      <td className="py-3 px-2">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value as AdminOrderStatus)}
-                          aria-label={`Change status for order ${order.order_number}`}
-                          className={cn(
-                            'text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border bg-bg-secondary focus:outline-none cursor-pointer',
-                            badge.bg,
-                            badge.text,
-                            badge.border
-                          )}
-                        >
-                          <option value="PENDING">Pending</option>
-                          <option value="PROCESSING">Processing</option>
-                          <option value="SHIPPED">Shipped</option>
-                          <option value="DELIVERED">Delivered</option>
-                          <option value="CANCELLED">Cancelled</option>
-                        </select>
-                      </td>
-                      <td className="py-3 px-2 text-end">
-                        <Link
-                          href={`/admin/orders?view=${order.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-secondary hover:bg-bg-secondary/80 border border-border-subtle text-[10px] text-fg-primary transition-colors"
-                        >
-                          <span>Inspect</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {recentOrders.length === 0 ? (
+              <div className="py-8 text-center text-xs text-fg-muted font-mono">
+                No orders recorded yet in database.
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-2">Order ID</th>
+                    <th className="py-3 px-2">Patron</th>
+                    <th className="py-3 px-2">Total Amount</th>
+                    <th className="py-3 px-2">Status</th>
+                    <th className="py-3 px-2 text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
+                  {recentOrders.slice(0, 5).map((order) => {
+                    const statusKey = order.status.toLowerCase();
+                    const badge = statusBadges[statusKey] || statusBadges.pending;
+                    return (
+                      <tr key={order.id} className="hover:bg-bg-secondary/40 transition-colors">
+                        <td className="py-3 px-2 font-bold text-fg-primary flex items-center gap-1.5">
+                          <ShoppingBag className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
+                          {order.order_number}
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="text-fg-primary font-semibold font-display truncate max-w-[130px]">
+                            {order.customer?.name || 'Patron'}
+                          </div>
+                          <div className="text-[10px] text-fg-muted truncate">{order.customer?.email}</div>
+                        </td>
+                        <td className="py-3 px-2 font-bold text-cyan-600 dark:text-cyan-300">
+                          {formatCurrency(Number(order.total || 0))}
+                        </td>
+                        <td className="py-3 px-2">
+                          <select
+                            value={order.status.toLowerCase()}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            aria-label={`Change status for order ${order.order_number}`}
+                            className={cn(
+                              'text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border bg-bg-secondary focus:outline-none cursor-pointer',
+                              badge.bg,
+                              badge.text,
+                              badge.border
+                            )}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="refunded">Refunded</option>
+                          </select>
+                        </td>
+                        <td className="py-3 px-2 text-end">
+                          <Link
+                            href={`/admin/orders?view=${order.id}`}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-secondary hover:bg-bg-secondary/80 border border-border-subtle text-[10px] text-fg-primary transition-colors"
+                          >
+                            <span>Inspect</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -349,13 +344,13 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       onClick={() => handleModerateComment(c.id, false)}
-                      className="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-500/20 transition-colors"
+                      className="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-500/20 transition-colors cursor-pointer"
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => handleModerateComment(c.id, true)}
-                      className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 transition-colors"
+                      className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 transition-colors cursor-pointer"
                     >
                       Approve
                     </button>

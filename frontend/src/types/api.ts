@@ -32,10 +32,12 @@ export interface User {
   email: string;
   first_name?: string;
   last_name?: string;
+  full_name?: string;
   phone_number?: string | null;
   is_staff?: boolean;
   is_superuser?: boolean;
   is_verified?: boolean;
+  permissions?: string[];
 }
 
 export interface UserProfileDetail {
@@ -50,7 +52,9 @@ export interface UserProfileDetail {
 
 export interface UserProfile extends User {
   profile?: UserProfileDetail;
+  permissions?: string[];
 }
+
 
 export interface UserRegistrationRequest {
   email: string;
@@ -515,3 +519,323 @@ export interface CreateReviewRequest {
   title?: string | null;
   body?: string | null;
 }
+
+// ==========================================
+// 9. Admin Control Center Domain
+// ==========================================
+
+export interface AdminKPIs {
+  monthly_revenue: number;
+  monthly_revenue_change: number;
+  total_orders: number;
+  total_orders_change: number;
+  active_customers: number;
+  active_customers_change: number;
+  conversion_rate: number;
+  conversion_rate_change: number;
+  average_order_value: number;
+  customer_acquisition_cost: number;
+  refund_rate: number;
+  target_revenue_progress: number;
+  active_products: number;
+  low_stock_variants: number;
+  out_of_stock_variants: number;
+}
+
+export interface AdminRevenuePoint {
+  date: string;
+  revenue: number;
+  projected: number;
+  orders: number;
+}
+
+export interface AdminAcquisitionChannel {
+  name: string;
+  value: number;
+  percentage: number;
+  color: string;
+}
+
+export interface AdminTopProduct {
+  id: string;
+  name: string;
+  category: string;
+  units_sold: number;
+  revenue: number;
+  stock: number;
+}
+
+export interface AdminCohort {
+  cohort: string;
+  users: number;
+  m1: string;
+  m2: string;
+  m3: string;
+  m4: string;
+}
+
+export interface AdminDashboardData {
+  kpis: AdminKPIs;
+  revenue_chart: AdminRevenuePoint[];
+  acquisition_channels: AdminAcquisitionChannel[];
+  status_distribution: {
+    pending: number;
+    processing: number;
+    shipped: number;
+    delivered: number;
+    cancelled: number;
+    refunded: number;
+  };
+}
+
+export interface AdminAnalyticsData {
+  kpis: AdminKPIs;
+  revenue_chart: AdminRevenuePoint[];
+  acquisition_channels: AdminAcquisitionChannel[];
+  top_products: AdminTopProduct[];
+  cohorts: AdminCohort[];
+}
+
+export interface AdminCustomerSummary {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
+
+export interface AdminOrderItem {
+  id: string;
+  product_id?: string | null;
+  variant_id?: string | null;
+  product_name: string;
+  variant_name?: string | null;
+  sku: string;
+  quantity: number;
+  unit_price: string;
+  total_price: string;
+  primary_image?: string | null;
+}
+
+export interface AdminOrderAddress {
+  recipient_name: string;
+  recipient_phone: string;
+  province: string;
+  city: string;
+  postal_code: string;
+  address_line: string;
+}
+
+export interface AdminPaymentSummary {
+  id: string;
+  amount: string;
+  status: PaymentStatus;
+  payment_method?: string;
+  gateway: string;
+  transaction_id: string;
+  created_at: string;
+}
+
+export interface AdminOrder {
+  id: string;
+  order_number: string;
+  customer: AdminCustomerSummary;
+  status: OrderStatus;
+  subtotal: string;
+  shipping_cost: string;
+  discount_amount: string;
+  total: string;
+  total_amount?: string;
+  items_count: number;
+  items: AdminOrderItem[];
+  shipping_address?: AdminOrderAddress;
+  notes?: string | null;
+  payments?: AdminPaymentSummary[];
+  paid_at?: string | null;
+  cancelled_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminProductVariant {
+  id: string;
+  sku: string;
+  name: string;
+  price_override?: string | null;
+  final_price: string;
+  stock: number;
+  is_active: boolean;
+  attributes?: Record<string, any>;
+}
+
+export interface AdminProductImage {
+  id: string;
+  variant?: string | null;
+  image: string;
+  alt_text?: string;
+  sort_order: number;
+  is_primary: boolean;
+}
+
+export interface AdminProduct {
+  id: string;
+  name: string;
+  slug: string;
+  category?: { id: string; name: string; slug: string } | null;
+  brand?: { id: string; name: string; slug: string } | null;
+  product_type: 'simple' | 'variable';
+  base_price: string;
+  stock: number;
+  is_active: boolean;
+  is_featured: boolean;
+  primary_image?: string | null;
+  variants: AdminProductVariant[];
+  images?: AdminProductImage[];
+  description?: string;
+  short_description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminInventoryItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  category_name: string;
+  sku: string;
+  name: string;
+  final_price: string;
+  stock: number;
+  is_active: boolean;
+  primary_image?: string | null;
+  updated_at: string;
+}
+
+export interface AdminCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone_number?: string | null;
+  is_verified: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  status: 'ACTIVE' | 'SUSPENDED';
+  orders_count: number;
+  total_spent: string;
+  last_order_date?: string | null;
+  addresses_count: number;
+  addresses?: any[];
+  orders?: any[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminReviewItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  author_name: string;
+  author_email: string;
+  rating: number;
+  title?: string | null;
+  body?: string | null;
+  is_verified_purchase: boolean;
+  is_approved: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminCommentReply {
+  id: string;
+  author_name: string;
+  author_email: string;
+  content: string;
+  is_approved: boolean;
+  created_at: string;
+}
+
+export interface AdminCommentItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  author_name: string;
+  author_email: string;
+  parent_id?: string | null;
+  content: string;
+  is_approved: boolean;
+  is_staff_reply: boolean;
+  replies_count: number;
+  replies: AdminCommentReply[];
+  sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminPaymentTransaction {
+  id: string;
+  order_id: string;
+  order_number: string;
+  customer_name: string;
+  customer_email: string;
+  amount: string;
+  status: PaymentStatus;
+  payment_method?: string;
+  gateway: string;
+  transaction_id: string;
+  is_mock: boolean;
+  idempotency_key?: string | null;
+  gateway_response?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminNotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'ORDER' | 'STOCK' | 'REVIEW' | 'PAYMENT' | 'SYSTEM';
+  notification_type: 'ORDER' | 'STOCK' | 'REVIEW' | 'PAYMENT' | 'SYSTEM';
+  is_read: boolean;
+  action_url?: string | null;
+  resource_id?: string | null;
+  timestamp: string;
+  created_at: string;
+}
+
+export interface AdminAuditLogItem {
+  id: string;
+  user_id?: string | null;
+  user_email?: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  ip_address?: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface AdminSystemSettingsData {
+  store_name: string;
+  store_url: string;
+  currency: string;
+  tax_rate: number;
+  shipping_fee_base: number;
+  free_shipping_threshold: number;
+  maintenance_mode: boolean;
+  webhook_url: string;
+  updated_at?: string;
+}
+
+export interface AdminMeProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  is_staff: boolean;
+  is_superuser: boolean;
+  permissions: string[];
+}
+

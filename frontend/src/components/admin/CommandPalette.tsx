@@ -98,12 +98,49 @@ export function CommandPalette({
       url: '/admin/marketing',
     },
     {
+      id: 'nav-inv',
+      title: 'Inventory & Reserve Stock',
+      category: 'Navigation',
+      icon: <Package className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
+      url: '/admin/inventory',
+      shortcut: 'G I',
+    },
+    {
+      id: 'nav-payments',
+      title: 'Payment Transactions & Gateway',
+      category: 'Navigation',
+      icon: <ShoppingBag className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+      url: '/admin/payments',
+    },
+    {
+      id: 'nav-reviews',
+      title: 'Reviews & Feedback Moderation',
+      category: 'Navigation',
+      icon: <MessageSquare className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />,
+      url: '/admin/reviews',
+      shortcut: 'G R',
+    },
+    {
+      id: 'nav-act',
+      title: 'Audit Logs & Activity Stream',
+      category: 'Navigation',
+      icon: <LayoutDashboard className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
+      url: '/admin/activity',
+    },
+    {
       id: 'nav-set',
       title: 'Store & System Settings',
       category: 'Navigation',
       icon: <Settings className="w-4 h-4 text-slate-400" />,
       url: '/admin/settings',
       shortcut: 'G S',
+    },
+    {
+      id: 'nav-prof',
+      title: 'Admin Clearance & Profile',
+      category: 'Navigation',
+      icon: <Shield className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
+      url: '/admin/profile',
     },
     {
       id: 'act-new-prod',
@@ -113,13 +150,6 @@ export function CommandPalette({
       url: '/admin/products?action=new',
     },
     {
-      id: 'act-new-coupon',
-      title: 'Issue New Discount Coupon',
-      category: 'Actions',
-      icon: <Tag className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
-      url: '/admin/marketing?action=new',
-    },
-    {
       id: 'link-store',
       title: 'Open Public Storefront',
       category: 'Quick Links',
@@ -127,6 +157,7 @@ export function CommandPalette({
       url: '/',
     },
   ];
+
 
   const filtered = commands.filter((c) =>
     c.title.toLowerCase().includes(query.toLowerCase()) ||

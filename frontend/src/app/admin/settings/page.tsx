@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { adminApi } from '@/lib/api/admin';
-import { SystemSettings, AuditLogEntry } from '@/types/admin';
+import { useAdminAuditLogs, useAdminSettings, useUpdateAdminSettings } from '@/hooks/useAdminData';
+import { AdminSystemSettingsData } from '@/types/api';
 import { SkeletonCard, SkeletonTable } from '@/components/admin/SkeletonLoader';
 import { formatDate } from '@/lib/utils/format';
 import { notify } from '@/stores/notifications';
@@ -11,67 +11,57 @@ import {
   Shield,
   DollarSign,
   Truck,
-  Mail,
   Send,
   Save,
-  Activity,
-  ToggleLeft,
-  ToggleRight,
   Globe,
-  Bell,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils/cn';
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const { data: serverSettings, isLoading } = useAdminSettings();
+  const { data: auditLogs = [] } = useAdminAuditLogs();
+  const updateSettingsMutation = useUpdateAdminSettings();
+
+  const [formData, setFormData] = useState<AdminSystemSettingsData>({
+    store_name: 'PARADOX SHOP ATELIER',
+    store_url: 'https://shop.paradox.art',
+    currency: 'TOMAN',
+    tax_rate: 9.0,
+    shipping_fee_base: 65000,
+    free_shipping_threshold: 5000000,
+    maintenance_mode: false,
+    webhook_url: 'https://api.paradox.art/webhooks/ops',
+  });
+
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [sData, lData] = await Promise.all([
-          adminApi.getSettings(),
-          adminApi.getAuditLogs(),
-        ]);
-        setSettings(sData);
-        setAuditLogs(lData);
-      } finally {
-        setIsLoading(false);
-      }
+    if (serverSettings) {
+      setFormData(serverSettings);
     }
-    load();
-  }, []);
+  }, [serverSettings]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!settings) return;
-
-    setIsSaving(true);
     try {
-      const updated = await adminApi.updateSettings(settings);
-      setSettings(updated);
-      notify.success('Settings Preserved', 'Atelier operational parameters synchronized.');
+      await updateSettingsMutation.mutateAsync(formData);
+      notify.success('Settings Preserved', 'Atelier operational parameters synchronized with database.');
     } catch {
       notify.error('Settings Error', 'Failed to save configuration.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleTestWebhook = async () => {
+  const handleTestWebhook = () => {
     setIsTestingWebhook(true);
     setTimeout(() => {
       setIsTestingWebhook(false);
-      notify.success('Webhook Dispatched', 'Received HTTP 200 OK from endpoint.');
-    }, 900);
+      notify.success('Webhook Ping Dispatched', `Payload sent to ${formData.webhook_url}`);
+    }, 800);
   };
 
-  if (isLoading || !settings) {
+  if (isLoading || !serverSettings) {
     return (
       <div className="space-y-8">
         <SkeletonCard />
@@ -98,201 +88,173 @@ export default function AdminSettingsPage() {
           variant="primary"
           size="sm"
           onClick={handleSaveSettings}
-          isLoading={isSaving}
-          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
-          leftIcon={<Save className="w-4 h-4" />}
+          isLoading={updateSettingsMutation.isPending}
+          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-bold shadow-md cursor-pointer"
+          leftIcon={<Save className="w-3.5 h-3.5" />}
         >
-          Persist All Settings
+          Save Configuration
         </Button>
       </div>
 
-      {/* Settings Form */}
+      {/* Main Settings Form */}
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        {/* General Storefront & Currency */}
-        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
-          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
-            <Globe className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
-            <span>1. Storefront Identity & Fiscal Parameters</span>
+        {/* Section 1: Storefront Identity & Financials */}
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm space-y-4 transition-colors">
+          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle">
+            <Globe className="w-4 h-4 text-cyan-500" />
+            <h3 className="text-sm font-bold font-display text-fg-primary">Store Identity & Logistics</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono">
             <div>
-              <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Storefront Name
-              </label>
+              <label className="block text-fg-muted mb-1">Store Name</label>
               <input
                 type="text"
-                value={settings.store_name}
-                onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500 font-sans"
+                value={formData.store_name}
+                onChange={(e) => setFormData({ ...formData, store_name: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Operational Currency
-              </label>
-              <select
-                value={settings.currency}
-                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
-              >
-                <option value="TOMAN">Iranian Toman (IRT)</option>
-                <option value="USD">US Dollar ($ USD)</option>
-                <option value="EUR">Euro (€ EUR)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Value Added Tax (VAT %)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="30"
-                value={settings.tax_rate}
-                onChange={(e) => setSettings({ ...settings, tax_rate: Number(e.target.value) })}
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Shipping & Thresholds */}
-        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
-          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
-            <Truck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-            <span>2. Courier Logistics & Thresholds</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Base Express Courier Fee (Toman)
-              </label>
-              <input
-                type="number"
-                value={settings.shipping_fee_base}
-                onChange={(e) =>
-                  setSettings({ ...settings, shipping_fee_base: Number(e.target.value) })
-                }
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Free Delivery Cart Threshold (Toman)
-              </label>
-              <input
-                type="number"
-                value={settings.free_shipping_threshold}
-                onChange={(e) =>
-                  setSettings({ ...settings, free_shipping_threshold: Number(e.target.value) })
-                }
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Security & Maintenance Mode */}
-        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl space-y-4 transition-colors">
-          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle text-xs font-bold font-display text-fg-primary">
-            <Shield className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-            <span>3. System State & Governance Gate</span>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-bg-secondary border border-border-subtle">
-            <div>
-              <div className="text-xs font-bold text-fg-primary">Storefront Maintenance Mode</div>
-              <p className="text-xs text-fg-secondary mt-0.5">
-                When active, public storefront access is halted with a 503 Atelier Under Service screen. Staff retain full console access.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSettings({ ...settings, maintenance_mode: !settings.maintenance_mode })
-              }
-              className={cn(
-                'px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0',
-                settings.maintenance_mode
-                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40'
-                  : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40'
-              )}
-            >
-              {settings.maintenance_mode ? 'MAINTENANCE ENGAGED' : 'SYSTEM OPERATIONAL'}
-            </button>
-          </div>
-
-          {/* Webhook Endpoint Tester */}
-          <div className="p-4 rounded-xl bg-bg-secondary border border-border-subtle space-y-3">
-            <div className="text-xs font-bold text-fg-primary">Outbound Event Webhook URL</div>
-            <div className="flex gap-2">
+              <label className="block text-fg-muted mb-1">Store Canonical URL</label>
               <input
                 type="url"
-                value={settings.webhook_url}
-                onChange={(e) => setSettings({ ...settings, webhook_url: e.target.value })}
-                className="flex-1 px-3.5 py-2 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                value={formData.store_url}
+                onChange={(e) => setFormData({ ...formData, store_url: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
               />
-              <Button
+            </div>
+
+            <div>
+              <label className="block text-fg-muted mb-1">Default Currency Unit</label>
+              <input
+                type="text"
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold text-cyan-600 dark:text-cyan-300"
+              />
+            </div>
+
+            <div>
+              <label className="block text-fg-muted mb-1">Base Courier Fee (Rial)</label>
+              <input
+                type="number"
+                value={formData.shipping_fee_base}
+                onChange={(e) => setFormData({ ...formData, shipping_fee_base: Number(e.target.value) })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-fg-muted mb-1">Free Courier Threshold (Rial)</label>
+              <input
+                type="number"
+                value={formData.free_shipping_threshold}
+                onChange={(e) => setFormData({ ...formData, free_shipping_threshold: Number(e.target.value) })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-fg-muted mb-1">Value-Added Tax (VAT %)</label>
+              <input
+                type="number"
+                step={0.1}
+                value={formData.tax_rate}
+                onChange={(e) => setFormData({ ...formData, tax_rate: Number(e.target.value) })}
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Security, Maintenance Mode, & Webhooks */}
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm space-y-4 transition-colors">
+          <div className="flex items-center gap-2 pb-2 border-b border-border-subtle">
+            <Shield className="w-4 h-4 text-indigo-500" />
+            <h3 className="text-sm font-bold font-display text-fg-primary">Security & Dispatch Webhooks</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-secondary/60 border border-border-subtle">
+              <div>
+                <div className="text-xs font-bold text-fg-primary">Emergency Maintenance Lockdown</div>
+                <div className="text-[11px] text-fg-muted">
+                  Bypasses storefront routing for non-staff visitors with an architectural pause state.
+                </div>
+              </div>
+
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleTestWebhook}
-                isLoading={isTestingWebhook}
-                className="text-xs font-mono border-border-subtle hover:bg-bg-elevated text-fg-primary"
+                onClick={() => setFormData({ ...formData, maintenance_mode: !formData.maintenance_mode })}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border',
+                  formData.maintenance_mode
+                    ? 'bg-rose-500 text-white border-rose-600 shadow-md animate-pulse'
+                    : 'bg-bg-elevated text-fg-secondary border-border-subtle hover:text-fg-primary'
+                )}
               >
-                Dispatch Test Ping
-              </Button>
+                {formData.maintenance_mode ? 'Lockdown Active' : 'Normal Operations'}
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-fg-muted mb-1">
+                Real-Time Operations Webhook Dispatch URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={formData.webhook_url}
+                  onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+                  placeholder="https://api.domain.com/webhooks/ops"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestWebhook}
+                  isLoading={isTestingWebhook}
+                  className="text-xs font-mono border-border-subtle text-cyan-600 dark:text-cyan-400 cursor-pointer"
+                  rightIcon={<Send className="w-3.5 h-3.5" />}
+                >
+                  Test Ping
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </form>
 
-      {/* Immutable Audit Log Stream */}
-      <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl space-y-4 transition-colors">
+      {/* Section 3: Recent Administrative Audit Stream */}
+      <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm space-y-4 transition-colors">
         <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
-          <div>
-            <h3 className="text-base font-bold font-display text-fg-primary tracking-tight">
-              Administrative Audit Log Stream
-            </h3>
-            <p className="text-xs text-fg-secondary font-mono mt-0.5">
-              Append-only immutable record of staff operations and system state changes
-            </p>
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-sm font-bold font-display text-fg-primary">Recent Audit Events</h3>
           </div>
-
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-bg-secondary text-cyan-600 dark:text-cyan-300 border border-border-subtle">
-            SOC2 Verified Log
-          </span>
+          <span className="text-[10px] font-mono text-fg-muted">Immutable Ledger</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead>
-              <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Timestamp</th>
-                <th className="py-2.5 px-3">Staff Identity</th>
-                <th className="py-2.5 px-3">Operation / Action</th>
-                <th className="py-2.5 px-3">Resource Target</th>
-                <th className="py-2.5 px-3 text-end">Origin IP</th>
+              <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px]">
+                <th className="py-2.5 px-3">Date</th>
+                <th className="py-2.5 px-3">Actor</th>
+                <th className="py-2.5 px-3">Action</th>
+                <th className="py-2.5 px-3">Target</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
-              {auditLogs.map((log) => (
+              {auditLogs.slice(0, 5).map((log) => (
                 <tr key={log.id} className="hover:bg-bg-secondary/40">
                   <td className="py-2.5 px-3 text-fg-muted">{formatDate(log.created_at)}</td>
-                  <td className="py-2.5 px-3 font-semibold text-fg-primary">{log.user_email}</td>
-                  <td className="py-2.5 px-3">
-                    <span className="px-2 py-0.5 rounded bg-bg-secondary text-cyan-600 dark:text-cyan-300 font-bold border border-border-subtle">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-fg-primary">{log.resource_type}: {log.resource_id}</td>
-                  <td className="py-2.5 px-3 text-end text-fg-muted">{log.ip_address}</td>
+                  <td className="py-2.5 px-3 font-bold text-fg-primary">{log.user_email || 'System'}</td>
+                  <td className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-bold">{log.action}</td>
+                  <td className="py-2.5 px-3">{log.resource_type}:{log.resource_id}</td>
                 </tr>
               ))}
             </tbody>

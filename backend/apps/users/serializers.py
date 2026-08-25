@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 from .models import Address, UserProfile
 
@@ -60,11 +62,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
 
+from common.permissions import get_user_effective_permissions
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Represents the authenticated user's account together with their profile."""
 
     profile = UserProfileDetailSerializer(required=False)
     full_name = serializers.CharField(read_only=True)
+    permissions = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -77,10 +83,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "phone_number",
             "is_staff",
             "is_superuser",
+            "permissions",
             "profile",
             "created_at",
         ]
-        read_only_fields = ["id", "email", "is_staff", "is_superuser", "created_at"]
+        read_only_fields = ["id", "email", "is_staff", "is_superuser", "permissions", "created_at"]
+
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_permissions(self, obj):
+        return get_user_effective_permissions(obj)
+
 
     def validate_phone_number(self, value):
         if value:
@@ -139,8 +151,12 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             "id": str(self.user.id),
             "email": self.user.email,
             "full_name": self.user.full_name,
+            "is_staff": self.user.is_staff,
+            "is_superuser": self.user.is_superuser,
+            "permissions": get_user_effective_permissions(self.user),
         }
         return data
+
 
 
 class PasswordChangeSerializer(serializers.Serializer):

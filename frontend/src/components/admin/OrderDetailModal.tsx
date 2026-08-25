@@ -1,21 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AdminOrder, AdminOrderStatus } from '@/types/admin';
+import { AdminOrder } from '@/types/api';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import {
   X,
   ShoppingBag,
   User,
   MapPin,
-  CreditCard,
-  Truck,
   Printer,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Send,
-  FileText,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { notify } from '@/stores/notifications';
@@ -23,12 +17,14 @@ import { notify } from '@/stores/notifications';
 interface OrderDetailModalProps {
   order: AdminOrder | null;
   onClose: () => void;
-  onStatusUpdate: (orderId: string, status: AdminOrderStatus) => Promise<void>;
+  onStatusUpdate: (orderId: string, status: string) => Promise<void>;
+  onCancelOrder?: (orderId: string) => Promise<void>;
 }
 
-export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetailModalProps) {
-  const [selectedStatus, setSelectedStatus] = useState<AdminOrderStatus>(order?.status || 'PENDING');
+export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder }: OrderDetailModalProps) {
+  const [selectedStatus, setSelectedStatus] = useState<string>(order?.status?.toLowerCase() || 'pending');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
   if (!order) return null;
@@ -37,11 +33,25 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
     setIsUpdating(true);
     try {
       await onStatusUpdate(order.id, selectedStatus);
-      notify.success('Order Updated', `Order ${order.order_number} is now ${selectedStatus}.`);
-    } catch {
-      notify.error('Update Failed', 'Failed to update order state.');
+      notify.success('Order Updated', `Order ${order.order_number} shifted to ${selectedStatus.toUpperCase()}.`);
+    } catch (err: any) {
+      notify.error('Update Failed', err?.response?.data?.status || 'Failed to update order state.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!onCancelOrder) return;
+    setIsCancelling(true);
+    try {
+      await onCancelOrder(order.id);
+      notify.success('Order Cancelled', `Order ${order.order_number} cancelled and stock replenished.`);
+      onClose();
+    } catch (err: any) {
+      notify.error('Cancellation Failed', err?.response?.data?.detail || 'Unable to cancel order.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -52,6 +62,11 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
       setIsPrinting(false);
     }, 300);
   };
+
+  const totalNum = Number(order.total || order.total_amount || 0);
+  const shippingNum = Number(order.shipping_cost || 0);
+  const discountNum = Number(order.discount_amount || 0);
+  const subtotalNum = Number(order.subtotal || totalNum - shippingNum + discountNum);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
@@ -72,7 +87,7 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
                 </span>
               </div>
               <p className="text-xs text-fg-muted font-mono">
-                Placed on {formatDate(order.created_at)}
+                Acquired on {formatDate(order.created_at)}
               </p>
             </div>
           </div>
@@ -100,22 +115,22 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
           {/* Quick Status Control Bar */}
           <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <div className="text-xs font-semibold text-fg-primary">Fulfillment State</div>
-              <div className="text-[11px] text-fg-muted">Update workflow progression for dispatch</div>
+              <div className="text-xs font-semibold text-fg-primary">Fulfillment State Machine</div>
+              <div className="text-[11px] text-fg-muted">Transitions validated against server lifecycle rules</div>
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value as AdminOrderStatus)}
+                onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-1.5 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
               >
-                <option value="PENDING">PENDING</option>
-                <option value="PROCESSING">PROCESSING</option>
-                <option value="SHIPPED">SHIPPED</option>
-                <option value="DELIVERED">DELIVERED</option>
-                <option value="CANCELLED">CANCELLED</option>
-                <option value="REFUNDED">REFUNDED</option>
+                <option value="pending">PENDING</option>
+                <option value="processing">PROCESSING</option>
+                <option value="shipped">SHIPPED</option>
+                <option value="delivered">DELIVERED</option>
+                <option value="cancelled">CANCELLED</option>
+                <option value="refunded">REFUNDED</option>
               </select>
 
               <Button
@@ -123,10 +138,23 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
                 size="sm"
                 onClick={handleSaveStatus}
                 isLoading={isUpdating}
-                className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
+                className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold cursor-pointer"
               >
                 Apply State
               </Button>
+
+              {order.status?.toUpperCase() !== 'CANCELLED' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  isLoading={isCancelling}
+                  className="text-xs text-rose-500 hover:bg-rose-500/10 border-rose-500/30 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                  Cancel & Restock
+                </Button>
+              )}
             </div>
           </div>
 
@@ -141,15 +169,15 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
               <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Full Name:</span>
-                  <span className="text-fg-primary font-semibold">{order.customer.name}</span>
+                  <span className="text-fg-primary font-semibold">{order.customer?.name || 'Anonymous Patron'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Email:</span>
-                  <span className="text-cyan-600 dark:text-cyan-300">{order.customer.email}</span>
+                  <span className="text-cyan-600 dark:text-cyan-300">{order.customer?.email}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Contact:</span>
-                  <span className="text-fg-primary">{order.customer.phone}</span>
+                  <span className="text-fg-primary">{order.customer?.phone || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -160,20 +188,24 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
                 <MapPin className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
                 <span>Delivery Address</span>
               </div>
-              <div className="space-y-1 text-xs">
-                <div className="font-medium text-fg-primary">
-                  {order.shipping_address.recipient_name} ({order.shipping_address.recipient_phone})
+              {order.shipping_address ? (
+                <div className="space-y-1 text-xs">
+                  <div className="font-medium text-fg-primary">
+                    {order.shipping_address.recipient_name} ({order.shipping_address.recipient_phone})
+                  </div>
+                  <div className="text-fg-secondary">
+                    {order.shipping_address.province}, {order.shipping_address.city}
+                  </div>
+                  <div className="text-fg-muted text-[11px]">
+                    {order.shipping_address.address_line}
+                  </div>
+                  <div className="text-fg-muted text-[10px] font-mono">
+                    Postal Code: {order.shipping_address.postal_code}
+                  </div>
                 </div>
-                <div className="text-fg-secondary">
-                  {order.shipping_address.province}, {order.shipping_address.city}
-                </div>
-                <div className="text-fg-muted text-[11px]">
-                  {order.shipping_address.address_line}
-                </div>
-                <div className="text-fg-muted text-[10px] font-mono">
-                  Postal Code: {order.shipping_address.postal_code}
-                </div>
-              </div>
+              ) : (
+                <div className="text-xs text-fg-muted font-mono">No shipping address recorded.</div>
+              )}
             </div>
           </div>
 
@@ -181,10 +213,7 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold font-display text-fg-primary">
-                Order Items ({order.items.length})
-              </span>
-              <span className="text-[11px] font-mono text-fg-muted">
-                Method: {order.payment_method}
+                Order Items ({order.items?.length || 0})
               </span>
             </div>
 
@@ -195,12 +224,12 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
                     <th className="px-4 py-2.5">Artifact</th>
                     <th className="px-4 py-2.5">SKU / Variant</th>
                     <th className="px-4 py-2.5 text-center">Qty</th>
-                    <th className="px-4 py-2.5 text-right">Price</th>
+                    <th className="px-4 py-2.5 text-right">Unit Price</th>
                     <th className="px-4 py-2.5 text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
-                  {order.items.map((item) => (
+                  {(order.items || []).map((item) => (
                     <tr key={item.id} className="hover:bg-bg-secondary/40">
                       <td className="px-4 py-3 font-semibold text-fg-primary">
                         {item.product_name}
@@ -212,10 +241,10 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
                         {item.quantity}
                       </td>
                       <td className="px-4 py-3 font-mono text-right text-fg-secondary">
-                        {formatCurrency(item.unit_price)}
+                        {formatCurrency(Number(item.unit_price))}
                       </td>
                       <td className="px-4 py-3 font-mono text-right font-bold text-fg-primary">
-                        {formatCurrency(item.total_price)}
+                        {formatCurrency(Number(item.total_price))}
                       </td>
                     </tr>
                   ))}
@@ -229,21 +258,21 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
             <div className="w-full sm:w-72 p-4 rounded-xl bg-bg-secondary/60 border border-border-subtle space-y-2 text-xs font-mono">
               <div className="flex justify-between text-fg-secondary">
                 <span>Items Subtotal:</span>
-                <span>{formatCurrency((order.total || order.total_amount || 0) - (order.shipping_fee || order.shipping_cost || 0) + (order.discount_amount || 0))}</span>
+                <span>{formatCurrency(subtotalNum)}</span>
               </div>
-              {order.discount_amount ? (
+              {discountNum > 0 && (
                 <div className="flex justify-between text-status-success">
                   <span>Voucher Discount:</span>
-                  <span>-{formatCurrency(order.discount_amount)}</span>
+                  <span>-{formatCurrency(discountNum)}</span>
                 </div>
-              ) : null}
+              )}
               <div className="flex justify-between text-fg-secondary">
                 <span>Shipping Fee:</span>
-                <span>{formatCurrency(order.shipping_fee || order.shipping_cost || 0)}</span>
+                <span>{formatCurrency(shippingNum)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-fg-primary pt-2 border-t border-border-subtle">
                 <span>Net Total:</span>
-                <span className="text-cyan-600 dark:text-cyan-400">{formatCurrency(order.total || order.total_amount || 0)}</span>
+                <span className="text-cyan-600 dark:text-cyan-400">{formatCurrency(totalNum)}</span>
               </div>
             </div>
           </div>
@@ -252,13 +281,13 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate }: OrderDetail
         {/* Modal Bottom Actions */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-bg-secondary/60">
           <span className="text-[11px] font-mono text-fg-muted">
-            Tracking ID: <span className="text-fg-primary font-bold">{order.id}</span>
+            Internal ID: <span className="text-fg-primary font-bold">{order.id}</span>
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={onClose}
-            className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary"
+            className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary cursor-pointer"
           >
             Close Inspector
           </Button>

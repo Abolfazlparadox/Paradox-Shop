@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { adminApi } from '@/lib/api/admin';
-import { AdminAnalytics } from '@/types/admin';
+import React, { useState } from 'react';
+import { useAdminAnalytics } from '@/hooks/useAdminData';
 import { RevenueChart } from '@/components/admin/RevenueChart';
 import { TrafficDonutChart } from '@/components/admin/TrafficDonutChart';
 import { SkeletonChart, SkeletonCard } from '@/components/admin/SkeletonLoader';
@@ -10,7 +9,6 @@ import { formatCurrency } from '@/lib/utils/format';
 import { notify } from '@/stores/notifications';
 import {
   BarChart3,
-  TrendingUp,
   CreditCard,
   UserCheck,
   RotateCcw,
@@ -23,15 +21,8 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
 
 export default function AdminAnalyticsPage() {
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    adminApi.getAnalytics().then((data) => {
-      setAnalytics(data);
-      setIsLoading(false);
-    });
-  }, []);
+  const [days, setDays] = useState<number>(30);
+  const { data: analytics, isLoading } = useAdminAnalytics(days);
 
   const handleExportJSON = () => {
     if (!analytics) return;
@@ -73,15 +64,40 @@ export default function AdminAnalyticsPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportJSON}
-          className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
-          leftIcon={<Download className="w-3.5 h-3.5" />}
-        >
-          Export Raw Telemetry
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Lookback Range Switcher */}
+          <div className="flex items-center p-1 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono">
+            {[
+              { label: '7D', value: 7 },
+              { label: '30D', value: 30 },
+              { label: '90D', value: 90 },
+              { label: '12M', value: 365 },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setDays(tab.value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer',
+                  days === tab.value
+                    ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                    : 'text-fg-secondary hover:text-fg-primary'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJSON}
+            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
+          >
+            Export Raw Telemetry
+          </Button>
+        </div>
       </div>
 
       {/* Financial Unit Economics Cards */}
@@ -121,7 +137,7 @@ export default function AdminAnalyticsPage() {
             {kpis.refund_rate}%
           </div>
           <p className="text-[10px] text-fg-muted">
-            0.8% return rate benchmarks in top 1% luxury tier
+            {kpis.refund_rate}% return rate benchmarks in top 1% luxury tier
           </p>
         </div>
       </div>
@@ -135,6 +151,43 @@ export default function AdminAnalyticsPage() {
           <TrafficDonutChart data={analytics.acquisition_channels} />
         </div>
       </div>
+
+      {/* Top Products Table */}
+      {analytics.top_products && analytics.top_products.length > 0 && (
+        <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl space-y-4 transition-colors">
+          <h3 className="text-base font-bold font-display text-fg-primary tracking-tight">
+            Top Performing Atelier Artifacts
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-border-subtle text-fg-muted uppercase text-[10px]">
+                  <th className="py-2.5 px-3">Product Name</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3">Units Sold</th>
+                  <th className="py-2.5 px-3">Total Revenue</th>
+                  <th className="py-2.5 px-3">Reserve Stock</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
+                {analytics.top_products.map((item) => (
+                  <tr key={item.id} className="hover:bg-bg-secondary/40">
+                    <td className="py-3 px-3 font-bold text-fg-primary">{item.name}</td>
+                    <td className="py-3 px-3">{item.category}</td>
+                    <td className="py-3 px-3 text-cyan-600 dark:text-cyan-400 font-bold">
+                      {item.units_sold} units
+                    </td>
+                    <td className="py-3 px-3 font-bold text-fg-primary">
+                      {formatCurrency(item.revenue)}
+                    </td>
+                    <td className="py-3 px-3">{item.stock} in reserve</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Cohort Retention Matrix Heatmap */}
       <div className="p-6 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl space-y-4 transition-colors">
@@ -160,13 +213,7 @@ export default function AdminAnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
-              {[
-                { cohort: 'April 2026', users: 140, m1: '100%', m2: '48%', m3: '42%', m4: '38%' },
-                { cohort: 'May 2026', users: 185, m1: '100%', m2: '54%', m3: '46%', m4: '41%' },
-                { cohort: 'June 2026', users: 220, m1: '100%', m2: '58%', m3: '51%', m4: '-' },
-                { cohort: 'July 2026', users: 295, m1: '100%', m2: '62%', m3: '-', m4: '-' },
-                { cohort: 'August 2026', users: 340, m1: '100%', m2: '-', m3: '-', m4: '-' },
-              ].map((c) => (
+              {(analytics.cohorts || []).map((c) => (
                 <tr key={c.cohort} className="hover:bg-bg-secondary/40">
                   <td className="py-3 px-3 font-bold text-fg-primary">{c.cohort}</td>
                   <td className="py-3 px-3">{c.users} Patrons</td>

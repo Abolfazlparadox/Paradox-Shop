@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { adminApi } from '@/lib/api/admin';
-import { AdminProduct } from '@/types/admin';
+import {
+  useAdminCategories,
+  useAdminProducts,
+  useCreateProduct,
+  useDeleteProduct,
+  useUpdateProduct,
+} from '@/hooks/useAdminData';
+import { AdminProduct } from '@/types/api';
 import { ProductFormModal } from '@/components/admin/ProductFormModal';
 import { SkeletonTable } from '@/components/admin/SkeletonLoader';
 import { formatCurrency } from '@/lib/utils/format';
@@ -12,15 +18,12 @@ import {
   Package,
   Plus,
   Search,
-  Filter,
   Edit2,
   Trash2,
   CheckCircle2,
   AlertTriangle,
   XCircle,
   ExternalLink,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
@@ -29,60 +32,53 @@ function AdminProductsContent() {
   const searchParams = useSearchParams();
   const initialAction = searchParams.get('action');
 
-  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [stockFilter, setStockFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(initialAction === 'new');
-  const [isLoading, setIsLoading] = useState(true);
 
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminApi.getProducts({
-        category: categoryFilter,
-        stock: stockFilter,
-        search: searchQuery,
-      });
-      setProducts(data);
-    } finally {
-      setIsLoading(false);
+  const {
+    data: products = [],
+    isLoading,
+  } = useAdminProducts({
+    category: categoryFilter,
+    stock: stockFilter,
+    search: searchQuery,
+  });
+
+  const { data: categories = [] } = useAdminCategories();
+  const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+  const deleteProductMutation = useDeleteProduct();
+
+  const handleSaveProduct = async (data: any) => {
+    if (editingProduct?.id) {
+      await updateProductMutation.mutateAsync({ id: editingProduct.id, data });
+    } else {
+      await createProductMutation.mutateAsync(data);
     }
-  }, [categoryFilter, stockFilter, searchQuery]);
-
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
-
-  const handleSaveProduct = async (data: Partial<AdminProduct>) => {
-    await adminApi.saveProduct(data);
-    await loadProducts();
   };
 
   const handleDeleteProduct = async (productId: string, name: string) => {
-    if (confirm(`Confirm deletion of artifact "${name}"? This removes the SKU from catalog.`)) {
-      await adminApi.deleteProduct(productId);
-      notify.success('Catalog Updated', `Product ${name} was deleted.`);
-      await loadProducts();
+    if (confirm(`Confirm permanent deletion of artifact "${name}"? This removes the SKU from catalog.`)) {
+      try {
+        await deleteProductMutation.mutateAsync(productId);
+        notify.success('Catalog Updated', `Product ${name} was deleted.`);
+      } catch {
+        notify.error('Deletion Failed', 'Unable to delete product.');
+      }
     }
   };
 
   const handleInlinePriceChange = async (productId: string, newPrice: number) => {
-    await adminApi.saveProduct({ id: productId, base_price: newPrice });
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, base_price: newPrice } : p))
-    );
-    notify.success('Price Updated', 'Live storefront price adjusted.');
+    try {
+      await updateProductMutation.mutateAsync({ id: productId, data: { base_price: newPrice } });
+      notify.success('Price Updated', 'Live storefront price adjusted.');
+    } catch {
+      notify.error('Update Failed', 'Failed to update price.');
+    }
   };
-
-  const categories = [
-    { id: 'ALL', label: 'All Artifacts' },
-    { id: 'horology', label: 'Horology' },
-    { id: 'leather-goods', label: 'Leather' },
-    { id: 'hardware', label: 'Hardware' },
-    { id: 'fragrance', label: 'Fragrance' },
-  ];
 
   return (
     <div className="space-y-6 pb-12">
@@ -105,167 +101,166 @@ function AdminProductsContent() {
             setEditingProduct(null);
             setIsFormOpen(true);
           }}
-          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
-          leftIcon={<Plus className="w-4 h-4" />}
+          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-bold shadow-md cursor-pointer"
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
         >
-          Create Artifact
+          Create New Artifact
         </Button>
       </div>
 
-      {/* Filter & Toolbar */}
-      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-2 sm:pb-0 scrollbar-none font-mono text-xs w-full sm:w-auto">
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCategoryFilter(c.id)}
-                className={cn(
-                  'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer',
-                  categoryFilter === c.id
-                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/30'
-                    : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary border border-transparent'
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+      {/* Control Bar: Search & Filters */}
+      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
+        {/* Search */}
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search title, slug, SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-cyan-500 transition-colors"
+          />
+        </div>
 
-          {/* Stock Filter & Search */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+        {/* Categories Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto p-1 bg-bg-secondary rounded-xl border border-border-subtle text-xs font-mono">
+          <button
+            onClick={() => setCategoryFilter('ALL')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
+              categoryFilter === 'ALL'
+                ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                : 'text-fg-secondary hover:text-fg-primary'
+            )}
+          >
+            All Artifacts
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setCategoryFilter(cat.slug || cat.name)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
+                categoryFilter === (cat.slug || cat.name)
+                  ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                  : 'text-fg-secondary hover:text-fg-primary'
+              )}
             >
-              <option value="ALL">All Stock Levels</option>
-              <option value="LOW">Low Stock (≤ 10)</option>
-              <option value="OUT">Out of Stock (0)</option>
-            </select>
+              {cat.name}
+            </button>
+          ))}
+        </div>
 
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-fg-muted absolute start-3 top-2.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search artifact name, SKU..."
-                className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary placeholder-fg-muted focus:outline-none focus:border-cyan-500 font-sans"
-              />
-            </div>
-          </div>
+        {/* Stock Filter */}
+        <div className="flex items-center gap-1 p-1 bg-bg-secondary rounded-xl border border-border-subtle text-xs font-mono">
+          {[
+            { id: 'ALL', label: 'All Stock' },
+            { id: 'LOW', label: 'Low Stock' },
+            { id: 'OUT', label: 'Out of Stock' },
+          ].map((st) => (
+            <button
+              key={st.id}
+              onClick={() => setStockFilter(st.id)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer text-[11px]',
+                stockFilter === st.id
+                  ? 'bg-bg-elevated text-cyan-600 dark:text-cyan-400 shadow-sm border border-border-subtle'
+                  : 'text-fg-muted hover:text-fg-primary'
+              )}
+            >
+              {st.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Products Master Table */}
-      {isLoading ? (
-        <SkeletonTable rows={6} />
-      ) : products.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
-          <Package className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
-          <p>No products match active category and search queries.</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-bg-elevated border border-border-subtle overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+      {/* Catalog Table */}
+      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm overflow-hidden transition-colors">
+        {isLoading ? (
+          <div className="p-6">
+            <SkeletonTable rows={5} />
+          </div>
+        ) : products.length === 0 ? (
+          <div className="py-16 text-center text-xs text-fg-muted font-mono space-y-2">
+            <Package className="w-8 h-8 mx-auto opacity-50 text-cyan-500" />
+            <p>No products matched the active filter criteria.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-bg-secondary text-fg-muted uppercase text-[10px] tracking-wider border-b border-border-subtle">
-                <tr>
+              <thead>
+                <tr className="border-b border-border-subtle bg-bg-secondary/60 text-fg-muted uppercase text-[10px] tracking-wider">
                   <th className="py-3.5 px-4">Artifact</th>
                   <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4">Base Price</th>
-                  <th className="py-3.5 px-4">Inventory Stock</th>
-                  <th className="py-3.5 px-4">Variants</th>
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Base Price (Rial)</th>
+                  <th className="py-3.5 px-4 text-center">Reserve Stock</th>
+                  <th className="py-3.5 px-4 text-center">Variants</th>
                   <th className="py-3.5 px-4 text-end">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
                 {products.map((p) => {
-                  const isLow = p.stock > 0 && p.stock <= 10;
-                  const isOut = p.stock === 0;
+                  const stockNum = p.stock || (p.variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0);
+                  const isLow = stockNum > 0 && stockNum <= 10;
+                  const isOut = stockNum === 0;
 
                   return (
                     <tr key={p.id} className="hover:bg-bg-secondary/40 transition-colors">
-                      {/* Product Visual & Name */}
-                      <td className="py-3.5 px-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-bg-secondary border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center">
-                          <img
-                            src={p.primary_image || '/images/products/chrono.png'}
-                            alt={p.name}
-                            className="w-full h-full object-cover"
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-fg-primary text-xs">{p.name}</div>
+                        <div className="text-[10px] text-fg-muted flex items-center gap-2 mt-0.5">
+                          <span>/{p.slug}</span>
+                          {p.brand && <span>• {p.brand.name}</span>}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-subtle text-[10px] font-bold">
+                          {p.category?.name || 'Uncategorized'}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            defaultValue={Number(p.base_price)}
+                            onBlur={(e) => {
+                              const val = Number(e.target.value);
+                              if (val !== Number(p.base_price) && val > 0) {
+                                handleInlinePriceChange(p.id, val);
+                              }
+                            }}
+                            className="w-28 px-2 py-1 rounded bg-bg-secondary border border-border-subtle text-xs font-bold text-cyan-600 dark:text-cyan-300 font-mono"
                           />
                         </div>
-                        <div>
-                          <div className="font-semibold text-fg-primary font-display line-clamp-1">
-                            {p.name}
-                          </div>
-                          <div className="text-[10px] text-fg-muted font-mono">{p.slug}</div>
-                        </div>
                       </td>
 
-                      {/* Category */}
-                      <td className="py-3.5 px-4">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-bg-secondary text-fg-secondary border border-border-subtle">
-                          {p.category.name}
-                        </span>
-                      </td>
-
-                      {/* Base Price Editable */}
-                      <td className="py-3.5 px-4">
-                        <input
-                          type="number"
-                          defaultValue={p.base_price}
-                          onBlur={(e) => handleInlinePriceChange(p.id, Number(e.target.value))}
-                          className="w-28 px-2 py-1 rounded bg-bg-secondary border border-border-subtle text-cyan-600 dark:text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
-                        />
-                      </td>
-
-                      {/* Stock Level Warning */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-4 text-center">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold">
                           {isOut ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                              <XCircle className="w-3 h-3" />
-                              0 Out of Stock
+                            <span className="inline-flex items-center gap-1 text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                              <XCircle className="w-3 h-3" /> Out of Stock
                             </span>
                           ) : isLow ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              <AlertTriangle className="w-3 h-3" />
-                              {p.stock} Low
+                            <span className="inline-flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                              <AlertTriangle className="w-3 h-3" /> {stockNum} left (Low)
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3" />
-                              {p.stock} Units
+                            <span className="inline-flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3" /> {stockNum} in Reserve
                             </span>
                           )}
                         </div>
                       </td>
 
-                      {/* Variants Count */}
-                      <td className="py-3.5 px-4 text-fg-muted">
-                        {p.variants?.length ? `${p.variants.length} SKUs` : 'Single SKU'}
-                      </td>
-
-                      {/* Active Status */}
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={cn(
-                            'text-[10px] font-mono px-2 py-0.5 rounded-full font-bold',
-                            p.is_active
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                              : 'bg-slate-500/10 text-fg-muted border border-border-subtle'
-                          )}
-                        >
-                          {p.is_active ? 'Live' : 'Draft'}
+                      <td className="py-3 px-4 text-center">
+                        <span className="text-[11px] text-fg-muted font-mono">
+                          {p.variants?.length || 1} SKU{p.variants?.length !== 1 ? 's' : ''}
                         </span>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-end">
+                      <td className="py-3 px-4 text-end">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
@@ -279,8 +274,8 @@ function AdminProductsContent() {
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(p.id, p.name)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
-                            title="Delete Artifact"
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 transition-colors cursor-pointer"
+                            title="Delete Product"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -292,26 +287,28 @@ function AdminProductsContent() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Product Form Modal */}
-      <ProductFormModal
-        product={editingProduct}
-        isOpen={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingProduct(null);
-        }}
-        onSave={handleSaveProduct}
-      />
+      {isFormOpen && (
+        <ProductFormModal
+          product={editingProduct}
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingProduct(null);
+          }}
+          onSave={handleSaveProduct}
+        />
+      )}
     </div>
   );
 }
 
 export default function AdminProductsPage() {
   return (
-    <Suspense fallback={<SkeletonTable rows={8} />}>
+    <Suspense fallback={<SkeletonTable rows={5} />}>
       <AdminProductsContent />
     </Suspense>
   );

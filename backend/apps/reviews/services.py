@@ -54,4 +54,17 @@ class ReviewService:
         except django.db.utils.IntegrityError:
             raise ValidationError({"review": "You have already reviewed this product."})
 
+        # Trigger admin notification for moderation
+        from common.notification_services import create_admin_notification
+        from common.models import AdminNotification
+
+        create_admin_notification(
+            title=f"New Review Waiting Moderation ({rating}/5 Stars)",
+            message=f"Review by {user.email} on product requires editorial approval.",
+            notification_type=AdminNotification.NotificationType.REVIEW,
+            action_url=f"/admin/reviews",
+            resource_id=str(review.id),
+        )
+
         return review
+

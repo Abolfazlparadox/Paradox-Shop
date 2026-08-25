@@ -22,4 +22,7 @@ urlpatterns = [
     path('orders/', include('apps.orders.urls', namespace='orders')),
     path('payments/', include('apps.payments.urls', namespace='payments')),
     path('reviews/', include('apps.reviews.urls', namespace='reviews')),
+    # Admin Control Center Router mount
+    path('admin/', include('api.v1.admin_urls', namespace='admin')),
 ]
+

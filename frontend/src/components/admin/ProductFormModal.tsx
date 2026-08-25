@@ -1,50 +1,51 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AdminProduct, AdminProductVariant } from '@/types/admin';
+import { useAdminCategories } from '@/hooks/useAdminData';
+import { AdminProduct, AdminProductVariant } from '@/types/api';
 import { formatCurrency } from '@/lib/utils/format';
 import { X, Plus, Trash2, Image as ImageIcon, Sparkles, Tag, Layers, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { notify } from '@/stores/notifications';
 
 interface ProductFormModalProps {
   product: AdminProduct | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Partial<AdminProduct>) => Promise<void>;
+  onSave: (data: any) => Promise<void>;
 }
 
 export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFormModalProps) {
   const isEditing = Boolean(product?.id);
+  const { data: categories = [] } = useAdminCategories();
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
-  const [categoryName, setCategoryName] = useState('Horology');
+  const [categoryId, setCategoryId] = useState('');
   const [basePrice, setBasePrice] = useState<number>(10000000);
   const [stock, setStock] = useState<number>(10);
   const [shortDescription, setShortDescription] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<string[]>(['/images/products/chrono.png']);
   const [newImageUrl, setNewImageUrl] = useState('');
-  const [variants, setVariants] = useState<AdminProductVariant[]>([]);
+  const [variants, setVariants] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (product) {
       setName(product.name);
       setSlug(product.slug);
-      setCategoryName(product.category.name);
-      setBasePrice(product.base_price);
-      setStock(product.stock);
+      setCategoryId(product.category?.id || (categories[0]?.id || ''));
+      setBasePrice(Number(product.base_price || 0));
+      setStock(product.stock || 10);
       setShortDescription(product.short_description || '');
       setDescription(product.description || '');
-      setImages(product.images.length ? product.images : ['/images/products/chrono.png']);
+      setImages(product.images?.map((i) => i.image) || ['/images/products/chrono.png']);
       setVariants(product.variants || []);
     } else {
       setName('');
       setSlug('');
-      setCategoryName('Horology');
+      setCategoryId(categories[0]?.id || '');
       setBasePrice(12000000);
       setStock(15);
       setShortDescription('');
@@ -52,7 +53,7 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
       setImages(['/images/products/chrono.png']);
       setVariants([]);
     }
-  }, [product, isOpen]);
+  }, [product, isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -69,9 +70,8 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
   };
 
   const handleAddVariant = () => {
-    const newVariant: AdminProductVariant = {
-      id: `var-${Date.now()}`,
-      sku: `${slug.toUpperCase().slice(0, 8)}-V${variants.length + 1}`,
+    const newVariant = {
+      sku: `${(slug || 'PX').toUpperCase().slice(0, 8)}-V${variants.length + 1}`,
       name: 'Custom Edition',
       final_price: basePrice,
       stock: 5,
@@ -81,8 +81,8 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
     setVariants([...variants, newVariant]);
   };
 
-  const handleRemoveVariant = (id: string) => {
-    setVariants(variants.filter((v) => v.id !== id));
+  const handleRemoveVariant = (index: number) => {
+    setVariants(variants.filter((_, idx) => idx !== index));
   };
 
   const handleAddImage = () => {
@@ -101,26 +101,21 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
     setIsSaving(true);
     try {
       await onSave({
-        id: product?.id,
         name,
         slug,
-        category: {
-          id: `cat-${categoryName.toLowerCase().replace(/\s+/g, '-')}`,
-          name: categoryName,
-          slug: categoryName.toLowerCase().replace(/\s+/g, '-'),
-        },
+        category: categoryId || undefined,
         base_price: Number(basePrice),
+        product_type: 'simple',
         stock: Number(stock),
         short_description: shortDescription,
         description,
-        primary_image: images[0] || '/images/products/chrono.png',
-        images,
-        variants,
+        is_active: true,
+        variants: variants.length > 0 ? variants : undefined,
       });
       notify.success('Catalog Updated', `Artifact "${name}" was saved successfully.`);
       onClose();
-    } catch {
-      notify.error('Save Failed', 'Could not persist artifact details.');
+    } catch (err: any) {
+      notify.error('Save Failed', err?.response?.data?.detail || 'Could not persist artifact details.');
     } finally {
       setIsSaving(false);
     }
@@ -140,7 +135,7 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
                 {isEditing ? `Edit Artifact: ${product?.name}` : 'Create New Atelier Artifact'}
               </h3>
               <p className="text-xs text-fg-muted font-mono">
-                Define master horological and engineered luxury product parameters
+                Define master luxury product parameters and variant matrix
               </p>
             </div>
           </div>
@@ -194,247 +189,188 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-fg-secondary mb-1">
-                  Atelier Category
+                  Category
                 </label>
                 <select
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="Horology">Horology</option>
-                  <option value="Leather Goods">Leather Goods</option>
-                  <option value="Hardware">Hardware</option>
-                  <option value="Fragrance">Fragrance</option>
-                  <option value="Eyewear">Eyewear</option>
-                  <option value="Accessories">Accessories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-fg-secondary mb-1">
-                  Base Price (Toman) *
+                  Base Price (Rial) *
                 </label>
                 <input
                   type="number"
-                  min="0"
-                  step="10000"
                   required
+                  min={0}
+                  step={1000}
                   value={basePrice}
                   onChange={(e) => setBasePrice(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-fg-secondary mb-1">
-                  Total Inventory Stock *
+                  Standard Reserve Units
                 </label>
                 <input
                   type="number"
-                  min="0"
                   required
+                  min={0}
                   value={stock}
                   onChange={(e) => setStock(Number(e.target.value))}
                   className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Descriptions Section */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-fg-muted pb-1 border-b border-border-subtle">
-              2. Atelier Narrative & Specifications
-            </h4>
 
             <div>
               <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Short Teaser Description
+                Short Teaser / Synopsis
               </label>
               <input
                 type="text"
                 value={shortDescription}
                 onChange={(e) => setShortDescription(e.target.value)}
-                placeholder="Brief engineered summary for catalog cards"
+                placeholder="High-density aerospace titanium alloy casing with sapphire crystal."
                 className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-fg-secondary mb-1">
-                Full Architectural Description
+                Comprehensive Description
               </label>
               <textarea
-                rows={3}
+                rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Comprehensive technical and material craftsmanship details..."
-                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500 resize-none"
+                placeholder="Full narrative, technical specifications, materials origin, and craftsmanship notes..."
+                className="w-full px-3.5 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500 resize-none font-sans"
               />
             </div>
           </div>
 
-          {/* Gallery Media */}
-          <div className="space-y-4">
+          {/* Variants Section */}
+          <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between pb-1 border-b border-border-subtle">
               <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-fg-muted">
-                3. Gallery Visual Artifacts ({images.length})
+                2. Variant SKUs ({variants.length})
               </h4>
-            </div>
-
-            <div className="flex flex-wrap gap-3 items-center">
-              {images.map((img, idx) => (
-                <div
-                  key={idx}
-                  className="relative w-20 h-20 rounded-xl bg-bg-secondary border border-border-subtle overflow-hidden group flex items-center justify-center"
-                >
-                  <img src={img} alt="Product visual" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                    className="absolute inset-0 bg-rose-950/80 text-rose-400 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={newImageUrl}
-                  onChange={(e) => setNewImageUrl(e.target.value)}
-                  placeholder="Image URL path..."
-                  className="px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500 w-48"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddImage}
-                  className="px-3 py-2 rounded-xl bg-bg-secondary hover:bg-bg-secondary/80 border border-border-subtle text-xs font-mono text-cyan-600 dark:text-cyan-300 transition-colors"
-                >
-                  Add Image
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Variants & SKU Matrix */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-1 border-b border-border-subtle">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-fg-muted">
-                4. Editions & SKU Variants ({variants.length})
-              </h4>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={handleAddVariant}
-                className="text-xs font-mono text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-mono border-border-subtle text-cyan-600 dark:text-cyan-400 cursor-pointer"
+                leftIcon={<Plus className="w-3 h-3" />}
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add Variant
-              </button>
+                Add Variant SKU
+              </Button>
             </div>
 
             {variants.length === 0 ? (
-              <div className="p-4 rounded-xl bg-bg-secondary/30 border border-dashed border-border-subtle text-center text-xs text-fg-muted font-mono">
-                No sub-variants configured. Base price and stock apply directly to master SKU.
+              <div className="py-4 text-center text-xs text-fg-muted font-mono bg-bg-secondary/30 rounded-xl border border-dashed border-border-subtle">
+                Standard single-variant item. Click &quot;Add Variant SKU&quot; to configure sizing, colors, or editions.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {variants.map((v, idx) => (
                   <div
-                    key={v.id}
-                    className="p-3 rounded-xl bg-bg-secondary/60 border border-border-subtle grid grid-cols-1 sm:grid-cols-4 gap-3 items-center"
+                    key={idx}
+                    className="p-3 rounded-xl bg-bg-secondary/60 border border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono"
                   >
-                    <div>
-                      <label className="text-[10px] font-mono text-fg-muted">Variant Name</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
                       <input
                         type="text"
-                        value={v.name}
-                        onChange={(e) => {
-                          const updated = [...variants];
-                          updated[idx].name = e.target.value;
-                          setVariants(updated);
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-subtle text-xs text-fg-primary font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-mono text-fg-muted">SKU Code</label>
-                      <input
-                        type="text"
+                        placeholder="SKU"
                         value={v.sku}
                         onChange={(e) => {
                           const updated = [...variants];
                           updated[idx].sku = e.target.value;
                           setVariants(updated);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary"
+                        className="px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono"
                       />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-mono text-fg-muted">Price (Toman)</label>
                       <input
-                        type="number"
-                        value={v.final_price}
+                        type="text"
+                        placeholder="Edition Name"
+                        value={v.name}
                         onChange={(e) => {
                           const updated = [...variants];
-                          updated[idx].final_price = Number(e.target.value);
+                          updated[idx].name = e.target.value;
                           setVariants(updated);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary"
+                        className="px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-subtle text-xs"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Price"
+                        value={v.final_price || v.price_override || basePrice}
+                        onChange={(e) => {
+                          const updated = [...variants];
+                          updated[idx].price_override = Number(e.target.value);
+                          setVariants(updated);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Stock"
+                        value={v.stock}
+                        onChange={(e) => {
+                          const updated = [...variants];
+                          updated[idx].stock = Number(e.target.value);
+                          setVariants(updated);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono"
                       />
                     </div>
-                    <div className="flex items-end justify-between gap-2">
-                      <div className="flex-1">
-                        <label className="text-[10px] font-mono text-fg-muted">Stock</label>
-                        <input
-                          type="number"
-                          value={v.stock}
-                          onChange={(e) => {
-                            const updated = [...variants];
-                            updated[idx].stock = Number(e.target.value);
-                            setVariants(updated);
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-subtle text-xs font-mono text-fg-primary"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVariant(v.id)}
-                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVariant(idx)}
+                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
+          {/* Modal Bottom Submit Actions */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSaving}
+              className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold cursor-pointer"
+            >
+              {isEditing ? 'Save Changes' : 'Publish to Catalog'}
+            </Button>
+          </div>
         </form>
-
-        {/* Modal Bottom Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-bg-secondary/60">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary"
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSubmit}
-            isLoading={isSaving}
-            className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold flex items-center gap-1.5"
-          >
-            <Check className="w-4 h-4" />
-            <span>{isEditing ? 'Save Changes' : 'Publish to Catalog'}</span>
-          </Button>
-        </div>
       </div>
     </div>
   );

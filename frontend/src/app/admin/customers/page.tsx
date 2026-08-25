@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { adminApi } from '@/lib/api/admin';
-import { AdminCustomer } from '@/types/admin';
+import React, { useState, Suspense } from 'react';
+import { useAdminCustomers, useToggleCustomerStatus } from '@/hooks/useAdminData';
+import { AdminCustomer } from '@/types/api';
 import { CustomerDetailModal } from '@/components/admin/CustomerDetailModal';
 import { SkeletonTable } from '@/components/admin/SkeletonLoader';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
@@ -11,36 +11,29 @@ import { Users, Search, ShieldCheck, ShieldAlert, ExternalLink, RefreshCw } from
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
 
-export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
+function AdminCustomersContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [inspectingCustomer, setInspectingCustomer] = useState<AdminCustomer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const loadCustomers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminApi.getCustomers(searchQuery);
-      setCustomers(data);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchQuery]);
+  const {
+    data: customers = [],
+    isLoading,
+    refetch,
+  } = useAdminCustomers({
+    search: searchQuery,
+  });
 
-  useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+  const toggleStatusMutation = useToggleCustomerStatus();
 
   const handleToggleStatus = async (customerId: string) => {
     try {
-      const updated = await adminApi.toggleCustomerStatus(customerId);
-      setCustomers((prev) => prev.map((c) => (c.id === customerId ? updated : c)));
+      const updated = await toggleStatusMutation.mutateAsync(customerId);
       if (inspectingCustomer?.id === customerId) {
         setInspectingCustomer(updated);
       }
       notify.success(
         'Account State Mutated',
-        `Client ${updated.name} status shifted to ${updated.status}.`
+        `Client ${updated.name || updated.email} status shifted to ${updated.status}.`
       );
     } catch {
       notify.error('Action Failed', 'Failed to toggle client access state.');
@@ -64,11 +57,11 @@ export default function AdminCustomersPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={loadCustomers}
-          className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
+          onClick={() => refetch()}
+          className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary cursor-pointer"
           leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />}
         >
-          Refresh
+          Refresh Directory
         </Button>
       </div>
 
@@ -81,7 +74,7 @@ export default function AdminCustomersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search patron by name, email, or telephone..."
-            className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary placeholder-fg-muted focus:outline-none focus:border-cyan-500 font-sans"
+            className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-cyan-500 font-sans"
           />
         </div>
 
@@ -91,72 +84,68 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Customers Table */}
-      {isLoading ? (
-        <SkeletonTable rows={6} />
-      ) : customers.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
-          <Users className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
-          <p>No patrons match search query.</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-bg-elevated border border-border-subtle overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm overflow-hidden transition-colors">
+        {isLoading ? (
+          <div className="p-6">
+            <SkeletonTable rows={6} />
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="py-16 text-center text-xs text-fg-muted font-mono space-y-2">
+            <Users className="w-8 h-8 mx-auto opacity-50 text-amber-500" />
+            <p>No patrons matched the search query.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-bg-secondary text-fg-muted uppercase text-[10px] tracking-wider border-b border-border-subtle">
-                <tr>
-                  <th className="py-3.5 px-4">Patron Name</th>
-                  <th className="py-3.5 px-4">Contact Info</th>
-                  <th className="py-3.5 px-4">Acquisitions</th>
-                  <th className="py-3.5 px-4">Lifetime Spend</th>
-                  <th className="py-3.5 px-4">Account Status</th>
+              <thead>
+                <tr className="border-b border-border-subtle bg-bg-secondary/60 text-fg-muted uppercase text-[10px] tracking-wider">
+                  <th className="py-3.5 px-4">Patron</th>
+                  <th className="py-3.5 px-4">Clearance</th>
+                  <th className="py-3.5 px-4 text-center">Orders</th>
+                  <th className="py-3.5 px-4 text-right">Lifetime Spend</th>
+                  <th className="py-3.5 px-4">Member Since</th>
+                  <th className="py-3.5 px-4 text-center">Account Status</th>
                   <th className="py-3.5 px-4 text-end">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
                 {customers.map((c) => (
                   <tr key={c.id} className="hover:bg-bg-secondary/40 transition-colors">
-                    {/* Name & Verification */}
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500 dark:bg-cyan-400 text-white dark:text-slate-950 font-mono font-bold text-xs flex items-center justify-center">
-                          {c.name[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-fg-primary font-display flex items-center gap-1.5">
-                            <span>{c.name}</span>
-                            {c.is_verified && (
-                              <ShieldCheck className="w-3.5 h-3.5 text-status-success" />
-                            )}
-                          </div>
-                          <div className="text-[10px] text-fg-muted">
-                            Member since {formatDate(c.created_at)}
-                          </div>
-                        </div>
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-fg-primary text-xs flex items-center gap-2">
+                        <span>{c.name || 'Patron'}</span>
+                        {c.is_verified && (
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        )}
                       </div>
+                      <div className="text-[10px] text-fg-muted font-mono">{c.email}</div>
                     </td>
 
-                    {/* Email & Phone */}
-                    <td className="py-3.5 px-4">
-                      <div className="text-fg-primary">{c.email}</div>
-                      <div className="text-[10px] text-fg-muted">{c.phone_number || 'No phone'}</div>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded-md bg-bg-secondary border border-border-subtle text-[10px] font-bold">
+                        {c.is_staff ? (c.is_superuser ? 'Superuser' : 'Staff') : 'Patron'}
+                      </span>
                     </td>
 
-                    {/* Orders Count */}
-                    <td className="py-3.5 px-4 font-bold text-fg-primary">
-                      {c.orders_count} Orders
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-subtle text-[10px]">
+                        {c.orders_count}
+                      </span>
                     </td>
 
-                    {/* Total Spent */}
-                    <td className="py-3.5 px-4 font-bold text-cyan-600 dark:text-cyan-300">
-                      {formatCurrency(c.total_spent)}
+                    <td className="py-3 px-4 text-right font-bold text-cyan-600 dark:text-cyan-300">
+                      {formatCurrency(Number(c.total_spent || 0))}
                     </td>
 
-                    {/* Status Toggle Badge */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-3 px-4 text-[11px] text-fg-muted">
+                      {formatDate(c.created_at)}
+                    </td>
+
+                    <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleToggleStatus(c.id)}
                         className={cn(
-                          'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all cursor-pointer',
+                          'px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer',
                           c.status === 'ACTIVE'
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                             : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
@@ -166,15 +155,15 @@ export default function AdminCustomersPage() {
                       </button>
                     </td>
 
-                    {/* Inspect Button */}
-                    <td className="py-3.5 px-4 text-end">
+                    <td className="py-3 px-4 text-end">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setInspectingCustomer(c)}
-                        className="text-[11px] font-mono border-border-subtle hover:bg-bg-secondary text-fg-primary px-2.5 py-1 h-auto"
+                        className="text-[11px] font-mono px-2.5 py-1 border-border-subtle hover:bg-bg-secondary text-fg-primary cursor-pointer"
+                        rightIcon={<ExternalLink className="w-3 h-3" />}
                       >
-                        <span>Dossier</span>
+                        Dossier
                       </Button>
                     </td>
                   </tr>
@@ -182,15 +171,25 @@ export default function AdminCustomersPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Customer Detail Drawer Modal */}
-      <CustomerDetailModal
-        customer={inspectingCustomer}
-        onClose={() => setInspectingCustomer(null)}
-        onToggleStatus={handleToggleStatus}
-      />
+      {/* Customer Detail Modal */}
+      {inspectingCustomer && (
+        <CustomerDetailModal
+          customer={inspectingCustomer}
+          onClose={() => setInspectingCustomer(null)}
+          onToggleStatus={handleToggleStatus}
+        />
+      )}
     </div>
+  );
+}
+
+export default function AdminCustomersPage() {
+  return (
+    <Suspense fallback={<SkeletonTable rows={6} />}>
+      <AdminCustomersContent />
+    </Suspense>
   );
 }

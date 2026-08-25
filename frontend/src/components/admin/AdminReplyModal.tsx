@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AdminComment } from '@/types/admin';
+import { AdminCommentItem } from '@/types/api';
 import { X, Send, MessageSquare, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { notify } from '@/stores/notifications';
 
 interface AdminReplyModalProps {
-  comment: AdminComment | null;
+  comment: AdminCommentItem | null;
   isOpen: boolean;
   onClose: () => void;
   onSendReply: (commentId: string, content: string) => Promise<void>;
@@ -53,7 +53,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-fg-muted hover:text-fg-primary hover:bg-bg-secondary transition-colors"
+            className="p-1 rounded-lg text-fg-muted hover:text-fg-primary hover:bg-bg-secondary transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -64,7 +64,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
           <div className="p-3.5 rounded-xl bg-bg-secondary/60 border border-border-subtle space-y-1.5 text-xs">
             <div className="flex items-center justify-between font-mono text-[10px] text-fg-muted">
               <span>{comment.author_name} asked on {comment.product_name}</span>
-              <span>{comment.created_at.slice(0, 10)}</span>
+              <span>{comment.created_at?.slice(0, 10)}</span>
             </div>
             <p className="text-fg-secondary italic leading-relaxed">
               &ldquo;{comment.content}&rdquo;
@@ -101,7 +101,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
                   variant="outline"
                   size="sm"
                   onClick={onClose}
-                  className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary"
+                  className="text-xs border-border-subtle hover:bg-bg-secondary text-fg-primary cursor-pointer"
                 >
                   Cancel
                 </Button>
@@ -110,10 +110,10 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
                   variant="primary"
                   size="sm"
                   isLoading={isSending}
-                  className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold flex items-center gap-1.5"
+                  className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold cursor-pointer"
+                  rightIcon={<Send className="w-3.5 h-3.5" />}
                 >
-                  <Send className="w-3 h-3" />
-                  <span>Send Response</span>
+                  Publish Reply
                 </Button>
               </div>
             </div>

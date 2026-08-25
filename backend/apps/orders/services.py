@@ -163,20 +163,31 @@ class OrderService:
             total,
         )
 
-        # Dispatch background confirmation email safely on transaction commit
+        # Dispatch background confirmation email and admin notification safely on transaction commit
         order_id_str = str(order.id)
         user_email = user.email
         order_num = order.order_number
         total_str = str(order.total)
         from .tasks import send_order_confirmation_email
+        from common.notification_services import create_admin_notification
+        from common.models import AdminNotification
 
-        transaction.on_commit(
-            lambda: send_order_confirmation_email.delay(
+        def _on_commit_handlers():
+            send_order_confirmation_email.delay(
                 order_id_str, user_email, order_num, total_str
             )
-        )
+            create_admin_notification(
+                title=f"New Acquisition: #{order_num}",
+                message=f"Patron {user_email} completed checkout for {total_str} Rial.",
+                notification_type=AdminNotification.NotificationType.ORDER,
+                action_url=f"/admin/orders?view={order_id_str}",
+                resource_id=order_id_str,
+            )
+
+        transaction.on_commit(_on_commit_handlers)
 
         return order
+
 
     @staticmethod
     @transaction.atomic

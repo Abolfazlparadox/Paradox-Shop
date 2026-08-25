@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { adminApi } from '@/lib/api/admin';
-import { AdminOrder, AdminOrderStatus } from '@/types/admin';
+import {
+  useAdminOrders,
+  useBulkUpdateOrders,
+  useCancelOrder,
+  useUpdateOrderStatus,
+} from '@/hooks/useAdminData';
+import { AdminOrder } from '@/types/api';
 import { OrderDetailModal } from '@/components/admin/OrderDetailModal';
 import { SkeletonTable } from '@/components/admin/SkeletonLoader';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
@@ -17,9 +22,6 @@ import {
   Square,
   ExternalLink,
   ChevronDown,
-  RefreshCw,
-  Truck,
-  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
@@ -29,41 +31,49 @@ function AdminOrdersContent() {
   const searchParams = useSearchParams();
   const initialViewId = searchParams.get('view');
 
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [inspectingOrder, setInspectingOrder] = useState<AdminOrder | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
-  const loadOrders = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminApi.getOrders({
-        status: statusFilter,
-        search: searchQuery,
-      });
-      setOrders(data);
+  const {
+    data: orders = [],
+    isLoading,
+    refetch,
+  } = useAdminOrders({
+    status: statusFilter,
+    search: searchQuery,
+  });
 
-      if (initialViewId) {
-        const target = data.find((o) => o.id === initialViewId);
-        if (target) setInspectingOrder(target);
-      }
-    } finally {
-      setIsLoading(false);
+  const updateStatusMutation = useUpdateOrderStatus();
+  const cancelOrderMutation = useCancelOrder();
+  const bulkStatusMutation = useBulkUpdateOrders();
+
+  // Find initial order if specified in query param
+  React.useEffect(() => {
+    if (initialViewId && orders.length > 0) {
+      const match = orders.find((o) => o.id === initialViewId);
+      if (match) setInspectingOrder(match);
     }
-  }, [statusFilter, searchQuery, initialViewId]);
+  }, [initialViewId, orders]);
 
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+  const handleStatusUpdate = async (orderId: string, status: string) => {
+    try {
+      const updated = await updateStatusMutation.mutateAsync({ id: orderId, status });
+      notify.success('Status Updated', `Order ${updated.order_number} shifted to ${status.toUpperCase()}.`);
+      if (inspectingOrder?.id === orderId) {
+        setInspectingOrder(updated);
+      }
+    } catch (err: any) {
+      notify.error('Update Failed', err?.response?.data?.status || 'Failed to update order state.');
+    }
+  };
 
-  const handleStatusUpdate = async (orderId: string, status: AdminOrderStatus) => {
-    const updated = await adminApi.updateOrderStatus(orderId, status);
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
-    if (inspectingOrder?.id === orderId) {
-      setInspectingOrder(updated);
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await cancelOrderMutation.mutateAsync({ id: orderId });
+    } catch (err: any) {
+      throw err;
     }
   };
 
@@ -81,293 +91,252 @@ function AdminOrdersContent() {
     );
   };
 
-  const handleBulkStatus = async (status: AdminOrderStatus) => {
+  const handleBulkStatus = async (status: string) => {
     if (selectedOrderIds.length === 0) return;
-    setIsBulkUpdating(true);
     try {
-      await adminApi.bulkUpdateOrderStatus(selectedOrderIds, status);
+      await bulkStatusMutation.mutateAsync({ orderIds: selectedOrderIds, status });
       notify.success('Batch Complete', `${selectedOrderIds.length} orders transitioned to ${status}.`);
       setSelectedOrderIds([]);
-      await loadOrders();
     } catch {
       notify.error('Batch Error', 'Unable to apply bulk transition.');
-    } finally {
-      setIsBulkUpdating(false);
     }
   };
 
   const handleExportCSV = () => {
     if (orders.length === 0) return;
-    const headers = ['Order Number', 'Date', 'Customer Name', 'Customer Email', 'Status', 'Payment Status', 'Total Amount'];
+    const headers = ['Order Number', 'Date', 'Customer Name', 'Customer Email', 'Items Count', 'Total (Toman)', 'Status'];
     const rows = orders.map((o) => [
       o.order_number,
       o.created_at,
-      `"${o.customer.name}"`,
-      o.customer.email,
+      `"${o.customer?.name || 'Patron'}"`,
+      o.customer?.email,
+      o.items?.length || 0,
+      o.total,
       o.status,
-      o.payment_status,
-      o.total_amount,
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `paradox-orders-export-${Date.now()}.csv`);
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `paradox_orders_export_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    notify.success('Export Ready', 'CSV order manifest generated.');
+    notify.success('Manifest Exported', 'Order dispatch manifest saved to CSV.');
   };
 
-  const statusTabs = [
-    { id: 'ALL', label: 'All Orders' },
-    { id: 'PENDING', label: 'Pending' },
-    { id: 'PROCESSING', label: 'Processing' },
-    { id: 'SHIPPED', label: 'Dispatched' },
-    { id: 'DELIVERED', label: 'Delivered' },
-    { id: 'CANCELLED', label: 'Cancelled' },
-  ];
-
-  const statusBadges: Record<AdminOrderStatus, { bg: string; text: string; border: string }> = {
-    PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-    PROCESSING: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
-    SHIPPED: { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
-    DELIVERED: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-    CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
-    REFUNDED: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
+  const statusBadges: Record<string, { label: string; bg: string; text: string; border: string }> = {
+    pending: { label: 'Pending', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+    processing: { label: 'Processing', bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
+    shipped: { label: 'Dispatched', bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
+    delivered: { label: 'Delivered', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
+    cancelled: { label: 'Cancelled', bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
+    refunded: { label: 'Refunded', bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
   };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header & Actions */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
             <ShoppingBag className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
-            <span>Orders Dispatch & Fulfillment</span>
+            <span>Order Fulfillment & Dispatch Manifest</span>
           </h1>
           <p className="text-xs text-fg-secondary font-mono mt-0.5">
-            Manage fulfillment workflows, courier manifests, and financial settlements
+            Real-time lifecycle management, address verification, and shipment routing
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadOrders}
-            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
-            leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />}
-          >
-            Refresh
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary"
-            leftIcon={<Download className="w-3.5 h-3.5" />}
-          >
-            Export Manifest
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCSV}
+          className="text-xs font-mono border-border-subtle hover:bg-bg-secondary text-fg-secondary hover:text-fg-primary cursor-pointer"
+          leftIcon={<Download className="w-3.5 h-3.5" />}
+        >
+          Export CSV Manifest
+        </Button>
       </div>
 
-      {/* Filter Bar & Status Tabs */}
-      <div className="space-y-4 p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm dark:shadow-xl backdrop-blur-xl transition-colors">
-        {/* Status Category Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 sm:pb-0 scrollbar-none font-mono text-xs">
-          {statusTabs.map((tab) => (
+      {/* Control Bar: Search & Status Filters */}
+      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
+        {/* Search */}
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search order #, patron email, name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-cyan-500 transition-colors"
+          />
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto p-1 bg-bg-secondary rounded-xl border border-border-subtle text-xs font-mono">
+          {['ALL', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer',
-                statusFilter === tab.id
-                  ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/30'
-                  : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary border border-transparent'
+                'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
+                statusFilter === tab
+                  ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                  : 'text-fg-secondary hover:text-fg-primary'
               )}
             >
-              {tab.label}
+              {tab}
             </button>
           ))}
         </div>
-
-        {/* Search & Bulk Operations Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-border-subtle/60">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="w-4 h-4 text-fg-muted absolute start-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by Order #, Patron or Email..."
-              className="w-full ps-9 pe-3 py-1.5 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary placeholder-fg-muted focus:outline-none focus:border-cyan-500 font-sans"
-            />
-          </div>
-
-          {/* Bulk Action Controls */}
-          {selectedOrderIds.length > 0 && (
-            <div className="flex items-center gap-2 p-1 bg-bg-secondary rounded-xl border border-cyan-500/30 text-xs font-mono w-full sm:w-auto">
-              <span className="px-2 text-cyan-600 dark:text-cyan-300 font-bold">
-                {selectedOrderIds.length} Selected:
-              </span>
-              <button
-                onClick={() => handleBulkStatus('PROCESSING')}
-                disabled={isBulkUpdating}
-                className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 transition-colors"
-              >
-                Mark Processing
-              </button>
-              <button
-                onClick={() => handleBulkStatus('SHIPPED')}
-                disabled={isBulkUpdating}
-                className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-600 dark:text-sky-300 border border-sky-500/30 transition-colors"
-              >
-                Dispatch
-              </button>
-              <button
-                onClick={() => handleBulkStatus('DELIVERED')}
-                disabled={isBulkUpdating}
-                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-colors"
-              >
-                Deliver
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Orders Master Data Table */}
-      {isLoading ? (
-        <SkeletonTable rows={6} />
-      ) : orders.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-bg-elevated border border-border-subtle font-mono text-xs text-fg-muted space-y-2">
-          <ShoppingBag className="w-8 h-8 text-fg-muted mx-auto opacity-50" />
-          <p>No acquisitions match current filtration parameters.</p>
+      {/* Bulk Action Bar (When Rows Selected) */}
+      {selectedOrderIds.length > 0 && (
+        <div className="p-3 px-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between gap-4 text-xs font-mono text-cyan-600 dark:text-cyan-300 animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-4 h-4 text-cyan-500" />
+            <span className="font-bold">{selectedOrderIds.length} orders selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-fg-muted hidden sm:inline">Set Status:</span>
+            {['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((st) => (
+              <button
+                key={st}
+                onClick={() => handleBulkStatus(st.toLowerCase())}
+                disabled={bulkStatusMutation.isPending}
+                className="px-2.5 py-1 rounded-lg bg-bg-elevated hover:bg-bg-secondary border border-border-subtle text-fg-primary text-[10px] font-bold uppercase transition-colors cursor-pointer"
+              >
+                {st}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="rounded-2xl bg-bg-elevated border border-border-subtle overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+      )}
+
+      {/* Orders Table */}
+      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm overflow-hidden transition-colors">
+        {isLoading ? (
+          <div className="p-6">
+            <SkeletonTable rows={6} />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="py-16 text-center text-xs text-fg-muted font-mono space-y-2">
+            <ShoppingBag className="w-8 h-8 mx-auto opacity-50 text-cyan-500" />
+            <p>No orders matched the active filter criteria.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-bg-secondary text-fg-muted uppercase text-[10px] tracking-wider border-b border-border-subtle">
-                <tr>
-                  <th className="py-3.5 px-4 w-10">
-                    <button
-                      onClick={handleSelectAll}
-                      className="text-fg-muted hover:text-fg-primary flex items-center cursor-pointer"
-                    >
-                      {selectedOrderIds.length === orders.length ? (
-                        <CheckSquare className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+              <thead>
+                <tr className="border-b border-border-subtle bg-bg-secondary/60 text-fg-muted uppercase text-[10px] tracking-wider">
+                  <th className="py-3.5 px-4 w-10 text-center">
+                    <button onClick={handleSelectAll} className="cursor-pointer">
+                      {selectedOrderIds.length === orders.length && orders.length > 0 ? (
+                        <CheckSquare className="w-4 h-4 text-cyan-500" />
                       ) : (
-                        <Square className="w-4 h-4" />
+                        <Square className="w-4 h-4 text-fg-muted" />
                       )}
                     </button>
                   </th>
-                  <th className="py-3.5 px-4">Order Record</th>
+                  <th className="py-3.5 px-4">Order ID</th>
+                  <th className="py-3.5 px-4">Date</th>
                   <th className="py-3.5 px-4">Patron & Destination</th>
-                  <th className="py-3.5 px-4">Artifacts</th>
-                  <th className="py-3.5 px-4">Gross Total</th>
-                  <th className="py-3.5 px-4">Fulfillment Status</th>
-                  <th className="py-3.5 px-4 text-end">Action</th>
+                  <th className="py-3.5 px-4 text-center">Items</th>
+                  <th className="py-3.5 px-4 text-right">Total</th>
+                  <th className="py-3.5 px-4 text-center">Fulfillment Status</th>
+                  <th className="py-3.5 px-4 text-end">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle/60 text-fg-secondary">
                 {orders.map((order) => {
                   const isSelected = selectedOrderIds.includes(order.id);
-                  const badge = statusBadges[order.status] || statusBadges.PENDING;
+                  const statusKey = order.status.toLowerCase();
+                  const badge = statusBadges[statusKey] || statusBadges.pending;
 
                   return (
                     <tr
                       key={order.id}
                       className={cn(
                         'hover:bg-bg-secondary/40 transition-colors',
-                        isSelected && 'bg-cyan-500/5'
+                        isSelected && 'bg-cyan-500/5 dark:bg-cyan-400/5'
                       )}
                     >
-                      {/* Checkbox */}
-                      <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => handleToggleSelect(order.id)}
-                          className="text-fg-muted hover:text-fg-primary flex items-center cursor-pointer"
-                        >
+                      <td className="py-3 px-4 text-center">
+                        <button onClick={() => handleToggleSelect(order.id)} className="cursor-pointer">
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                            <CheckSquare className="w-4 h-4 text-cyan-500" />
                           ) : (
-                            <Square className="w-4 h-4" />
+                            <Square className="w-4 h-4 text-fg-muted" />
                           )}
                         </button>
                       </td>
 
-                      {/* Order Number & Timestamp */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-fg-primary flex items-center gap-1.5">
+                      <td className="py-3 px-4 font-bold text-fg-primary">
+                        <div className="flex items-center gap-1.5">
                           <ShoppingBag className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 shrink-0" />
                           <span>{order.order_number}</span>
                         </div>
-                        <div className="text-[10px] text-fg-muted">{formatDate(order.created_at)}</div>
                       </td>
 
-                      {/* Customer Name & City */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-fg-primary font-semibold font-display">
-                          {order.customer.name}
+                      <td className="py-3 px-4 text-fg-muted text-[11px]">
+                        {formatDate(order.created_at)}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-fg-primary truncate max-w-[150px]">
+                          {order.customer?.name || 'Patron'}
                         </div>
                         <div className="text-[10px] text-fg-muted truncate max-w-[150px]">
-                          {order.shipping_address.city}, {order.shipping_address.province}
+                          {order.shipping_address
+                            ? `${order.shipping_address.city}, ${order.shipping_address.province}`
+                            : order.customer?.email}
                         </div>
                       </td>
 
-                      {/* Items Preview */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-fg-primary truncate max-w-[170px]">
-                          {order.items[0]?.product_name}
-                        </div>
-                        {order.items.length > 1 && (
-                          <div className="text-[10px] text-fg-muted">
-                            +{order.items.length - 1} additional artifacts
-                          </div>
-                        )}
+                      <td className="py-3 px-4 text-center">
+                        <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-subtle text-[11px]">
+                          {order.items?.length || order.items_count || 0} items
+                        </span>
                       </td>
 
-                      {/* Financial Total */}
-                      <td className="py-3.5 px-4 font-bold text-cyan-600 dark:text-cyan-300">
-                        {formatCurrency(order.total_amount)}
+                      <td className="py-3 px-4 text-right font-bold text-cyan-600 dark:text-cyan-300">
+                        {formatCurrency(Number(order.total || 0))}
                       </td>
 
-                      {/* Status Dropdown */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4 text-center">
                         <select
-                          value={order.status}
-                          onChange={(e) => handleStatusUpdate(order.id, e.target.value as AdminOrderStatus)}
+                          value={order.status.toLowerCase()}
+                          onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                          aria-label={`Update status for ${order.order_number}`}
                           className={cn(
-                            'text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border bg-bg-secondary focus:outline-none cursor-pointer',
+                            'text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border bg-bg-secondary focus:outline-none cursor-pointer',
                             badge.bg,
                             badge.text,
                             badge.border
                           )}
                         >
-                          <option value="PENDING">Pending</option>
-                          <option value="PROCESSING">Processing</option>
-                          <option value="SHIPPED">Shipped</option>
-                          <option value="DELIVERED">Delivered</option>
-                          <option value="CANCELLED">Cancelled</option>
-                          <option value="REFUNDED">Refunded</option>
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                          <option value="refunded">Refunded</option>
                         </select>
                       </td>
 
-                      {/* Inspect Button */}
-                      <td className="py-3.5 px-4 text-end">
+                      <td className="py-3 px-4 text-end">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setInspectingOrder(order)}
-                          className="text-[11px] font-mono border-border-subtle hover:bg-bg-secondary text-fg-primary px-2.5 py-1 h-auto"
+                          className="text-[11px] font-mono px-2.5 py-1 border-border-subtle hover:bg-bg-secondary text-fg-primary cursor-pointer"
+                          rightIcon={<ExternalLink className="w-3 h-3" />}
                         >
-                          <span>Inspect</span>
+                          Inspect
                         </Button>
                       </td>
                     </tr>
@@ -376,22 +345,25 @@ function AdminOrdersContent() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Order Detail Modal */}
-      <OrderDetailModal
-        order={inspectingOrder}
-        onClose={() => setInspectingOrder(null)}
-        onStatusUpdate={handleStatusUpdate}
-      />
+      {/* Modal Inspector */}
+      {inspectingOrder && (
+        <OrderDetailModal
+          order={inspectingOrder}
+          onClose={() => setInspectingOrder(null)}
+          onStatusUpdate={handleStatusUpdate}
+          onCancelOrder={handleCancelOrder}
+        />
+      )}
     </div>
   );
 }
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense fallback={<SkeletonTable rows={8} />}>
+    <Suspense fallback={<SkeletonTable rows={6} />}>
       <AdminOrdersContent />
     </Suspense>
   );

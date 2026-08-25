@@ -24,6 +24,8 @@ import {
   AlertCircle,
   PackageCheck,
   Lock,
+  CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -37,6 +39,7 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [createdOrder, setCreatedOrder] = useState<OrderDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number>(4);
 
   // Fetch Cart
   const { data: cart, isLoading: isCartLoading } = useQuery<Cart>({
@@ -50,6 +53,25 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
     }
   }, [isAuthenticated, isAuthLoading, router, step]);
+
+  // Auto-redirect to payment gateway upon order creation in Step 3
+  useEffect(() => {
+    if (step !== 3 || !createdOrder?.id) return;
+
+    setCountdown(4);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push(`/payments/${createdOrder.id}`);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step, createdOrder?.id, router]);
 
   const items = cart?.items || [];
   const isEmpty = items.length === 0;
@@ -194,6 +216,25 @@ export default function CheckoutPage() {
               </p>
             </div>
 
+            {/* Countdown / Redirect Banner */}
+            <div className="p-4 rounded-xl bg-accent/5 border border-accent/20 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-2 text-accent">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>Redirecting to Payment Terminal</span>
+                </div>
+                <span className="font-bold text-fg-primary">
+                  {countdown}s
+                </span>
+              </div>
+              <div className="w-full bg-bg-secondary h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-accent h-full transition-all duration-1000 ease-linear rounded-full"
+                  style={{ width: `${Math.min(100, Math.max(0, ((4 - countdown) / 4) * 100))}%` }}
+                />
+              </div>
+            </div>
+
             <div className="p-4 bg-bg-secondary rounded-lg border border-border-subtle grid grid-cols-2 gap-4 text-xs font-mono text-start">
               <div>
                 <span className="text-fg-muted block text-[10px]">TOTAL AMOUNT</span>
@@ -208,6 +249,17 @@ export default function CheckoutPage() {
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href={`/payments/${createdOrder.id}`} className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full text-xs font-semibold"
+                  leftIcon={<CreditCard className="w-4 h-4" />}
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Proceed to Payment Now
+                </Button>
+              </Link>
               <Link href="/products" className="w-full sm:w-auto">
                 <Button variant="outline" size="md" className="w-full text-xs">
                   Continue Browsing

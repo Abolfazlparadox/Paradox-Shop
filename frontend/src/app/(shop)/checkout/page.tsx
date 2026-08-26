@@ -12,7 +12,9 @@ import { useAuthStore } from '@/stores/auth';
 import { notify } from '@/stores/notifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi, ordersApi } from '@/lib/api/endpoints';
-import { Address, Cart, OrderDetail } from '@/types/api';
+import { Address, Cart, OrderDetail, ShippingQuote } from '@/types/api';
+import { useShippingQuotes } from '@/features/shipping/hooks/use-shipping';
+import { ShippingMethodSelector } from '@/features/shipping/components/ShippingMethodSelector';
 import {
   ShieldCheck,
   Check,
@@ -26,6 +28,7 @@ import {
   Lock,
   CreditCard,
   Loader2,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -36,6 +39,7 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingQuote | null>(null);
   const [notes, setNotes] = useState('');
   const [createdOrder, setCreatedOrder] = useState<OrderDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,6 +50,20 @@ export default function CheckoutPage() {
     queryKey: ['cart'],
     queryFn: cartApi.getCart,
   });
+
+  // Fetch Dynamic Shipping Quotes based on destination and subtotal
+  const { data: shippingMethods = [], isLoading: isShippingLoading } = useShippingQuotes(
+    selectedAddress?.province,
+    selectedAddress?.city,
+    cart?.subtotal
+  );
+
+  // Auto-select first shipping method when loaded
+  useEffect(() => {
+    if (shippingMethods.length > 0 && !selectedShippingMethod) {
+      setSelectedShippingMethod(shippingMethods[0]);
+    }
+  }, [shippingMethods, selectedShippingMethod]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -76,9 +94,14 @@ export default function CheckoutPage() {
   const items = cart?.items || [];
   const isEmpty = items.length === 0;
 
+  // Compute live total including calculated shipping fee
+  const subtotalNumber = Number(cart?.subtotal || 0);
+  const shippingFeeNumber = selectedShippingMethod ? Number(selectedShippingMethod.shipping_fee) : 0;
+  const grandTotal = subtotalNumber + shippingFeeNumber;
+
   // Checkout Mutation
   const checkoutMutation = useMutation({
-    mutationFn: (payload: { address_id: string; notes?: string }) =>
+    mutationFn: (payload: { address_id: string; shipping_method_id?: string | null; notes?: string }) =>
       ordersApi.checkout(payload),
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -348,6 +371,22 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
+                  {/* Shipping & Delivery Method Selection */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-fg-primary" />
+                      <label className="text-xs font-mono uppercase tracking-wider text-fg-primary font-semibold">
+                        Delivery Method & Speed
+                      </label>
+                    </div>
+                    <ShippingMethodSelector
+                      methods={shippingMethods}
+                      selectedMethodId={selectedShippingMethod?.method_id || null}
+                      onSelectMethod={(method) => setSelectedShippingMethod(method)}
+                      isLoading={isShippingLoading}
+                    />
+                  </div>
+
                   {/* Order Notes */}
                   <div className="space-y-2">
                     <label className="block text-xs font-mono uppercase tracking-wider text-fg-primary font-medium">
@@ -380,6 +419,7 @@ export default function CheckoutPage() {
                         if (!selectedAddress) return;
                         checkoutMutation.mutate({
                           address_id: selectedAddress.id,
+                          shipping_method_id: selectedShippingMethod?.method_id,
                           notes: notes.trim() || undefined,
                         });
                       }}
@@ -437,12 +477,20 @@ export default function CheckoutPage() {
                     <Price amount={cart?.subtotal || '0'} size="sm" />
                   </div>
                   <div className="flex justify-between text-fg-secondary">
-                    <span>Shipping</span>
-                    <span className="text-emerald-400 font-semibold">Standard Courier</span>
+                    <span>Shipping Fee</span>
+                    {selectedShippingMethod ? (
+                      selectedShippingMethod.is_free ? (
+                        <span className="text-emerald-400 font-semibold">Free Delivery</span>
+                      ) : (
+                        <Price amount={selectedShippingMethod.shipping_fee} size="sm" />
+                      )
+                    ) : (
+                      <span className="text-fg-muted">Calculated at dispatch</span>
+                    )}
                   </div>
                   <div className="pt-2 border-t border-border-subtle flex justify-between items-baseline text-fg-primary font-bold">
                     <span>Order Total</span>
-                    <Price amount={cart?.subtotal || '0'} size="md" />
+                    <Price amount={grandTotal.toString()} size="md" />
                   </div>
                 </div>
 

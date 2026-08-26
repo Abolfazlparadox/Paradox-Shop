@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useOrderDetail, useCancelOrder } from '@/features/orders/queries/useOrders';
 import { OrderTimeline } from '@/features/orders/components/OrderTimeline';
+import { useOrderShipment } from '@/features/shipping/hooks/use-shipping';
+import { ShipmentTrackingCard } from '@/features/shipping/components/ShipmentTrackingCard';
 import { CreateReviewModal } from '@/features/reviews/components/CreateReviewModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +29,7 @@ export default function OrderDetailPage() {
   const orderId = params.id as string;
 
   const { data: order, isLoading, isError, error } = useOrderDetail(orderId);
+  const { data: shipment } = useOrderShipment(order?.id);
   const cancelMutation = useCancelOrder();
 
   const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string } | null>(null);
@@ -131,6 +134,9 @@ export default function OrderDetailPage() {
           <span>{cancelError}</span>
         </div>
       )}
+
+      {/* Live Courier Shipment Tracking */}
+      {shipment && <ShipmentTrackingCard shipment={shipment} />}
 
       {/* Order Status Stepper Timeline */}
       <div className="bg-bg-elevated border border-border-subtle rounded-xl p-6 shadow-card space-y-4">

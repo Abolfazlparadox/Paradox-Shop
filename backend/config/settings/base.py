@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.cart",
     "apps.wishlist",
     "apps.orders",
+    "apps.shipping",
     "apps.payments",
     "apps.reviews",
 ]
@@ -167,6 +168,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "Cart", "description": "Shopping cart management"},
         {"name": "Wishlist", "description": "Customer wishlist and saved products management"},
         {"name": "Orders", "description": "Order lifecycle and checkout"},
+        {"name": "Shipping", "description": "Shipping methods, rate calculation, and delivery tracking"},
         {"name": "Payments", "description": "Payment processing"},
         {"name": "Reviews", "description": "Product reviews and ratings"},
     ],

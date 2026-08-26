@@ -20,7 +20,13 @@ class OrderService:
 
     @staticmethod
     @transaction.atomic
-    def create_order_from_cart(*, user, address_id: uuid.UUID, notes: str | None = None) -> Order:
+    def create_order_from_cart(
+        *,
+        user,
+        address_id: uuid.UUID,
+        shipping_method_id: uuid.UUID | None = None,
+        notes: str | None = None,
+    ) -> Order:
         """
         Executes the full checkout workflow atomically:
 
@@ -30,12 +36,13 @@ class OrderService:
         4. Lock required ProductVariant rows with select_for_update().
         5. Re-validate stock AFTER acquiring locks.
         6. Calculate subtotal / shipping / total using the locked variant's
-           current final_price (NOT the stale CartItem.unit_price).
-        7. Create Order + OrderItem snapshots + OrderAddress snapshot.
+           current final_price (NOT the stale CartItem.unit_price) and selected shipping method.
+        7. Create Order + OrderItem snapshots + OrderAddress snapshot + Shipment.
         8. Decrease variant stock.
         9. Clear the user's cart.
         """
         from apps.users.models import Address
+        from apps.shipping.services import calculate_shipping_for_order, create_shipment_for_order
 
         # --- Step 1: Lock the cart row to prevent concurrent checkouts ---
         try:
@@ -83,7 +90,7 @@ class OrderService:
                         }
                     )
 
-        # --- Step 6: Calculate totals using live prices from locked variants ---
+        # --- Step 6: Calculate totals using live prices and shipping quote ---
         subtotal = Decimal("0")
         for item in cart_items:
             if item.variant_id is not None:
@@ -92,7 +99,12 @@ class OrderService:
                 unit_price = item.product.base_price
             subtotal += unit_price * item.quantity
 
-        shipping_cost = Decimal("0")
+        shipping_method, shipping_cost = calculate_shipping_for_order(
+            shipping_method_id=shipping_method_id,
+            province=address.province,
+            city=address.city,
+            subtotal=subtotal,
+        )
 
         total = subtotal + shipping_cost
 
@@ -125,7 +137,7 @@ class OrderService:
                     variant=variant,
                     product_name=item.product.name,
                     variant_name=variant.name if variant else None,
-                    sku=variant.sku if variant else "",
+                    sku=variant.sku if variant else f"PRD-{item.product.id.hex[:8].upper()}",
                     quantity=item.quantity,
                     unit_price=unit_price,
                     total_price=unit_price * item.quantity,
@@ -142,6 +154,13 @@ class OrderService:
             city=address.city,
             postal_code=address.postal_code,
             address_line=address.address_line,
+        )
+
+        # --- Step 7c: Create Shipment linked record ---
+        create_shipment_for_order(
+            order=order,
+            shipping_method=shipping_method,
+            shipping_fee=shipping_cost,
         )
 
         # --- Step 8: Decrease variant stock (while locked) ---

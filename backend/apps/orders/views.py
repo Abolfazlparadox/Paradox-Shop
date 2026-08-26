@@ -73,6 +73,7 @@ class CheckoutView(APIView):
         order = OrderService.create_order_from_cart(
             user=request.user,
             address_id=serializer.validated_data["address_id"],
+            shipping_method_id=serializer.validated_data.get("shipping_method_id"),
             notes=serializer.validated_data.get("notes"),
         )
 

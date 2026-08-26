@@ -456,6 +456,7 @@ export interface OrderDetail {
 
 export interface CheckoutRequest {
   address_id: string;
+  shipping_method_id?: string | null;
   notes?: string | null;
 }
 
@@ -895,5 +896,49 @@ export interface AddWishlistItemRequest {
 export interface MergeWishlistRequest {
   product_ids: string[];
 }
+
+// ==========================================
+// 8. Shipping & Delivery Domain
+// ==========================================
+
+export interface ShippingQuote {
+  method_id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  base_rate: string;
+  shipping_fee: string;
+  is_free: boolean;
+  free_shipping_threshold: string | null;
+  estimated_days_min: number;
+  estimated_days_max: number;
+  estimated_delivery_text: string;
+}
+
+export interface ShippingCalculateRequest {
+  method_id?: string | null;
+  province?: string;
+  city?: string;
+  subtotal?: string | number;
+}
+
+export interface Shipment {
+  id: string;
+  tracking_code: string;
+  carrier_name: string;
+  shipping_fee: string;
+  status: 'pending' | 'label_created' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed';
+  status_display: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  notes: string | null;
+  shipping_method?: ShippingQuote | null;
+  recipient_province?: string;
+  recipient_city?: string;
+  order_number?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 
 

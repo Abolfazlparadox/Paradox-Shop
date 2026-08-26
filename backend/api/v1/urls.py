@@ -21,6 +21,7 @@ urlpatterns = [
     path('cart/', include('apps.cart.urls', namespace='cart')),
     path('wishlist/', include('apps.wishlist.urls', namespace='wishlist')),
     path('orders/', include('apps.orders.urls', namespace='orders')),
+    path('shipping/', include('apps.shipping.urls', namespace='shipping')),
     path('payments/', include('apps.payments.urls', namespace='payments')),
     path('reviews/', include('apps.reviews.urls', namespace='reviews')),
     # Admin Control Center Router mount

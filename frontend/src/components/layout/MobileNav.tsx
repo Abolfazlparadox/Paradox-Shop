@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Search,
   ExternalLink,
+  Truck,
 } from 'lucide-react';
 
 export interface MobileNavProps {
@@ -66,6 +67,15 @@ export function MobileNav({ categories = [], onOpenSearch }: MobileNavProps) {
             >
               <Layers className="w-4 h-4 text-fg-muted" />
               All Artifacts
+            </Link>
+
+            <Link
+              href="/track"
+              onClick={handleClose}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary transition-colors"
+            >
+              <Truck className="w-4 h-4 text-fg-muted" />
+              Track Shipment
             </Link>
 
             {categories.map((cat) => (

@@ -121,6 +121,13 @@ export function Navbar() {
                   All Products
                 </Link>
 
+                <Link
+                  href="/track"
+                  className="text-xs font-medium text-fg-secondary hover:text-fg-primary transition-colors"
+                >
+                  Track Order
+                </Link>
+
                 {/* Category Dropdown */}
                 <div
                   className="relative"

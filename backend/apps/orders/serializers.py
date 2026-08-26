@@ -93,5 +93,6 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 class CheckoutSerializer(serializers.Serializer):
     """Validates the payload for initiating checkout from the user's cart."""
 
-    address_id = serializers.UUIDField()
+    address_id = serializers.UUIDField(required=True)
+    shipping_method_id = serializers.UUIDField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)

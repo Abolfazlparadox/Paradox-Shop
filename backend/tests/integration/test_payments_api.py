@@ -4,6 +4,8 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
+from apps.orders.models import Order
+
 
 @pytest.mark.django_db
 class TestPaymentsAPI:
@@ -53,7 +55,8 @@ class TestPaymentsAPI:
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["status"] == "succeeded"
-        assert data["amount"] == "750000"
+        order = Order.objects.get(id=order_id)
+        assert Decimal(data["amount"]) == order.total
         assert data["idempotency_key"] == "key-12345"
 
         # Verify order transitioned to 'processing'

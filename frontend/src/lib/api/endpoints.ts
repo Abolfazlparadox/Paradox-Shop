@@ -44,6 +44,9 @@ import {
   WishlistItem,
   AddWishlistItemRequest,
   MergeWishlistRequest,
+  Shipment,
+  ShippingCalculateRequest,
+  ShippingQuote,
 } from '@/types/api';
 
 // ==========================================
@@ -294,6 +297,33 @@ export const wishlistApi = {
     const res = await apiClient.get<{ in_wishlist: boolean }>('/wishlist/check/', {
       params: { product_id: productId, variant_id: variantId },
     });
+    return res.data;
+  },
+};
+
+// ==========================================
+// 10. Shipping & Delivery Domain
+// ==========================================
+
+export const shippingApi = {
+  getQuotes: async (params?: {
+    province?: string;
+    city?: string;
+    subtotal?: string | number;
+  }): Promise<ShippingQuote[]> => {
+    const res = await apiClient.get<ShippingQuote[]>('/shipping/methods/', { params });
+    return res.data;
+  },
+  calculateQuote: async (data: ShippingCalculateRequest): Promise<ShippingQuote> => {
+    const res = await apiClient.post<ShippingQuote>('/shipping/calculate/', data);
+    return res.data;
+  },
+  getOrderShipment: async (orderId: string): Promise<Shipment> => {
+    const res = await apiClient.get<Shipment>(`/shipping/orders/${orderId}/shipment/`);
+    return res.data;
+  },
+  trackShipment: async (trackingCode: string): Promise<Shipment> => {
+    const res = await apiClient.get<Shipment>(`/shipping/track/${trackingCode}/`);
     return res.data;
   },
 };

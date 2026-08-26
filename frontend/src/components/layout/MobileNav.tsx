@@ -10,6 +10,7 @@ import { CategoryTreeNode } from '@/types/api';
 import {
   Layers,
   ShoppingBag,
+  Heart,
   User,
   LogOut,
   Moon,
@@ -98,6 +99,15 @@ export function MobileNav({ categories = [], onOpenSearch }: MobileNavProps) {
                   </div>
                   <div className="text-[10px] font-mono text-fg-muted truncate">{user?.email}</div>
                 </div>
+
+                <Link
+                  href="/wishlist"
+                  onClick={handleClose}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-fg-primary hover:bg-bg-secondary transition-colors"
+                >
+                  <Heart className="w-4 h-4 text-fg-muted" />
+                  Wishlist & Saved
+                </Link>
 
                 <Link
                   href="/dashboard/orders"

@@ -10,6 +10,7 @@ import { Button } from './Button';
 import { ProductListItem } from '@/types/api';
 import { ShoppingBag, Eye } from 'lucide-react';
 import { getMediaUrl } from '@/lib/utils/media';
+import { WishlistButton } from '@/features/wishlist/components/WishlistButton';
 
 export interface ProductCardProps {
   product: ProductListItem;
@@ -67,6 +68,11 @@ export function ProductCard({
               Sold Out
             </Badge>
           )}
+        </div>
+
+        {/* Wishlist Floating Action */}
+        <div className="absolute top-3 end-3 z-10">
+          <WishlistButton productId={product.id} size="sm" />
         </div>
 
         {/* Quick Action Overlay on Desktop */}

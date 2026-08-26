@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import {
   LayoutDashboard,
   Package,
+  Heart,
   MapPin,
   User,
   LogOut,
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils/cn';
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/orders', label: 'Orders & Tracking', icon: Package },
+  { href: '/dashboard/wishlist', label: 'Wishlist & Saved', icon: Heart },
   { href: '/dashboard/addresses', label: 'Delivery Addresses', icon: MapPin },
   { href: '/dashboard/profile', label: 'Profile & Security', icon: User },
 ];

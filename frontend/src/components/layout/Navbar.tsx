@@ -15,6 +15,7 @@ import { AuthModal } from './AuthModal';
 import { MobileNav } from './MobileNav';
 import {
   ShoppingBag,
+  Heart,
   Search,
   User,
   Moon,
@@ -26,6 +27,7 @@ import {
   ShieldCheck,
   LayoutDashboard,
 } from 'lucide-react';
+import { useWishlist } from '@/features/wishlist/hooks/use-wishlist';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
@@ -85,6 +87,7 @@ export function Navbar() {
   });
 
   const totalItems = cart?.items_count ?? cart?.total_items ?? 0;
+  const { totalItemsCount: totalWishlistItems } = useWishlist();
 
   return (
     <>
@@ -200,6 +203,30 @@ export function Navbar() {
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
 
+              {/* Wishlist Link with Live Counter */}
+              <Link
+                href="/wishlist"
+                data-cursor="action"
+                className="relative inline-flex items-center justify-center h-9 px-3 rounded-md bg-bg-secondary hover:bg-border-subtle text-fg-primary border border-border-subtle transition-colors focus-ring cursor-pointer"
+                aria-label={`Wishlist with ${totalWishlistItems} saved items`}
+              >
+                <Heart className="w-4 h-4" />
+                <AnimatePresence mode="wait">
+                  {totalWishlistItems > 0 && (
+                    <motion.span
+                      key={totalWishlistItems}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.6, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                      className="ms-1.5 text-xs font-mono font-semibold text-rose-500"
+                    >
+                      {totalWishlistItems}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+
               {/* Cart Drawer Trigger with Authoritative Counter */}
               <button
                 onClick={toggleCartDrawer}
@@ -274,6 +301,15 @@ export function Navbar() {
                       >
                         <ShoppingBag className="w-3.5 h-3.5 text-fg-muted" />
                         <span>Orders</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard/wishlist"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-fg-primary hover:bg-bg-secondary rounded-md transition-colors"
+                      >
+                        <Heart className="w-3.5 h-3.5 text-fg-muted" />
+                        <span>Wishlist & Saved</span>
                       </Link>
 
                       <Link

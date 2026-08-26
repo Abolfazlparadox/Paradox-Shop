@@ -839,3 +839,61 @@ export interface AdminMeProfile {
   permissions: string[];
 }
 
+// ==========================================
+// 10. Wishlist Domain
+// ==========================================
+
+export interface WishlistProductImage {
+  id: string;
+  image: string;
+  alt_text?: string | null;
+  sort_order?: number;
+  is_primary?: boolean;
+}
+
+export interface WishlistVariant {
+  id: string;
+  sku: string;
+  name: string;
+  price_override?: string | null;
+  stock?: number;
+  is_active?: boolean;
+}
+
+export interface WishlistProduct {
+  id: string;
+  name: string;
+  slug: string;
+  base_price: string;
+  brand_name?: string | null;
+  category_name?: string | null;
+  images: WishlistProductImage[];
+  is_active: boolean;
+  is_featured: boolean;
+}
+
+export interface WishlistItem {
+  id: string;
+  product: WishlistProduct;
+  variant?: WishlistVariant | null;
+  created_at: string;
+}
+
+export interface Wishlist {
+  id: string;
+  items_count: number;
+  items: WishlistItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AddWishlistItemRequest {
+  product_id: string;
+  variant_id?: string | null;
+}
+
+export interface MergeWishlistRequest {
+  product_ids: string[];
+}
+
+

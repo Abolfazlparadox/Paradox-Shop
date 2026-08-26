@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '@/lib/api/endpoints';
 import { ShoppingBag, Check, Plus, Minus, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WishlistButton } from '@/features/wishlist/components/WishlistButton';
 
 export function ProductDetailView({ product }: { product: ProductDetail }) {
   const { toggleCartDrawer } = useUIStore();
@@ -195,6 +196,15 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
               >
                 {addedRecently ? 'Added to Bag' : isOutOfStock ? 'Sold Out' : 'Acquire Artifact'}
               </Button>
+
+              {/* Wishlist Action Button */}
+              <WishlistButton
+                productId={product.id}
+                variantId={selectedVariant?.id}
+                size="lg"
+                variant="outline"
+                className="h-12 w-12 shrink-0"
+              />
             </div>
           </div>
 

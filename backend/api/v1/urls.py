@@ -19,6 +19,7 @@ urlpatterns = [
     path('products/', include('apps.products.urls', namespace='products')),
     path('categories/', include('apps.categories.urls', namespace='categories')),
     path('cart/', include('apps.cart.urls', namespace='cart')),
+    path('wishlist/', include('apps.wishlist.urls', namespace='wishlist')),
     path('orders/', include('apps.orders.urls', namespace='orders')),
     path('payments/', include('apps.payments.urls', namespace='payments')),
     path('reviews/', include('apps.reviews.urls', namespace='reviews')),

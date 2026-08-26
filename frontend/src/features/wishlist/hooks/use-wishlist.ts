@@ -13,7 +13,12 @@ export const WISHLIST_QUERY_KEY = ['wishlist'];
 export function useWishlist() {
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const guestWishlist = useGuestWishlistStore();
+  const guestProductIds = useGuestWishlistStore((state) => state.guestProductIds);
+  const addGuestItem = useGuestWishlistStore((state) => state.addGuestItem);
+  const removeGuestItem = useGuestWishlistStore((state) => state.removeGuestItem);
+  const toggleGuestItem = useGuestWishlistStore((state) => state.toggleGuestItem);
+  const isGuestInWishlist = useGuestWishlistStore((state) => state.isGuestInWishlist);
+  const clearGuestWishlist = useGuestWishlistStore((state) => state.clearGuestWishlist);
 
   // 1. Authenticated Server Wishlist Query
   const {
@@ -31,12 +36,12 @@ export function useWishlist() {
 
   // 2. Auto-merge Guest Wishlist into Server on Login
   useEffect(() => {
-    if (isAuthenticated && guestWishlist.guestProductIds.length > 0) {
-      const idsToMerge = [...guestWishlist.guestProductIds];
+    if (isAuthenticated && guestProductIds.length > 0) {
+      const idsToMerge = [...guestProductIds];
       wishlistApi
         .mergeWishlist({ product_ids: idsToMerge })
         .then(() => {
-          guestWishlist.clearGuestWishlist();
+          clearGuestWishlist();
           queryClient.invalidateQueries({ queryKey: WISHLIST_QUERY_KEY });
           notify.info(
             'Wishlist Synchronized',
@@ -47,7 +52,7 @@ export function useWishlist() {
           console.error('Failed to merge guest wishlist:', err);
         });
     }
-  }, [isAuthenticated, guestWishlist, queryClient]);
+  }, [isAuthenticated, guestProductIds, clearGuestWishlist, queryClient]);
 
   // 3. Add Item Mutation
   const addMutation = useMutation({
@@ -97,7 +102,7 @@ export function useWishlist() {
   // 7. Check if Product is in Wishlist (Unified for Authenticated and Guest)
   const isProductSaved = (productId: string, variantId?: string): boolean => {
     if (!isAuthenticated) {
-      return guestWishlist.isGuestInWishlist(productId);
+      return isGuestInWishlist(productId);
     }
     if (!serverWishlist?.items) return false;
     return serverWishlist.items.some((item) => {
@@ -113,7 +118,7 @@ export function useWishlist() {
 
     if (!isAuthenticated) {
       // Guest local storage toggle
-      const wasAdded = guestWishlist.toggleGuestItem(productId);
+      const wasAdded = toggleGuestItem(productId);
       if (wasAdded) {
         notify.success('Saved to Wishlist', 'Item saved locally. Log in to sync across devices.');
       } else {
@@ -133,7 +138,7 @@ export function useWishlist() {
 
   const totalItemsCount = isAuthenticated
     ? serverWishlist?.items_count ?? 0
-    : guestWishlist.guestProductIds.length;
+    : guestProductIds.length;
 
   return {
     wishlist: serverWishlist,

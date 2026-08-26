@@ -21,7 +21,7 @@ export function CustomerDetailModal({ customer, onClose, onToggleStatus }: Custo
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-secondary/60">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500 dark:bg-cyan-400 text-white dark:text-slate-950 font-mono font-bold text-xs flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-accent text-accent-fg border border-border-subtle font-mono font-bold text-xs flex items-center justify-center shadow-subtle">
               {customer.name ? customer.name[0].toUpperCase() : 'P'}
             </div>
             <div>
@@ -49,7 +49,7 @@ export function CustomerDetailModal({ customer, onClose, onToggleStatus }: Custo
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 rounded-xl bg-bg-secondary/60 border border-border-subtle space-y-1">
               <span className="text-[10px] text-fg-muted uppercase">Lifetime Value</span>
-              <div className="text-sm font-bold text-cyan-600 dark:text-cyan-300">
+              <div className="text-sm font-bold text-fg-primary">
                 {formatCurrency(Number(customer.total_spent || 0))}
               </div>
             </div>
@@ -107,7 +107,7 @@ export function CustomerDetailModal({ customer, onClose, onToggleStatus }: Custo
                   >
                     <span className="font-bold text-fg-primary">{ord.order_number}</span>
                     <span className="text-fg-muted">{ord.status}</span>
-                    <span className="font-bold text-cyan-600 dark:text-cyan-400">
+                    <span className="font-bold text-fg-primary">
                       {formatCurrency(Number(ord.total))}
                     </span>
                   </div>

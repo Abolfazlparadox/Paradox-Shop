@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Order, OrderAddress, OrderItem
+from apps.shipping.serializers import ShipmentSerializer
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -32,7 +33,6 @@ class OrderAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderAddress
         fields = [
-            "id",
             "recipient_name",
             "recipient_phone",
             "province",
@@ -44,7 +44,10 @@ class OrderAddressSerializer(serializers.ModelSerializer):
 
 
 class OrderListSerializer(serializers.ModelSerializer):
-    """Lightweight Order representation for list endpoints."""
+    """Compact Order representation for listing views."""
+
+    items_count = serializers.IntegerField(source="items.count", read_only=True)
+    shipment = ShipmentSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -59,6 +62,8 @@ class OrderListSerializer(serializers.ModelSerializer):
             "notes",
             "created_at",
             "paid_at",
+            "items_count",
+            "shipment",
         ]
         read_only_fields = fields
 
@@ -68,6 +73,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     items = OrderItemSerializer(many=True, read_only=True)
     shipping_address = OrderAddressSerializer(read_only=True)
+    shipment = ShipmentSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -86,6 +92,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "updated_at",
             "items",
             "shipping_address",
+            "shipment",
         ]
         read_only_fields = fields
 

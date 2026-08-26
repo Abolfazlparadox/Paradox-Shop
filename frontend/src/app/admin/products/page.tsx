@@ -86,7 +86,7 @@ function AdminProductsContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
-            <Package className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
+            <Package className="w-6 h-6 text-amber-500" />
             <span>Artifacts & Catalog Engine</span>
           </h1>
           <p className="text-xs text-fg-secondary font-mono mt-0.5">
@@ -101,7 +101,7 @@ function AdminProductsContent() {
             setEditingProduct(null);
             setIsFormOpen(true);
           }}
-          className="text-xs font-mono bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-bold shadow-md cursor-pointer"
+          className="text-xs font-mono font-bold shadow-subtle cursor-pointer"
           leftIcon={<Plus className="w-3.5 h-3.5" />}
         >
           Create New Artifact
@@ -109,7 +109,7 @@ function AdminProductsContent() {
       </div>
 
       {/* Control Bar: Search & Filters */}
-      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
+      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-card flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
         {/* Search */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -118,7 +118,7 @@ function AdminProductsContent() {
             placeholder="Search title, slug, SKU..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-cyan-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-amber-500/80 transition-colors"
           />
         </div>
 
@@ -129,7 +129,7 @@ function AdminProductsContent() {
             className={cn(
               'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
               categoryFilter === 'ALL'
-                ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                ? 'bg-accent text-accent-fg font-semibold shadow-subtle'
                 : 'text-fg-secondary hover:text-fg-primary'
             )}
           >
@@ -142,7 +142,7 @@ function AdminProductsContent() {
               className={cn(
                 'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
                 categoryFilter === (cat.slug || cat.name)
-                  ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                  ? 'bg-accent text-accent-fg font-semibold shadow-subtle'
                   : 'text-fg-secondary hover:text-fg-primary'
               )}
             >
@@ -164,7 +164,7 @@ function AdminProductsContent() {
               className={cn(
                 'px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer text-[11px]',
                 stockFilter === st.id
-                  ? 'bg-bg-elevated text-cyan-600 dark:text-cyan-400 shadow-sm border border-border-subtle'
+                  ? 'bg-bg-elevated text-fg-primary shadow-subtle border border-border-subtle'
                   : 'text-fg-muted hover:text-fg-primary'
               )}
             >
@@ -175,14 +175,14 @@ function AdminProductsContent() {
       </div>
 
       {/* Catalog Table */}
-      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm overflow-hidden transition-colors">
+      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-card overflow-hidden transition-colors">
         {isLoading ? (
           <div className="p-6">
             <SkeletonTable rows={5} />
           </div>
         ) : products.length === 0 ? (
           <div className="py-16 text-center text-xs text-fg-muted font-mono space-y-2">
-            <Package className="w-8 h-8 mx-auto opacity-50 text-cyan-500" />
+            <Package className="w-8 h-8 mx-auto opacity-50 text-fg-muted" />
             <p>No products matched the active filter criteria.</p>
           </div>
         ) : (
@@ -231,7 +231,7 @@ function AdminProductsContent() {
                                 handleInlinePriceChange(p.id, val);
                               }
                             }}
-                            className="w-28 px-2 py-1 rounded bg-bg-secondary border border-border-subtle text-xs font-bold text-cyan-600 dark:text-cyan-300 font-mono"
+                            className="w-28 px-2 py-1 rounded bg-bg-secondary border border-border-subtle text-xs font-bold text-fg-primary font-mono"
                           />
                         </div>
                       </td>

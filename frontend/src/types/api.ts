@@ -436,6 +436,8 @@ export interface OrderListItem {
   notes?: string | null;
   created_at: string;
   paid_at?: string | null;
+  items_count?: number;
+  shipment?: Shipment | null;
 }
 
 export interface OrderDetail {
@@ -450,8 +452,10 @@ export interface OrderDetail {
   paid_at?: string | null;
   cancelled_at?: string | null;
   created_at: string;
+  updated_at?: string;
   shipping_address: OrderAddress;
   items: OrderItem[];
+  shipment?: Shipment | null;
 }
 
 export interface CheckoutRequest {

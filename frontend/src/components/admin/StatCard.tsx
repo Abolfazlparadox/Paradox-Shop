@@ -11,7 +11,7 @@ export interface StatCardProps {
   changeLabel?: string;
   icon: React.ReactNode;
   sparklineData?: number[];
-  color?: 'cyan' | 'indigo' | 'emerald' | 'amber';
+  color?: 'gold' | 'neutral' | 'emerald' | 'amber' | 'cyan';
 }
 
 export function StatCard({
@@ -21,15 +21,16 @@ export function StatCard({
   changeLabel = 'vs last month',
   icon,
   sparklineData = [10, 25, 18, 30, 45, 38, 55, 70],
-  color = 'cyan',
+  color = 'gold',
 }: StatCardProps) {
   const isPositive = change >= 0;
 
   const colorStyles = {
-    cyan: 'border-cyan-500/20 shadow-[0_0_20px_rgba(0,245,212,0.08)] text-cyan-600 dark:text-cyan-400',
-    indigo: 'border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.08)] text-indigo-600 dark:text-indigo-400',
-    emerald: 'border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.08)] text-emerald-600 dark:text-emerald-400',
-    amber: 'border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.08)] text-amber-600 dark:text-amber-400',
+    gold: 'border-amber-500/20 text-amber-600 dark:text-amber-400',
+    cyan: 'border-amber-500/20 text-amber-600 dark:text-amber-400',
+    neutral: 'border-border-subtle text-fg-primary',
+    emerald: 'border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+    amber: 'border-amber-500/20 text-amber-600 dark:text-amber-400',
   };
 
   // Generate simple SVG sparkline polyline

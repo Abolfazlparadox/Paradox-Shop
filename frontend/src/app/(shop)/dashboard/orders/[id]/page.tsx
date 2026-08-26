@@ -135,17 +135,11 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* Live Courier Shipment Tracking or Fallback Timeline */}
-      {shipment ? (
-        <ShipmentTrackingCard shipment={shipment} />
-      ) : (
-        <div className="bg-bg-elevated border border-border-subtle rounded-xl p-6 shadow-card space-y-4">
-          <h3 className="text-xs font-mono uppercase tracking-wider text-fg-muted font-semibold">
-            Fulfillment Timeline
-          </h3>
-          <OrderTimeline status={order.status} />
-        </div>
-      )}
+      {/* Live Order Lifecycle & Courier Fulfillment Radar */}
+      <ShipmentTrackingCard
+        shipment={shipment || order.shipment}
+        orderStatus={order.status}
+      />
 
       {/* Items Table & Summary Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

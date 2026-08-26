@@ -42,7 +42,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-secondary/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-accent text-accent-fg border border-border-subtle flex items-center justify-center shadow-subtle">
               <MessageSquare className="w-3.5 h-3.5" />
             </div>
             <div>
@@ -60,7 +60,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
         </div>
 
         {/* Original Comment Preview */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 text-left">
           <div className="p-3.5 rounded-xl bg-bg-secondary/60 border border-border-subtle space-y-1.5 text-xs">
             <div className="flex items-center justify-between font-mono text-[10px] text-fg-muted">
               <span>{comment.author_name} asked on {comment.product_name}</span>
@@ -76,7 +76,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-mono text-fg-muted flex items-center gap-1.5">
-                  <Shield className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
+                  <Shield className="w-3 h-3 text-amber-500" />
                   <span>Official Atelier Response (Published as Staff)</span>
                 </label>
               </div>
@@ -86,7 +86,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Compose a concise, professional horological/technical reply..."
-                className="w-full p-3 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-cyan-500 resize-none font-sans"
+                className="w-full p-3 rounded-xl bg-bg-secondary border border-border-subtle text-xs text-fg-primary focus:outline-none focus:border-amber-500/80 resize-none font-sans"
               />
             </div>
 
@@ -110,7 +110,7 @@ export function AdminReplyModal({ comment, isOpen, onClose, onSendReply }: Admin
                   variant="primary"
                   size="sm"
                   isLoading={isSending}
-                  className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold cursor-pointer"
+                  className="text-xs font-semibold rounded-xl cursor-pointer"
                   rightIcon={<Send className="w-3.5 h-3.5" />}
                 >
                   Publish Reply

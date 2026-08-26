@@ -74,7 +74,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-mono text-fg-muted mb-1">
-              Promotional Coupon Code *
+              Promotional Voucher Code *
             </label>
             <input
               type="text"
@@ -82,7 +82,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="e.g. VIP-SUMMER-20"
-              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono font-bold uppercase text-fg-primary focus:outline-none focus:border-cyan-500 tracking-wider"
+              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono font-bold uppercase text-fg-primary focus:outline-none focus:border-amber-500/80 tracking-wider"
             />
           </div>
 
@@ -94,7 +94,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
               <select
                 value={discountType}
                 onChange={(e) => setDiscountType(e.target.value as 'PERCENTAGE' | 'FIXED')}
-                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-amber-500/80"
               >
                 <option value="PERCENTAGE">Percentage (%)</option>
                 <option value="FIXED">Fixed Amount (Toman)</option>
@@ -111,7 +111,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
                 required
                 value={discountValue}
                 onChange={(e) => setDiscountValue(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-amber-500/80"
               />
             </div>
           </div>
@@ -127,7 +127,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
                 step="100000"
                 value={minOrderValue}
                 onChange={(e) => setMinOrderValue(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-amber-500/80"
               />
             </div>
 
@@ -140,7 +140,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
                 min="1"
                 value={usageLimit}
                 onChange={(e) => setUsageLimit(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-amber-500/80"
               />
             </div>
           </div>
@@ -153,7 +153,7 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary focus:outline-none focus:border-amber-500/80"
             />
           </div>
 
@@ -172,9 +172,9 @@ export function CouponBuilderModal({ isOpen, onClose, onSave }: CouponBuilderMod
               variant="primary"
               size="sm"
               isLoading={isSaving}
-              className="text-xs bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 font-semibold"
+              className="text-xs font-semibold rounded-xl"
             >
-              Activate Coupon
+              Provision Coupon
             </Button>
           </div>
         </form>

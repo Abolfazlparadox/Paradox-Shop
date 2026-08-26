@@ -127,7 +127,7 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-secondary/60">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+            <div className="p-2 rounded-xl bg-accent text-accent-fg border border-border-subtle shadow-subtle">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -365,7 +365,7 @@ export function ProductFormModal({ product, isOpen, onClose, onSave }: ProductFo
               variant="primary"
               size="sm"
               isLoading={isSaving}
-              className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold cursor-pointer"
+              className="text-xs font-semibold rounded-xl cursor-pointer"
             >
               {isEditing ? 'Save Changes' : 'Publish to Catalog'}
             </Button>

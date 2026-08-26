@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,8 +17,8 @@ import {
   UserCheck,
   ChevronLeft,
   ChevronRight,
-  Shield,
   Truck,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -29,7 +29,7 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string | number;
-  badgeVariant?: 'cyan' | 'amber' | 'emerald' | 'rose';
+  badgeVariant?: 'amber' | 'emerald' | 'rose' | 'neutral';
   permission?: string;
 }
 
@@ -38,14 +38,36 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { can, isSuperUser } = usePermissions();
+  const { can } = usePermissions();
   const { data: dashboardData } = useAdminDashboard();
   const { data: notifications } = useAdminNotifications();
 
-  const unreadNotifs = (notifications || []).filter((n) => !n.is_read).length;
+  // Close mobile drawer on route change
+  useEffect(() => {
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  }, [pathname, onCloseMobile]);
+
+  // Close on escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileOpen && onCloseMobile) {
+        onCloseMobile();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onCloseMobile]);
+
   const pendingOrders = dashboardData?.status_distribution?.pending || 0;
   const lowStock = dashboardData?.kpis?.low_stock_variants || 0;
 
@@ -75,7 +97,7 @@ export function AdminSidebar() {
           href: '/admin/orders',
           icon: ShoppingBag,
           badge: pendingOrders > 0 ? `${pendingOrders} Pending` : undefined,
-          badgeVariant: 'cyan',
+          badgeVariant: 'amber',
           permission: 'orders.view',
         },
         {
@@ -89,7 +111,7 @@ export function AdminSidebar() {
           href: '/admin/inventory',
           icon: Boxes,
           badge: lowStock > 0 ? `${lowStock} Low` : undefined,
-          badgeVariant: 'amber',
+          badgeVariant: 'rose',
           permission: 'inventory.view',
         },
         {
@@ -142,34 +164,43 @@ export function AdminSidebar() {
     },
   ];
 
-  return (
-    <aside
-      className={cn(
-        'relative bg-bg-elevated/95 dark:bg-[#070C18]/95 backdrop-blur-xl border-r border-border-subtle dark:border-slate-800/80 flex flex-col justify-between transition-all duration-300 z-30 select-none shrink-0 shadow-lg',
-        isCollapsed ? 'w-20' : 'w-64'
-      )}
-    >
+  const sidebarContent = (
+    <div className="flex flex-col h-full justify-between">
       {/* Top: Brand Header */}
       <div>
-        <div className="h-16 flex items-center justify-between px-5 border-b border-border-subtle dark:border-slate-800/80">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-border-subtle">
           <Link
             href="/admin"
-            className={cn('flex items-center gap-3 transition-opacity overflow-hidden', isCollapsed && 'justify-center w-full')}
+            className={cn(
+              'flex items-center gap-3 transition-opacity overflow-hidden',
+              isCollapsed && 'lg:justify-center lg:w-full'
+            )}
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 dark:from-cyan-400 dark:to-indigo-500 flex items-center justify-center text-white dark:text-slate-950 font-mono font-black text-sm shadow-[0_0_15px_rgba(0,245,212,0.3)] shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-accent text-accent-fg border border-border-subtle flex items-center justify-center font-mono font-black text-sm shadow-subtle shrink-0">
               PX
             </div>
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="font-display font-bold text-sm tracking-wider text-fg-primary dark:text-white uppercase">
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="flex flex-col text-left">
+                <span className="font-display font-bold text-sm tracking-wider text-fg-primary uppercase">
                   Control
                 </span>
-                <span className="text-[10px] font-mono tracking-widest text-cyan-600 dark:text-cyan-400 font-semibold uppercase -mt-0.5">
+                <span className="text-[10px] font-mono tracking-widest text-amber-600 dark:text-amber-400 font-semibold uppercase -mt-0.5">
                   Center
                 </span>
               </div>
             )}
           </Link>
+
+          {/* Close button on mobile drawer */}
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-lg text-fg-muted hover:text-fg-primary hover:bg-bg-secondary transition-colors"
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Items */}
@@ -183,8 +214,8 @@ export function AdminSidebar() {
 
             return (
               <div key={groupIdx} className="space-y-1">
-                {!isCollapsed && (
-                  <div className="px-3 py-1 text-[10px] font-mono font-bold tracking-widest text-fg-muted dark:text-slate-400 uppercase">
+                {(!isCollapsed || isMobileOpen) && (
+                  <div className="px-3 py-1 text-[10px] font-mono font-bold tracking-widest text-fg-muted uppercase text-left">
                     {group.label}
                   </div>
                 )}
@@ -198,34 +229,34 @@ export function AdminSidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      title={isCollapsed ? item.title : undefined}
+                      title={isCollapsed && !isMobileOpen ? item.title : undefined}
                       className={cn(
-                        'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all relative',
+                        'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all relative text-left',
                         isActive
-                          ? 'bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-cyan-300 font-semibold shadow-sm'
-                          : 'text-fg-secondary dark:text-slate-400 hover:text-fg-primary dark:hover:text-slate-100 hover:bg-bg-secondary dark:hover:bg-slate-800/60',
-                        isCollapsed && 'justify-center px-0'
+                          ? 'bg-accent text-accent-fg font-semibold shadow-subtle'
+                          : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary',
+                        isCollapsed && !isMobileOpen && 'lg:justify-center lg:px-0'
                       )}
                     >
-                      {isActive && (
-                        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-cyan-500 dark:bg-cyan-400 rounded-r" />
-                      )}
                       <item.icon
                         className={cn(
-                          'w-4 h-4 shrink-0 transition-transform group-hover:scale-110',
-                          isActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-fg-muted dark:text-slate-400'
+                          'w-4 h-4 shrink-0 transition-transform group-hover:scale-105',
+                          isActive ? 'text-accent-fg' : 'text-fg-muted'
                         )}
                       />
-                      {!isCollapsed && <span className="truncate">{item.title}</span>}
+                      {(!isCollapsed || isMobileOpen) && <span className="truncate">{item.title}</span>}
 
-                      {!isCollapsed && item.badge && (
+                      {(!isCollapsed || isMobileOpen) && item.badge && (
                         <span
                           className={cn(
                             'ms-auto px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wide uppercase',
-                            item.badgeVariant === 'cyan' && 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30',
-                            item.badgeVariant === 'amber' && 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30',
-                            item.badgeVariant === 'emerald' && 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30',
-                            item.badgeVariant === 'rose' && 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+                            isActive
+                              ? 'bg-accent-fg/20 text-accent-fg'
+                              : item.badgeVariant === 'amber'
+                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              : item.badgeVariant === 'rose'
+                              ? 'bg-status-error/15 text-status-error border border-status-error/20'
+                              : 'bg-bg-secondary text-fg-muted border border-border-subtle'
                           )}
                         >
                           {item.badge}
@@ -240,11 +271,11 @@ export function AdminSidebar() {
         </div>
       </div>
 
-      {/* Bottom: Collapse Button */}
-      <div className="p-3 border-t border-border-subtle dark:border-slate-800/80">
+      {/* Bottom: Desktop Collapse Toggle */}
+      <div className="hidden lg:block p-3 border-t border-border-subtle">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-fg-secondary dark:text-slate-400 hover:text-fg-primary dark:hover:text-white hover:bg-bg-secondary dark:hover:bg-slate-800/60 transition-colors text-xs cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary transition-colors text-xs cursor-pointer"
         >
           {isCollapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -256,6 +287,37 @@ export function AdminSidebar() {
           )}
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar (>= lg) */}
+      <aside
+        className={cn(
+          'hidden lg:flex relative bg-bg-elevated border-r border-border-subtle flex-col justify-between transition-all duration-300 z-30 select-none shrink-0 shadow-card',
+          isCollapsed ? 'w-20' : 'w-64'
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Backdrop & Drawer (< lg) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          />
+
+          {/* Drawer Slide-in */}
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-bg-elevated border-r border-border-subtle shadow-2xl z-50 flex flex-col animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

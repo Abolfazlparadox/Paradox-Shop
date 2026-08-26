@@ -222,7 +222,7 @@ export function CommandPalette({
       >
         {/* Search Bar Input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-subtle bg-bg-secondary/40">
-          <Search className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
+          <Search className="w-4 h-4 text-fg-muted shrink-0" />
           <input
             type="text"
             autoFocus
@@ -256,7 +256,7 @@ export function CommandPalette({
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all ${
                   selectedIndex === idx
-                    ? 'bg-cyan-500/10 border border-cyan-500/20 text-fg-primary shadow-sm'
+                    ? 'bg-accent text-accent-fg font-semibold shadow-subtle'
                     : 'text-fg-secondary hover:bg-bg-secondary border border-transparent'
                 }`}
               >
@@ -294,7 +294,7 @@ export function CommandPalette({
             <span><kbd className="px-1 py-0.5 rounded bg-bg-elevated border border-border-subtle text-fg-secondary">↵</kbd> Select</span>
             <span><kbd className="px-1 py-0.5 rounded bg-bg-elevated border border-border-subtle text-fg-secondary">ESC</kbd> Close</span>
           </div>
-          <div className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400">
+          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
             <Shield className="w-3 h-3" />
             <span>Paradox Atelier OS</span>
           </div>

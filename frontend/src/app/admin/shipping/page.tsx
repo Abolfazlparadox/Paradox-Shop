@@ -133,7 +133,7 @@ export default function AdminShippingPage() {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-subtle">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+          <div className="p-2.5 rounded-xl bg-accent text-accent-fg border border-border-subtle shadow-subtle">
             <Truck className="w-6 h-6" />
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function AdminShippingPage() {
               <h1 className="text-xl font-bold font-display text-fg-primary tracking-tight">
                 Shipping & Logistics Control
               </h1>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 {activeMethodsCount} Active Tiers
               </span>
             </div>
@@ -156,7 +156,7 @@ export default function AdminShippingPage() {
           variant="primary"
           size="sm"
           leftIcon={<Plus className="w-4 h-4" />}
-          className="text-xs"
+          className="text-xs font-semibold rounded-xl"
         >
           Add Shipping Method
         </Button>
@@ -167,7 +167,7 @@ export default function AdminShippingPage() {
         <div className="p-4 rounded-xl bg-bg-elevated border border-border-subtle shadow-card space-y-1">
           <div className="flex items-center justify-between text-xs text-fg-muted font-mono uppercase">
             <span>Configured Tiers</span>
-            <Layers className="w-4 h-4 text-cyan-500" />
+            <Layers className="w-4 h-4 text-fg-primary" />
           </div>
           <p className="text-2xl font-bold font-mono text-fg-primary">{methods.length}</p>
         </div>
@@ -313,7 +313,7 @@ export default function AdminShippingPage() {
           <div className="w-full max-w-lg rounded-2xl bg-bg-elevated border border-border-subtle shadow-2xl p-6 space-y-5 text-fg-primary">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <Truck className="w-5 h-5 text-cyan-500" />
+                <Truck className="w-5 h-5 text-amber-500" />
                 <h3 className="text-base font-bold font-display">Configure {editingMethod.name}</h3>
               </div>
               <button
@@ -332,7 +332,7 @@ export default function AdminShippingPage() {
                   type="text"
                   value={editingMethod.name}
                   onChange={(e) => setEditingMethod({ ...editingMethod, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                   required
                 />
               </div>
@@ -342,7 +342,7 @@ export default function AdminShippingPage() {
                 <textarea
                   value={editingMethod.description || ''}
                   onChange={(e) => setEditingMethod({ ...editingMethod, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 h-16 resize-none"
+                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80 h-16 resize-none"
                 />
               </div>
 
@@ -353,7 +353,7 @@ export default function AdminShippingPage() {
                     type="number"
                     value={editingMethod.base_rate}
                     onChange={(e) => setEditingMethod({ ...editingMethod, base_rate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80 font-bold"
                     required
                   />
                 </div>
@@ -369,67 +369,73 @@ export default function AdminShippingPage() {
                         free_shipping_threshold: e.target.value || null,
                       })
                     }
-                    placeholder="Leave empty if none"
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    placeholder="None (Always Paid)"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-fg-muted">Min Delivery Days</label>
+                  <label className="text-fg-muted">Min Estimated Days (SLA)</label>
                   <input
                     type="number"
-                    min="1"
-                    max="30"
+                    min="0"
                     value={editingMethod.estimated_days_min}
                     onChange={(e) =>
-                      setEditingMethod({
-                        ...editingMethod,
-                        estimated_days_min: Number(e.target.value),
-                      })
+                      setEditingMethod({ ...editingMethod, estimated_days_min: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-fg-muted">Max Delivery Days</label>
+                  <label className="text-fg-muted">Max Estimated Days (SLA)</label>
                   <input
                     type="number"
                     min="1"
-                    max="30"
                     value={editingMethod.estimated_days_max}
                     onChange={(e) =>
-                      setEditingMethod({
-                        ...editingMethod,
-                        estimated_days_max: Number(e.target.value),
-                      })
+                      setEditingMethod({ ...editingMethod, estimated_days_max: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-subtle">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingMethod(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  isLoading={updateMutation.isPending}
-                >
-                  Save Changes
-                </Button>
+              <div className="flex items-center justify-between pt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editingMethod.is_active}
+                    onChange={(e) => setEditingMethod({ ...editingMethod, is_active: e.target.checked })}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-xs text-fg-primary">Active for checkout</span>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingMethod(null)}
+                    className="text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    isLoading={updateMutation.isPending}
+                    className="text-xs"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -442,8 +448,8 @@ export default function AdminShippingPage() {
           <div className="w-full max-w-lg rounded-2xl bg-bg-elevated border border-border-subtle shadow-2xl p-6 space-y-5 text-fg-primary">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <Truck className="w-5 h-5 text-cyan-500" />
-                <h3 className="text-base font-bold font-display">Add New Shipping Method</h3>
+                <Truck className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-bold font-display">Provision New Delivery Tier</h3>
               </div>
               <button
                 type="button"
@@ -457,15 +463,13 @@ export default function AdminShippingPage() {
             <form onSubmit={handleCreateMethod} className="space-y-4 text-xs font-mono">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-fg-muted">Code Identifier</label>
+                  <label className="text-fg-muted">Unique Code</label>
                   <input
                     type="text"
                     value={newMethodData.code}
-                    onChange={(e) =>
-                      setNewMethodData({ ...newMethodData, code: e.target.value.toLowerCase() })
-                    }
+                    onChange={(e) => setNewMethodData({ ...newMethodData, code: e.target.value.toLowerCase() })}
                     placeholder="e.g. drone_vip"
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
@@ -476,8 +480,8 @@ export default function AdminShippingPage() {
                     type="text"
                     value={newMethodData.name}
                     onChange={(e) => setNewMethodData({ ...newMethodData, name: e.target.value })}
-                    placeholder="e.g. Autonomous Drone Delivery"
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    placeholder="e.g. VIP Direct Courier"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
@@ -487,11 +491,9 @@ export default function AdminShippingPage() {
                 <label className="text-fg-muted">Description</label>
                 <textarea
                   value={newMethodData.description}
-                  onChange={(e) =>
-                    setNewMethodData({ ...newMethodData, description: e.target.value })
-                  }
-                  placeholder="Method description..."
-                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 h-16 resize-none"
+                  onChange={(e) => setNewMethodData({ ...newMethodData, description: e.target.value })}
+                  placeholder="Direct dispatch with protective vault security wrapping..."
+                  className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80 h-16 resize-none"
                 />
               </div>
 
@@ -501,10 +503,8 @@ export default function AdminShippingPage() {
                   <input
                     type="number"
                     value={newMethodData.base_rate}
-                    onChange={(e) =>
-                      setNewMethodData({ ...newMethodData, base_rate: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500 font-bold"
+                    onChange={(e) => setNewMethodData({ ...newMethodData, base_rate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80 font-bold"
                     required
                   />
                 </div>
@@ -515,61 +515,51 @@ export default function AdminShippingPage() {
                     type="number"
                     value={newMethodData.free_shipping_threshold}
                     onChange={(e) =>
-                      setNewMethodData({
-                        ...newMethodData,
-                        free_shipping_threshold: e.target.value,
-                      })
+                      setNewMethodData({ ...newMethodData, free_shipping_threshold: e.target.value })
                     }
-                    placeholder="Leave empty if none"
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    placeholder="e.g. 100000000"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-fg-muted">Min Delivery Days</label>
+                  <label className="text-fg-muted">Min Days (SLA)</label>
                   <input
                     type="number"
-                    min="1"
-                    max="30"
+                    min="0"
                     value={newMethodData.estimated_days_min}
                     onChange={(e) =>
-                      setNewMethodData({
-                        ...newMethodData,
-                        estimated_days_min: Number(e.target.value),
-                      })
+                      setNewMethodData({ ...newMethodData, estimated_days_min: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-fg-muted">Max Delivery Days</label>
+                  <label className="text-fg-muted">Max Days (SLA)</label>
                   <input
                     type="number"
                     min="1"
-                    max="30"
                     value={newMethodData.estimated_days_max}
                     onChange={(e) =>
-                      setNewMethodData({
-                        ...newMethodData,
-                        estimated_days_max: Number(e.target.value),
-                      })
+                      setNewMethodData({ ...newMethodData, estimated_days_max: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-fg-primary focus:outline-none focus:border-amber-500/80"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-subtle">
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setIsCreateModalOpen(false)}
+                  className="text-xs"
                 >
                   Cancel
                 </Button>
@@ -578,6 +568,7 @@ export default function AdminShippingPage() {
                   variant="primary"
                   size="sm"
                   isLoading={createMutation.isPending}
+                  className="text-xs"
                 >
                   Create Method
                 </Button>

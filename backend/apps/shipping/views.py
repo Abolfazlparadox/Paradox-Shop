@@ -145,3 +145,62 @@ class ShipmentPublicTrackView(APIView):
 
         serializer = ShipmentTrackingSerializer(shipment)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+from rest_framework import serializers as drf_serializers
+
+
+class CarrierWebhookRequestSerializer(drf_serializers.Serializer):
+    tracking_code = drf_serializers.CharField(max_length=100)
+    event = drf_serializers.ChoiceField(
+        choices=[
+            ("label_created", "Label Created"),
+            ("in_transit", "In Transit"),
+            ("out_for_delivery", "Out for Delivery"),
+            ("delivered", "Delivered"),
+            ("failed", "Failed / Returned"),
+        ]
+    )
+    carrier_name = drf_serializers.CharField(max_length=100, required=False, allow_blank=True)
+    notes = drf_serializers.CharField(max_length=500, required=False, allow_blank=True)
+    timestamp = drf_serializers.DateTimeField(required=False)
+
+
+class CarrierWebhookView(APIView):
+    """
+    Automated Webhook listener for external postal / courier shipping service updates.
+    """
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Carrier Status Webhook",
+        description="Receives automated webhook events from postal carriers and logistics partners to update tracking state in real-time.",
+        request=CarrierWebhookRequestSerializer,
+        responses={200: ShipmentTrackingSerializer},
+        tags=["Shipping"],
+    )
+    def post(self, request):
+        serializer = CarrierWebhookRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        tracking_code = data["tracking_code"]
+        event = data["event"]
+        carrier_name = data.get("carrier_name")
+        notes = data.get("notes")
+
+        shipment = get_shipment_by_tracking_code(tracking_code)
+        if not shipment:
+            raise NotFound(f"Shipment with tracking code '{tracking_code}' not found.")
+
+        from .services import update_shipment_status
+        updated_shipment = update_shipment_status(
+            shipment=shipment,
+            new_status=event,
+            carrier_name=carrier_name,
+            notes=notes,
+        )
+
+        return Response(ShipmentTrackingSerializer(updated_shipment).data, status=status.HTTP_200_OK)
+

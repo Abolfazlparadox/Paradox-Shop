@@ -141,7 +141,7 @@ function AdminOrdersContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display text-fg-primary tracking-tight flex items-center gap-2.5">
-            <ShoppingBag className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
+            <ShoppingBag className="w-6 h-6 text-amber-500" />
             <span>Order Fulfillment & Dispatch Manifest</span>
           </h1>
           <p className="text-xs text-fg-secondary font-mono mt-0.5">
@@ -161,7 +161,7 @@ function AdminOrdersContent() {
       </div>
 
       {/* Control Bar: Search & Status Filters */}
-      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
+      <div className="p-4 rounded-2xl bg-bg-elevated border border-border-subtle shadow-card flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
         {/* Search */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -170,7 +170,7 @@ function AdminOrdersContent() {
             placeholder="Search order #, patron email, name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-cyan-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-secondary border border-border-subtle text-xs font-mono text-fg-primary placeholder:text-fg-muted focus:outline-none focus:border-amber-500/80 transition-colors"
           />
         </div>
 
@@ -183,7 +183,7 @@ function AdminOrdersContent() {
               className={cn(
                 'px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap',
                 statusFilter === tab
-                  ? 'bg-cyan-500 text-white dark:text-slate-950 shadow-sm'
+                  ? 'bg-accent text-accent-fg font-semibold shadow-subtle'
                   : 'text-fg-secondary hover:text-fg-primary'
               )}
             >
@@ -195,9 +195,9 @@ function AdminOrdersContent() {
 
       {/* Bulk Action Bar (When Rows Selected) */}
       {selectedOrderIds.length > 0 && (
-        <div className="p-3 px-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between gap-4 text-xs font-mono text-cyan-600 dark:text-cyan-300 animate-in fade-in slide-in-from-top-1">
+        <div className="p-3 px-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-4 text-xs font-mono text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-top-1">
           <div className="flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-cyan-500" />
+            <CheckSquare className="w-4 h-4 text-amber-500" />
             <span className="font-bold">{selectedOrderIds.length} orders selected</span>
           </div>
 
@@ -218,14 +218,14 @@ function AdminOrdersContent() {
       )}
 
       {/* Orders Table */}
-      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-sm overflow-hidden transition-colors">
+      <div className="rounded-2xl bg-bg-elevated border border-border-subtle shadow-card overflow-hidden transition-colors">
         {isLoading ? (
           <div className="p-6">
             <SkeletonTable rows={6} />
           </div>
         ) : orders.length === 0 ? (
           <div className="py-16 text-center text-xs text-fg-muted font-mono space-y-2">
-            <ShoppingBag className="w-8 h-8 mx-auto opacity-50 text-cyan-500" />
+            <ShoppingBag className="w-8 h-8 mx-auto opacity-50 text-fg-muted" />
             <p>No orders matched the active filter criteria.</p>
           </div>
         ) : (
@@ -236,7 +236,7 @@ function AdminOrdersContent() {
                   <th className="py-3.5 px-4 w-10 text-center">
                     <button onClick={handleSelectAll} className="cursor-pointer">
                       {selectedOrderIds.length === orders.length && orders.length > 0 ? (
-                        <CheckSquare className="w-4 h-4 text-cyan-500" />
+                        <CheckSquare className="w-4 h-4 text-amber-500" />
                       ) : (
                         <Square className="w-4 h-4 text-fg-muted" />
                       )}
@@ -262,13 +262,13 @@ function AdminOrdersContent() {
                       key={order.id}
                       className={cn(
                         'hover:bg-bg-secondary/40 transition-colors',
-                        isSelected && 'bg-cyan-500/5 dark:bg-cyan-400/5'
+                        isSelected && 'bg-accent/5'
                       )}
                     >
                       <td className="py-3 px-4 text-center">
                         <button onClick={() => handleToggleSelect(order.id)} className="cursor-pointer">
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-cyan-500" />
+                            <CheckSquare className="w-4 h-4 text-amber-500" />
                           ) : (
                             <Square className="w-4 h-4 text-fg-muted" />
                           )}
@@ -277,7 +277,7 @@ function AdminOrdersContent() {
 
                       <td className="py-3 px-4 font-bold text-fg-primary">
                         <div className="flex items-center gap-1.5">
-                          <ShoppingBag className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 shrink-0" />
+                          <ShoppingBag className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <span>{order.order_number}</span>
                         </div>
                       </td>
@@ -303,7 +303,7 @@ function AdminOrdersContent() {
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 text-right font-bold text-cyan-600 dark:text-cyan-300">
+                      <td className="py-3 px-4 text-right font-bold text-fg-primary">
                         {formatCurrency(Number(order.total || 0))}
                       </td>
 

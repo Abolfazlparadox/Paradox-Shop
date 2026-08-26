@@ -62,10 +62,10 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center text-fg-secondary space-y-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-xl bg-bg-elevated border border-border-subtle flex items-center justify-center text-cyan-500 dark:text-cyan-400 font-mono font-bold text-sm shadow-[0_0_25px_rgba(0,245,212,0.2)]">
+          <div className="w-12 h-12 rounded-xl bg-bg-elevated border border-border-subtle flex items-center justify-center text-fg-primary font-mono font-bold text-sm shadow-card">
             PX
           </div>
-          <Loader2 className="w-6 h-6 animate-spin text-cyan-500 dark:text-cyan-400 absolute -top-1 -right-1" />
+          <Loader2 className="w-6 h-6 animate-spin text-amber-500 absolute -top-1 -right-1" />
         </div>
         <div className="text-xs font-mono tracking-wider text-fg-muted uppercase">
           Verifying Atelier Access Key...
@@ -79,8 +79,8 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   if (!isStaffOrSuper) {
     return (
       <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-bg-elevated border border-rose-500/30 backdrop-blur-xl shadow-2xl space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(244,63,94,0.15)]">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-bg-elevated border border-status-error/30 backdrop-blur-xl shadow-2xl space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-status-error/10 border border-status-error/20 text-status-error flex items-center justify-center mx-auto shadow-subtle">
             <ShieldAlert className="w-7 h-7" />
           </div>
 
@@ -89,7 +89,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
               Access Restricted (403)
             </h2>
             <p className="text-xs text-fg-secondary leading-relaxed">
-              The account <span className="font-mono text-cyan-600 dark:text-cyan-400 font-semibold">{user?.email}</span> does not possess administrative staff clearance for the Paradox Atelier Console.
+              The account <span className="font-mono text-fg-primary font-semibold">{user?.email}</span> does not possess administrative staff clearance for the Paradox Atelier Console.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
               variant="primary"
               size="sm"
               onClick={() => router.push('/admin/login')}
-              className="text-xs bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-semibold"
+              className="text-xs font-semibold"
             >
               Switch Account
             </Button>

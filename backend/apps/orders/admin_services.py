@@ -44,6 +44,31 @@ class AdminOrderService:
 
         order.save(update_fields=["status", "paid_at", "cancelled_at", "updated_at"])
 
+        # Synchronize linked Shipment lifecycle
+        shipment = getattr(order, "shipment", None)
+        if shipment:
+            from apps.shipping.models import Shipment
+            now = timezone.now()
+            if new_status == Order.OrderStatus.PROCESSING:
+                if shipment.status == Shipment.ShipmentStatus.PENDING:
+                    shipment.status = Shipment.ShipmentStatus.LABEL_CREATED
+                    shipment.save(update_fields=["status", "updated_at"])
+            elif new_status == Order.OrderStatus.SHIPPED:
+                if shipment.status in (Shipment.ShipmentStatus.PENDING, Shipment.ShipmentStatus.LABEL_CREATED):
+                    shipment.status = Shipment.ShipmentStatus.IN_TRANSIT
+                    if not shipment.shipped_at:
+                        shipment.shipped_at = now
+                    shipment.save(update_fields=["status", "shipped_at", "updated_at"])
+            elif new_status == Order.OrderStatus.DELIVERED:
+                if shipment.status != Shipment.ShipmentStatus.DELIVERED:
+                    shipment.status = Shipment.ShipmentStatus.DELIVERED
+                    if not shipment.delivered_at:
+                        shipment.delivered_at = now
+                    shipment.save(update_fields=["status", "delivered_at", "updated_at"])
+            elif new_status == Order.OrderStatus.CANCELLED:
+                shipment.status = Shipment.ShipmentStatus.FAILED
+                shipment.save(update_fields=["status", "updated_at"])
+
         # Audit log
         record_audit_log(
             action=f"ORDER_STATUS_MUTATION_{new_status.upper()}",

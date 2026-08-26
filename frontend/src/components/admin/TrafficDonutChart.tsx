@@ -86,7 +86,7 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
               : '184.5M Toman'}
           </span>
           {hoveredChannel && (
-            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">
               {hoveredChannel.percentage}% Share
             </span>
           )}
@@ -106,8 +106,8 @@ export function TrafficDonutChart({ data }: { data: AcquisitionChannel[] }) {
               onMouseLeave={() => setHoveredChannel(null)}
               className={`flex items-center justify-between p-1.5 rounded-lg border transition-all text-left cursor-pointer ${
                 isHovered
-                  ? 'bg-bg-secondary border-cyan-500/40 shadow-sm'
-                  : 'bg-bg-secondary/40 border-border-subtle/40 hover:bg-bg-secondary'
+                  ? 'bg-bg-secondary border-amber-500/40 shadow-subtle'
+                  : 'bg-bg-secondary/40 border-border-subtle hover:bg-bg-secondary'
               }`}
             >
               <div className="flex items-center gap-1.5 truncate">

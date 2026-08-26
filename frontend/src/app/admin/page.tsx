@@ -95,10 +95,10 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* 1. Operational Hero Banner */}
-      <div className="relative p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-bg-elevated via-bg-elevated/90 to-bg-secondary border border-border-subtle backdrop-blur-xl shadow-sm dark:shadow-2xl overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-colors">
-        <div className="space-y-2 max-w-xl z-10">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[11px] font-mono uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
+      <div className="relative p-6 sm:p-8 rounded-2xl bg-bg-elevated border border-border-subtle shadow-card overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-colors">
+        <div className="space-y-2 max-w-xl z-10 text-left">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-mono uppercase tracking-wider font-semibold">
+            <Sparkles className="w-3 h-3 text-amber-500" />
             Atelier Executive Deck
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display text-fg-primary tracking-tight">
@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 />
                 <path
-                  className="text-cyan-500 dark:text-cyan-400"
+                  className="text-amber-500"
                   strokeDasharray={`${kpis.target_revenue_progress}, 100`}
                   strokeWidth="3.5"
                   strokeLinecap="round"
@@ -139,7 +139,7 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-mono uppercase text-fg-muted block tracking-wider">
                 Monthly Target
               </span>
-              <span className="text-xs font-bold font-mono text-cyan-600 dark:text-cyan-300">
+              <span className="text-xs font-bold font-mono text-fg-primary">
                 {formatCurrency(kpis.monthly_revenue)}
               </span>
             </div>
@@ -147,7 +147,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/products?action=new"
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-400 dark:hover:bg-cyan-300 text-white dark:text-slate-950 text-xs font-semibold font-mono transition-all shadow-md shrink-0 w-full sm:w-auto cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent text-accent-fg hover:opacity-90 text-xs font-semibold font-mono transition-all shadow-subtle shrink-0 w-full sm:w-auto cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Artifact</span>
@@ -161,23 +161,23 @@ export default function AdminDashboardPage() {
           title="Gross Monthly Revenue"
           value={formatCurrency(kpis.monthly_revenue)}
           change={kpis.monthly_revenue_change}
-          icon={<DollarSign className="w-4 h-4" />}
-          color="cyan"
+          icon={<DollarSign className="w-4 h-4 text-amber-500" />}
+          color="gold"
           sparklineData={[12, 19, 28, 35, 42, 60, 85, 110]}
         />
         <StatCard
           title="Orders Processed"
           value={`${kpis.total_orders} Orders`}
           change={kpis.total_orders_change}
-          icon={<ShoppingBag className="w-4 h-4" />}
-          color="indigo"
+          icon={<ShoppingBag className="w-4 h-4 text-fg-primary" />}
+          color="neutral"
           sparklineData={[5, 12, 10, 18, 22, 29, 31, 38]}
         />
         <StatCard
           title="Active VIP Patrons"
           value={`${kpis.active_customers}`}
           change={kpis.active_customers_change}
-          icon={<Users className="w-4 h-4" />}
+          icon={<Users className="w-4 h-4 text-emerald-500" />}
           color="emerald"
           sparklineData={[40, 52, 61, 74, 88, 105, 130, 160]}
         />
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
           title="Conversion Efficiency"
           value={`${kpis.conversion_rate}%`}
           change={kpis.conversion_rate_change}
-          icon={<Activity className="w-4 h-4" />}
+          icon={<Activity className="w-4 h-4 text-amber-500" />}
           color="amber"
           sparklineData={[2.8, 3.1, 2.9, 3.4, 3.6, 3.5, 3.7, 3.82]}
         />
@@ -204,9 +204,9 @@ export default function AdminDashboardPage() {
       {/* 4. Operational Tables & Moderation Queue */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Recent Orders Dispatch Table (8 Cols) */}
-        <div className="lg:col-span-8 rounded-2xl bg-bg-elevated border border-border-subtle p-6 space-y-4 shadow-sm dark:shadow-2xl backdrop-blur-xl transition-colors">
+        <div className="lg:col-span-8 rounded-2xl bg-bg-elevated border border-border-subtle p-6 space-y-4 shadow-card backdrop-blur-xl transition-colors">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="text-left">
               <h3 className="text-base font-bold font-display text-fg-primary tracking-tight">
                 Fulfillment & Dispatch Queue
               </h3>
@@ -216,7 +216,7 @@ export default function AdminDashboardPage() {
             </div>
             <Link
               href="/admin/orders"
-              className="text-xs font-mono text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 transition-colors"
+              className="text-xs font-mono text-fg-secondary hover:text-fg-primary hover:underline flex items-center gap-1 transition-colors"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -246,7 +246,7 @@ export default function AdminDashboardPage() {
                     return (
                       <tr key={order.id} className="hover:bg-bg-secondary/40 transition-colors">
                         <td className="py-3 px-2 font-bold text-fg-primary flex items-center gap-1.5">
-                          <ShoppingBag className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
+                          <ShoppingBag className="w-3 h-3 text-amber-500 shrink-0" />
                           {order.order_number}
                         </td>
                         <td className="py-3 px-2">
@@ -255,7 +255,7 @@ export default function AdminDashboardPage() {
                           </div>
                           <div className="text-[10px] text-fg-muted truncate">{order.customer?.email}</div>
                         </td>
-                        <td className="py-3 px-2 font-bold text-cyan-600 dark:text-cyan-300">
+                        <td className="py-3 px-2 font-bold text-fg-primary">
                           {formatCurrency(Number(order.total || 0))}
                         </td>
                         <td className="py-3 px-2">

@@ -27,6 +27,7 @@ export const adminKeys = {
   notifications: () => [...adminKeys.all, 'notifications'] as const,
   auditLogs: (params?: any) => [...adminKeys.all, 'audit-logs', params] as const,
   settings: () => [...adminKeys.all, 'settings'] as const,
+  shippingMethods: () => [...adminKeys.all, 'shipping-methods'] as const,
 };
 
 // ==========================================
@@ -416,3 +417,58 @@ export function useUpdateAdminSettings() {
     },
   });
 }
+
+// ==========================================
+// 12. Shipping Methods & Logistics
+// ==========================================
+export function useAdminShippingMethods() {
+  return useQuery({
+    queryKey: adminKeys.shippingMethods(),
+    queryFn: () => adminApi.getShippingMethods(),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useUpdateShippingMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminApi.updateShippingMethod(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shippingMethods() });
+    },
+  });
+}
+
+export function useCreateShippingMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminApi.createShippingMethod(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shippingMethods() });
+    },
+  });
+}
+
+export function useDeleteShippingMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deleteShippingMethod(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shippingMethods() });
+    },
+  });
+}
+
+export function useUpdateOrderShipment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, data }: { orderId: string; data: any }) =>
+      adminApi.updateOrderShipment(orderId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.orders() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.order(variables.orderId) });
+    },
+  });
+}
+

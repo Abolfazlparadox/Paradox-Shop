@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -102,6 +103,12 @@ export function AdminSidebar() {
           href: '/admin/payments',
           icon: CreditCard,
           permission: 'payments.view',
+        },
+        {
+          title: 'Shipping & Delivery',
+          href: '/admin/shipping',
+          icon: Truck,
+          permission: 'settings.view',
         },
       ],
     },

@@ -28,8 +28,8 @@ def get_or_create_default_shipping_methods():
     express, _ = ShippingMethod.objects.get_or_create(
         code="express",
         defaults={
-            "name": "پیک اکسپرس VIP (تهران و حومه)",
-            "description": "تحویل سریع روزانه با پیک اختصاصی و بسته‌بندی ویژه ضدضربه",
+            "name": "VIP Express Courier",
+            "description": "Priority direct dispatch with shock-resistant luxury protective casing",
             "base_rate": Decimal("1500000"),
             "free_shipping_threshold": Decimal("100000000"),
             "estimated_days_min": 1,
@@ -40,8 +40,8 @@ def get_or_create_default_shipping_methods():
     standard, _ = ShippingMethod.objects.get_or_create(
         code="standard",
         defaults={
-            "name": "پست پیشتاز سراسری",
-            "description": "ارسال ایمن به سراسر کشور با بیمه مرسوله و رهگیری آنلاین",
+            "name": "Insured Standard Post",
+            "description": "Secure nationwide postal delivery with full insurance coverage and online tracking",
             "base_rate": Decimal("750000"),
             "free_shipping_threshold": Decimal("50000000"),
             "estimated_days_min": 2,
@@ -52,8 +52,8 @@ def get_or_create_default_shipping_methods():
     freight, _ = ShippingMethod.objects.get_or_create(
         code="freight",
         defaults={
-            "name": "باربری اختصاصی اقلام سنگین و کلکسیونی",
-            "description": "ارسال کالاهای حساس و حجیم با خودروی اختصاصی و کارشناس تحویل",
+            "name": "Specialized White-Glove Freight",
+            "description": "Dedicated climate-controlled vehicle and handling specialist for heavy/delicate artifacts",
             "base_rate": Decimal("2500000"),
             "free_shipping_threshold": None,
             "estimated_days_min": 2,
@@ -111,7 +111,7 @@ def create_shipment_for_order(
     order: Order,
     shipping_method: Optional[ShippingMethod] = None,
     shipping_fee: Decimal = Decimal("0"),
-    carrier_name: str = "پیک اختصاصی پارادوکس",
+    carrier_name: str = "Paradox Express Fleet",
 ) -> Shipment:
     """
     Create a linked Shipment record when an Order is finalized.

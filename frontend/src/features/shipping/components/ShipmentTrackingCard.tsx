@@ -9,7 +9,6 @@ import {
   Package,
   Copy,
   Check,
-  ExternalLink,
   MapPin,
   ShieldCheck,
   AlertCircle,
@@ -23,11 +22,11 @@ interface ShipmentTrackingCardProps {
 }
 
 const STEPS = [
-  { key: 'pending', label: 'تایید و پردازش', desc: 'سفارش در انبار در حال آماده‌سازی است.' },
-  { key: 'label_created', label: 'صدور بارنامه', desc: 'مرسوله بسته‌بندی و شماره بارنامه صادر شد.' },
-  { key: 'in_transit', label: 'در مسیر ارسال', desc: 'مرسوله به ناوگان پستی / پیک تحویل داده شد.' },
-  { key: 'out_for_delivery', label: 'تحویل به پیک', desc: 'بسته به پیک توزیع برای تحویل تحویل گردید.' },
-  { key: 'delivered', label: 'تحویل موفق', desc: 'سفارش با موفقیت تحویل مشتری داده شد.' },
+  { key: 'pending', label: 'Order Processing', desc: 'Order verified and securely staged at central vault.' },
+  { key: 'label_created', label: 'Label Created', desc: 'Secure packaging sealed and dispatch barcode generated.' },
+  { key: 'in_transit', label: 'In Transit', desc: 'Handed over to carrier fleet for metropolitan/regional transit.' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', desc: 'Dispatched with local courier for immediate doorstep delivery.' },
+  { key: 'delivered', label: 'Delivered', desc: 'Parcel successfully handed over and verified by recipient.' },
 ];
 
 export function ShipmentTrackingCard({
@@ -60,45 +59,45 @@ export function ShipmentTrackingCard({
     if (shipment.tracking_code) {
       navigator.clipboard.writeText(shipment.tracking_code);
       setCopied(true);
-      notify.success('کپی شد', 'کد رهگیری مرسوله در کلیپ‌بورد ذخیره شد.');
+      notify.success('Copied', 'Shipment tracking code copied to clipboard.');
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl bg-neutral-900/60 border border-white/[0.08] backdrop-blur-xl p-6 md:p-8 ${className}`}
+      className={`relative overflow-hidden rounded-3xl bg-neutral-900/60 border border-white/[0.08] backdrop-blur-xl p-6 md:p-8 text-left ${className}`}
     >
       {/* Header with Tracking Number & Carrier */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">
-              وضعیت ارسال سفارش
+              Fulfillment & Delivery Radar
             </span>
             {isFailed ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
                 <AlertCircle className="w-3 h-3" />
-                تحویل ناموفق
+                Delivery Exception
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <ShieldCheck className="w-3 h-3" />
-                {shipment.status_display}
+                {shipment.status_display || shipment.status.toUpperCase()}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-3">
             <h3 className="text-lg md:text-xl font-bold text-white font-mono tracking-wider">
-              {shipment.tracking_code || 'در انتظار صدور'}
+              {shipment.tracking_code || 'PENDING DISPATCH'}
             </h3>
             {shipment.tracking_code && (
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors"
-                title="کپی کد رهگیری"
+                className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                title="Copy tracking code"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               </button>
@@ -106,15 +105,15 @@ export function ShipmentTrackingCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-neutral-400">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-400">
           <div className="flex items-center gap-1.5">
             <Truck className="w-4 h-4 text-neutral-500" />
-            <span>متصدی حمل: <strong className="text-neutral-200">{shipment.carrier_name}</strong></span>
+            <span>Carrier: <strong className="text-neutral-200">{shipment.carrier_name}</strong></span>
           </div>
           {shipment.recipient_city && (
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-neutral-500" />
-              <span>مقصد: <strong className="text-neutral-200">{shipment.recipient_province}، {shipment.recipient_city}</strong></span>
+              <span>Destination: <strong className="text-neutral-200">{shipment.recipient_province}, {shipment.recipient_city}</strong></span>
             </div>
           )}
         </div>
@@ -124,9 +123,9 @@ export function ShipmentTrackingCard({
       <div className="py-8">
         <div className="relative">
           {/* Progress Track Line */}
-          <div className="absolute top-4 right-4 left-4 h-0.5 bg-white/[0.06] hidden md:block" />
+          <div className="absolute top-4 left-4 right-4 h-0.5 bg-white/[0.06] hidden md:block" />
           <div
-            className="absolute top-4 right-4 h-0.5 bg-gradient-to-l from-amber-400 to-amber-500 transition-all duration-700 hidden md:block"
+            className="absolute top-4 left-4 h-0.5 bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 hidden md:block"
             style={{
               width: `calc(${(currentStepIdx / (STEPS.length - 1)) * 100}% - 32px)`,
             }}
@@ -138,7 +137,7 @@ export function ShipmentTrackingCard({
               const isCurrent = idx === currentStepIdx;
 
               return (
-                <div key={step.key} className="flex md:flex-col items-start md:items-center gap-4 md:gap-3 text-right md:text-center">
+                <div key={step.key} className="flex md:flex-col items-start md:items-center gap-4 md:gap-3 text-left md:text-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 shrink-0 ${
                       isCompleted
@@ -183,19 +182,19 @@ export function ShipmentTrackingCard({
             {shipment.shipped_at && (
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-neutral-500" />
-                زمان تحویل به پیک: {new Date(shipment.shipped_at).toLocaleDateString('fa-IR')}
+                Dispatched: {new Date(shipment.shipped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
             {shipment.delivered_at && (
               <span className="flex items-center gap-1.5 text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                تحویل داده شده: {new Date(shipment.delivered_at).toLocaleDateString('fa-IR')}
+                Delivered: {new Date(shipment.delivered_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
           </div>
           {shipment.notes && (
             <span className="text-neutral-400 italic">
-              یادداشت: {shipment.notes}
+              Dispatch Note: {shipment.notes}
             </span>
           )}
         </div>

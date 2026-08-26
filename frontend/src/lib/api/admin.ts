@@ -12,7 +12,9 @@ import {
   AdminPaymentTransaction,
   AdminProduct,
   AdminReviewItem,
+  AdminShippingMethod,
   AdminSystemSettingsData,
+  Shipment,
 } from '@/types/api';
 import { AdminCoupon } from '@/types/admin';
 
@@ -302,5 +304,52 @@ export const adminApi = {
     } catch {
       // Graceful fallback
     }
+  },
+
+  // 13. Shipping Methods & Logistics
+  async getShippingMethods(): Promise<AdminShippingMethod[]> {
+    const { data } = await apiClient.get('/admin/shipping/methods/');
+    return extractResults<AdminShippingMethod>(data);
+  },
+
+  async updateShippingMethod(
+    id: string,
+    methodData: Partial<AdminShippingMethod>
+  ): Promise<AdminShippingMethod> {
+    const { data } = await apiClient.patch<AdminShippingMethod>(
+      `/admin/shipping/methods/${id}/`,
+      methodData
+    );
+    return data;
+  },
+
+  async createShippingMethod(
+    methodData: Partial<AdminShippingMethod>
+  ): Promise<AdminShippingMethod> {
+    const { data } = await apiClient.post<AdminShippingMethod>(
+      '/admin/shipping/methods/',
+      methodData
+    );
+    return data;
+  },
+
+  async deleteShippingMethod(id: string): Promise<void> {
+    await apiClient.delete(`/admin/shipping/methods/${id}/`);
+  },
+
+  async updateOrderShipment(
+    orderId: string,
+    shipmentData: {
+      status?: string;
+      tracking_code?: string;
+      carrier_name?: string;
+      notes?: string;
+    }
+  ): Promise<Shipment> {
+    const { data } = await apiClient.patch<Shipment>(
+      `/admin/orders/${orderId}/shipment/`,
+      shipmentData
+    );
+    return data;
   },
 };

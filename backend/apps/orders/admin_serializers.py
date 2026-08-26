@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from apps.orders.models import Order, OrderAddress, OrderItem
 from apps.payments.models import Payment
+from apps.shipping.serializers import ShipmentSerializer
 
 
 class AdminOrderItemSerializer(serializers.ModelSerializer):
@@ -51,6 +52,13 @@ class AdminCustomerSummarySerializer(serializers.Serializer):
 class AdminOrderListSerializer(serializers.ModelSerializer):
     customer = AdminCustomerSummarySerializer(source="user", read_only=True)
     shipping_address = AdminOrderAddressSerializer(read_only=True)
+    shipment = ShipmentSerializer(read_only=True)
+    shipping_method_name = serializers.CharField(
+        source="shipment.shipping_method.name", read_only=True, default=None
+    )
+    tracking_code = serializers.CharField(
+        source="shipment.tracking_code", read_only=True, default=None
+    )
     items = AdminOrderItemSerializer(many=True, read_only=True)
     items_count = serializers.IntegerField(source="items.count", read_only=True)
     total_amount = serializers.DecimalField(source="total", max_digits=12, decimal_places=0, read_only=True)
@@ -70,6 +78,9 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             "items_count",
             "items",
             "shipping_address",
+            "shipment",
+            "shipping_method_name",
+            "tracking_code",
             "paid_at",
             "cancelled_at",
             "created_at",

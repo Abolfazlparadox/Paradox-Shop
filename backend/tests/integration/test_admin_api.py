@@ -294,3 +294,92 @@ class TestAdminModerationAndGovernance:
 
         # Verify audit log
         assert AuditLog.objects.filter(resource_type="SETTINGS", action="SETTINGS_UPDATE").exists()
+
+
+@pytest.mark.django_db
+class TestAdminShippingAndLogistics:
+    """Test admin management of shipping rate tiers and order tracking updates."""
+
+    def test_shipping_methods_crud_and_rates_update(self, auth_client, create_user):
+        from apps.shipping.models import ShippingMethod
+        staff = create_user(email="staff_logistics@example.com", is_staff=True)
+        client = auth_client(staff)
+
+        # Create method
+        res_create = client.post(
+            "/api/v1/admin/shipping/methods/",
+            {
+                "code": "drone_vip",
+                "name": "Autonomous Drone VIP",
+                "description": "Sub-hour aerial dispatch",
+                "base_rate": "3500000",
+                "free_shipping_threshold": "150000000",
+                "estimated_days_min": 1,
+                "estimated_days_max": 1,
+                "is_active": True,
+                "sort_order": 5,
+            },
+            format="json",
+        )
+        assert res_create.status_code == status.HTTP_201_CREATED
+        method_id = res_create.json()["id"]
+
+        # List methods
+        res_list = client.get("/api/v1/admin/shipping/methods/")
+        assert res_list.status_code == status.HTTP_200_OK
+        codes = [m["code"] for m in res_list.json()]
+        assert "drone_vip" in codes
+
+        # Update rates & SLA
+        res_patch = client.patch(
+            f"/api/v1/admin/shipping/methods/{method_id}/",
+            {"base_rate": "4000000", "is_active": False},
+            format="json",
+        )
+        assert res_patch.status_code == status.HTTP_200_OK
+        assert res_patch.json()["base_rate"] == "4000000"
+        assert res_patch.json()["is_active"] is False
+
+    def test_order_shipment_tracking_update(self, auth_client, create_user):
+        from apps.shipping.services import create_shipment_for_order
+        from apps.orders.models import Order
+        staff = create_user(email="staff_tracking@example.com", is_staff=True)
+        customer = create_user(email="customer_track@example.com")
+        client = auth_client(staff)
+
+        order = Order.objects.create(
+            user=customer,
+            order_number="ORD-SHIP-999",
+            subtotal=Decimal("8000000"),
+            total=Decimal("8000000"),
+        )
+        shipment = create_shipment_for_order(
+            order=order,
+            carrier_name="Paradox Express Fleet",
+            shipping_fee=Decimal("1500000"),
+        )
+
+        # Update shipment tracking and status
+        res_update = client.patch(
+            f"/api/v1/admin/orders/{order.id}/shipment/",
+            {
+                "status": "in_transit",
+                "carrier_name": "Specialized Armored Transit",
+                "notes": "Custom seal applied",
+            },
+            format="json",
+        )
+        assert res_update.status_code == status.HTTP_200_OK
+        data = res_update.json()
+        assert data["status"] == "in_transit"
+        assert data["carrier_name"] == "Specialized Armored Transit"
+        assert data["notes"] == "Custom seal applied"
+
+        # Check order detail contains shipment
+        res_order = client.get(f"/api/v1/admin/orders/{order.id}/")
+        assert res_order.status_code == status.HTTP_200_OK
+        order_data = res_order.json()
+        assert order_data["shipment"] is not None
+        assert order_data["shipment"]["tracking_code"] == shipment.tracking_code
+        assert order_data["shipping_method_name"] is None  # no method object linked, but valid string
+

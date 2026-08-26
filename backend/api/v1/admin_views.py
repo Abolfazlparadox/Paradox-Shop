@@ -58,6 +58,9 @@ from common.admin_serializers import (
 )
 from common.analytics_selectors import AnalyticsSelector
 from common.models import AdminNotification, AuditLog, SystemSetting
+from apps.shipping.models import Shipment, ShippingMethod
+from apps.shipping.serializers import ShippingMethodSerializer, ShipmentSerializer
+from apps.shipping.services import update_shipment_status
 from common.permissions import IsStaffAdmin
 
 User = get_user_model()
@@ -709,3 +712,67 @@ class AdminSettingsView(APIView):
         )
 
         return Response(setting_obj.value)
+
+
+# ============================================================
+# 12. Shipping Methods & Logistics Admin
+# ============================================================
+
+@extend_schema(tags=["Admin - Shipping"], responses={200: ShippingMethodSerializer(many=True)})
+class AdminShippingMethodListView(generics.ListCreateAPIView):
+    """Lists all shipping methods or provisions a new shipping rate tier."""
+
+    permission_classes = [IsStaffAdmin]
+    serializer_class = ShippingMethodSerializer
+    queryset = ShippingMethod.objects.all().order_by("sort_order", "base_rate")
+    pagination_class = None
+
+
+@extend_schema(tags=["Admin - Shipping"], responses={200: ShippingMethodSerializer})
+class AdminShippingMethodDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Inspects, reconfigures (rates, thresholds, delivery days), or removes a shipping method."""
+
+    permission_classes = [IsStaffAdmin]
+    serializer_class = ShippingMethodSerializer
+    queryset = ShippingMethod.objects.all()
+
+
+from rest_framework import serializers as drf_serializers
+
+
+class AdminOrderShipmentUpdateSerializer(drf_serializers.Serializer):
+    status = drf_serializers.ChoiceField(choices=Shipment.ShipmentStatus.choices, required=False)
+    tracking_code = drf_serializers.CharField(max_length=100, required=False, allow_blank=True)
+    carrier_name = drf_serializers.CharField(max_length=100, required=False, allow_blank=True)
+    notes = drf_serializers.CharField(max_length=500, required=False, allow_blank=True)
+
+
+@extend_schema(tags=["Admin - Shipping"], request=AdminOrderShipmentUpdateSerializer, responses={200: ShipmentSerializer})
+class AdminOrderShipmentUpdateView(APIView):
+    """Updates courier tracking, carrier details, or transitions shipment state for an order."""
+
+    permission_classes = [IsStaffAdmin]
+
+    def patch(self, request, pk):
+        serializer = AdminOrderShipmentUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        order = get_object_or_404(Order, id=pk)
+        shipment = getattr(order, "shipment", None)
+        if not shipment:
+            return Response({"detail": "No shipment associated with this order."}, status=status.HTTP_404_NOT_FOUND)
+
+        data = serializer.validated_data
+        if "carrier_name" in data:
+            shipment.carrier_name = data["carrier_name"]
+        if "tracking_code" in data:
+            shipment.tracking_code = data["tracking_code"]
+        if "notes" in data:
+            shipment.notes = data["notes"]
+        shipment.save()
+
+        if "status" in data and data["status"] != shipment.status:
+            shipment = update_shipment_status(shipment, data["status"], notes=data.get("notes"))
+
+        return Response(ShipmentSerializer(shipment).data)
+

@@ -10,6 +10,9 @@ import {
   MapPin,
   Printer,
   RotateCcw,
+  Truck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { notify } from '@/stores/notifications';
@@ -26,6 +29,7 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [copiedTracking, setCopiedTracking] = useState(false);
 
   if (!order) return null;
 
@@ -63,10 +67,20 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
     }, 300);
   };
 
+  const handleCopyTracking = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedTracking(true);
+    notify.success('Copied', 'Tracking code copied to clipboard.');
+    setTimeout(() => setCopiedTracking(false), 2000);
+  };
+
   const totalNum = Number(order.total || order.total_amount || 0);
   const shippingNum = Number(order.shipping_cost || 0);
   const discountNum = Number(order.discount_amount || 0);
   const subtotalNum = Number(order.subtotal || totalNum - shippingNum + discountNum);
+  const trackingCode = order.shipment?.tracking_code || order.tracking_code;
+  const shippingMethodName = order.shipment?.shipping_method?.name || order.shipping_method_name || 'Standard Shipping';
+  const carrierName = order.shipment?.carrier_name || 'Paradox Express Fleet';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
@@ -159,7 +173,7 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
           </div>
 
           {/* Grid Information Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Customer Dossier */}
             <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold font-display text-fg-primary pb-2 border-b border-border-subtle">
@@ -169,11 +183,11 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
               <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Full Name:</span>
-                  <span className="text-fg-primary font-semibold">{order.customer?.name || 'Anonymous Patron'}</span>
+                  <span className="text-fg-primary font-semibold truncate max-w-[120px]">{order.customer?.name || 'Anonymous Patron'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Email:</span>
-                  <span className="text-cyan-600 dark:text-cyan-300">{order.customer?.email}</span>
+                  <span className="text-cyan-600 dark:text-cyan-300 truncate max-w-[120px]">{order.customer?.email}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fg-muted">Contact:</span>
@@ -196,7 +210,7 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
                   <div className="text-fg-secondary">
                     {order.shipping_address.province}, {order.shipping_address.city}
                   </div>
-                  <div className="text-fg-muted text-[11px]">
+                  <div className="text-fg-muted text-[11px] truncate">
                     {order.shipping_address.address_line}
                   </div>
                   <div className="text-fg-muted text-[10px] font-mono">
@@ -206,6 +220,55 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
               ) : (
                 <div className="text-xs text-fg-muted font-mono">No shipping address recorded.</div>
               )}
+            </div>
+
+            {/* Shipping Method & Logistics */}
+            <div className="p-4 rounded-xl bg-bg-secondary/40 border border-border-subtle space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold font-display text-fg-primary pb-2 border-b border-border-subtle">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  <span>Logistics & Courier</span>
+                </div>
+                {order.shipment?.status && (
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
+                    {order.shipment.status_display || order.shipment.status}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Method:</span>
+                  <span className="text-fg-primary font-semibold truncate max-w-[130px]" title={shippingMethodName}>
+                    {shippingMethodName}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Shipping Fee:</span>
+                  <span className="text-emerald-500 font-bold">
+                    {shippingNum === 0 ? 'Free' : formatCurrency(shippingNum)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Carrier:</span>
+                  <span className="text-fg-secondary truncate max-w-[130px]">{carrierName}</span>
+                </div>
+                {trackingCode && (
+                  <div className="flex justify-between items-center pt-1 border-t border-border-subtle/40">
+                    <span className="text-fg-muted">Tracking:</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-amber-400 font-bold text-[11px]">{trackingCode}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyTracking(trackingCode)}
+                        className="p-1 rounded hover:bg-bg-secondary text-fg-muted hover:text-fg-primary cursor-pointer"
+                        title="Copy Tracking Code"
+                      >
+                        {copiedTracking ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

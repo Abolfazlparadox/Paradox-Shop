@@ -32,6 +32,9 @@ from .admin_views import (
     AdminReviewListView,
     AdminReviewModerateView,
     AdminSettingsView,
+    AdminShippingMethodDetailView,
+    AdminShippingMethodListView,
+    AdminOrderShipmentUpdateView,
 )
 
 app_name = "admin"
@@ -50,6 +53,11 @@ urlpatterns = [
     path("orders/<uuid:pk>/", AdminOrderDetailView.as_view(), name="orders-detail"),
     path("orders/<uuid:pk>/status/", AdminOrderStatusUpdateView.as_view(), name="orders-status-update"),
     path("orders/<uuid:pk>/cancel/", AdminOrderCancelView.as_view(), name="orders-cancel"),
+    path("orders/<uuid:pk>/shipment/", AdminOrderShipmentUpdateView.as_view(), name="orders-shipment-update"),
+
+    # Shipping Methods & Logistics
+    path("shipping/methods/", AdminShippingMethodListView.as_view(), name="shipping-methods-list"),
+    path("shipping/methods/<uuid:pk>/", AdminShippingMethodDetailView.as_view(), name="shipping-methods-detail"),
 
     # Catalog & Inventory
     path("products/", AdminProductListCreateView.as_view(), name="products-list"),

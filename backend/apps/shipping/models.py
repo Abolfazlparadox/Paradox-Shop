@@ -52,8 +52,8 @@ class ShippingMethod(UUIDPrimaryKeyMixin, TimestampMixin):
     @property
     def estimated_delivery_text(self) -> str:
         if self.estimated_days_min == self.estimated_days_max:
-            return f"{self.estimated_days_min} روز کاری"
-        return f"{self.estimated_days_min} تا {self.estimated_days_max} روز کاری"
+            return f"{self.estimated_days_min} Business Day{'s' if self.estimated_days_min > 1 else ''}"
+        return f"{self.estimated_days_min} to {self.estimated_days_max} Business Days"
 
 
 class ShippingZone(UUIDPrimaryKeyMixin, TimestampMixin):
@@ -188,7 +188,7 @@ class Shipment(UUIDPrimaryKeyMixin, TimestampMixin):
         _("tracking code"), max_length=100, null=True, blank=True, unique=True, db_index=True
     )
     carrier_name = models.CharField(
-        _("carrier name"), max_length=100, default="پیک اختصاصی پارادوکس"
+        _("carrier name"), max_length=100, default="Paradox Express Fleet"
     )
     shipping_fee = models.DecimalField(
         _("shipping fee (Rial)"), max_digits=12, decimal_places=0, default=0

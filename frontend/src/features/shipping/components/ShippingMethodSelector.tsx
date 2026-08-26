@@ -37,7 +37,7 @@ export function ShippingMethodSelector({
       <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center">
         <Truck className="w-8 h-8 text-neutral-500 mx-auto mb-2" />
         <p className="text-sm text-neutral-400">
-          روش ارسالی برای این آدرس یافت نشد. لطفاً آدرس تحویل را بررسی کنید.
+          No shipping methods available for this destination. Please verify delivery address.
         </p>
       </div>
     );
@@ -57,10 +57,9 @@ export function ShippingMethodSelector({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 text-left">
       {methods.map((method) => {
         const isSelected = selectedMethodId === method.method_id;
-        const feeNumber = Number(method.shipping_fee);
 
         return (
           <motion.div
@@ -94,7 +93,7 @@ export function ShippingMethodSelector({
                     {method.is_free && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <Sparkles className="w-3 h-3" />
-                        ارسال رایگان
+                        Free Shipping
                       </span>
                     )}
                   </div>
@@ -107,17 +106,17 @@ export function ShippingMethodSelector({
 
                   <div className="flex items-center gap-2 pt-1 text-xs text-neutral-400">
                     <Clock className="w-3.5 h-3.5 text-neutral-500" />
-                    <span>زمان تحویل تقریبی: {method.estimated_delivery_text}</span>
+                    <span>Estimated Delivery: {method.estimated_delivery_text}</span>
                   </div>
                 </div>
               </div>
 
               {/* Price Tag */}
-              <div className="text-left shrink-0">
+              <div className="text-right shrink-0">
                 {method.is_free ? (
-                  <div className="text-left">
+                  <div className="text-right">
                     <span className="text-sm md:text-base font-bold text-emerald-400">
-                      رایگان
+                      Free
                     </span>
                     {Number(method.base_rate) > 0 && (
                       <div className="text-[11px] text-neutral-500 line-through">
@@ -126,7 +125,7 @@ export function ShippingMethodSelector({
                     )}
                   </div>
                 ) : (
-                  <div className="text-left">
+                  <div className="text-right">
                     <span className="text-sm md:text-base font-bold text-white tracking-tight">
                       {formatCurrency(method.shipping_fee)}
                     </span>
@@ -136,7 +135,7 @@ export function ShippingMethodSelector({
             </div>
 
             {/* Subtle Active Indicator Dot */}
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-4 right-4">
               <div
                 className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${
                   isSelected

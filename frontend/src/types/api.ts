@@ -649,12 +649,29 @@ export interface AdminOrder {
   items_count: number;
   items: AdminOrderItem[];
   shipping_address?: AdminOrderAddress;
+  shipment?: Shipment | null;
+  shipping_method_name?: string | null;
+  tracking_code?: string | null;
   notes?: string | null;
   payments?: AdminPaymentSummary[];
   paid_at?: string | null;
   cancelled_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface AdminShippingMethod {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  base_rate: string;
+  free_shipping_threshold?: string | null;
+  estimated_days_min: number;
+  estimated_days_max: number;
+  estimated_delivery_text?: string;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface AdminProductVariant {

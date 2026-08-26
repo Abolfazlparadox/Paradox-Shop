@@ -187,7 +187,7 @@ class TestShippingAPI:
         shipment = create_shipment_for_order(
             order=order,
             shipping_method=self.express,
-            carrier_name="پیک اختصاصی پارادوکس",
+            carrier_name="Paradox Express Fleet",
             shipping_fee=Decimal("1500000"),
         )
 
@@ -196,7 +196,7 @@ class TestShippingAPI:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["tracking_code"] == shipment.tracking_code
-        assert data["carrier_name"] == "پیک اختصاصی پارادوکس"
+        assert data["carrier_name"] == "Paradox Express Fleet"
         assert data["status"] == "pending"
 
     def test_shipment_status_transition_and_order_sync(self, create_user):

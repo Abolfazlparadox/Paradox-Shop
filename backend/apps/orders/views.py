@@ -75,6 +75,7 @@ class CheckoutView(APIView):
             address_id=serializer.validated_data["address_id"],
             shipping_method_id=serializer.validated_data.get("shipping_method_id"),
             notes=serializer.validated_data.get("notes"),
+            coupon_code=serializer.validated_data.get("coupon_code"),
         )
 
         # Re-fetch with full relations for the response

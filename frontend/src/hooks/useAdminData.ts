@@ -28,6 +28,12 @@ export const adminKeys = {
   auditLogs: (params?: any) => [...adminKeys.all, 'audit-logs', params] as const,
   settings: () => [...adminKeys.all, 'settings'] as const,
   shippingMethods: () => [...adminKeys.all, 'shipping-methods'] as const,
+  promotions: () => [...adminKeys.all, 'promotions'] as const,
+  promotion: (id: string) => [...adminKeys.all, 'promotion', id] as const,
+  coupons: () => [...adminKeys.all, 'coupons'] as const,
+  coupon: (id: string) => [...adminKeys.all, 'coupon', id] as const,
+  couponUsages: (id: string) => [...adminKeys.all, 'coupon', id, 'usages'] as const,
+  promotionReports: (params?: any) => [...adminKeys.all, 'promotions', 'reports', params] as const,
 };
 
 // ==========================================
@@ -471,4 +477,153 @@ export function useUpdateOrderShipment() {
     },
   });
 }
+
+// ==========================================
+// 14. Promotions & Campaigns
+// ==========================================
+export function useAdminPromotions() {
+  return useQuery({
+    queryKey: adminKeys.promotions(),
+    queryFn: () => adminApi.getPromotions(),
+  });
+}
+
+export function useAdminPromotion(id: string) {
+  return useQuery({
+    queryKey: adminKeys.promotion(id),
+    queryFn: () => adminApi.getPromotion(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCreatePromotion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminApi.createPromotion(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotions() });
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+    },
+  });
+}
+
+export function useUpdatePromotion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminApi.updatePromotion(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotions() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotion(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+    },
+  });
+}
+
+export function useDeletePromotion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deletePromotion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotions() });
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+    },
+  });
+}
+
+export function useTogglePromotion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.togglePromotion(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotions() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.promotion(id) });
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+    },
+  });
+}
+
+// ==========================================
+// 15. Vouchers & Coupons
+// ==========================================
+export function useAdminCoupons() {
+  return useQuery({
+    queryKey: adminKeys.coupons(),
+    queryFn: () => adminApi.getCoupons(),
+  });
+}
+
+export function useAdminCoupon(id: string) {
+  return useQuery({
+    queryKey: adminKeys.coupon(id),
+    queryFn: () => adminApi.getCoupon(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useAdminCouponUsages(id: string) {
+  return useQuery({
+    queryKey: adminKeys.couponUsages(id),
+    queryFn: () => adminApi.getCouponUsages(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCreateCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminApi.createCoupon(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupons() });
+    },
+  });
+}
+
+export function useUpdateCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminApi.updateCoupon(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupons() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupon(variables.id) });
+    },
+  });
+}
+
+export function useDeleteCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deleteCoupon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupons() });
+    },
+  });
+}
+
+export function useToggleCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.toggleCoupon(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupons() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.coupon(id) });
+    },
+  });
+}
+
+// ==========================================
+// 16. Promotion Telemetry & Reports
+// ==========================================
+export function useAdminPromotionReports(params?: {
+  days?: number;
+  start_date?: string;
+  end_date?: string;
+}) {
+  return useQuery({
+    queryKey: adminKeys.promotionReports(params),
+    queryFn: () => adminApi.getPromotionReports(params),
+  });
+}
+
 

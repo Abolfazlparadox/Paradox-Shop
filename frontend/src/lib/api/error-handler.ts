@@ -78,9 +78,11 @@ export function parseApiError(error: unknown, context: ErrorContext = 'generic')
     let rawMessage = '';
     let details: Record<string, string[]> | null = null;
 
-    // Check standardized Paradox Shop error envelope: { error: { code, message, details } }
+    // Check standardized Paradox Shop error envelope or direct DRF validation error map
     if (data && typeof data === 'object') {
-      if (data.error && typeof data.error === 'object') {
+      if (Array.isArray(data)) {
+        rawMessage = data.map(String).join(', ');
+      } else if (data.error && typeof data.error === 'object') {
         code = data.error.code || `HTTP_${status}`;
         rawMessage = data.error.message || '';
         if (data.error.details && typeof data.error.details === 'object') {
@@ -91,6 +93,30 @@ export function parseApiError(error: unknown, context: ErrorContext = 'generic')
         rawMessage = data.detail || data.message || '';
         if (data.errors && typeof data.errors === 'object') {
           details = data.errors;
+        } else {
+          // Extract direct field validation errors from DRF: { [field]: ["error"] }
+          const fieldKeys = Object.keys(data).filter(
+            (k) => !['code', 'status', 'detail', 'message', 'request_id'].includes(k)
+          );
+          if (fieldKeys.length > 0) {
+            const extractedDetails: Record<string, string[]> = {};
+            const extractedMsgs: string[] = [];
+            for (const key of fieldKeys) {
+              const val = data[key];
+              const msgList = Array.isArray(val)
+                ? val.map(String)
+                : typeof val === 'object' && val !== null
+                ? [JSON.stringify(val)]
+                : [String(val)];
+              extractedDetails[key] = msgList;
+              const formattedField = key === 'non_field_errors' ? '' : `${key}: `;
+              extractedMsgs.push(`${formattedField}${msgList.join(', ')}`);
+            }
+            details = extractedDetails;
+            if (!rawMessage && extractedMsgs.length > 0) {
+              rawMessage = extractedMsgs.join(' | ');
+            }
+          }
         }
       }
     }
@@ -113,7 +139,9 @@ export function parseApiError(error: unknown, context: ErrorContext = 'generic')
             : 'Too many requests. Please slow down and wait a moment.';
       }
     } else if (isAuthError) {
-      if (context === 'login') {
+      if (rawMessage && !rawMessage.toLowerCase().includes('given token not valid')) {
+        userMessage = rawMessage;
+      } else if (context === 'login') {
         userMessage = 'Invalid email or password. Please verify your credentials.';
       } else if (context === 'checkout') {
         userMessage = 'Your session has expired. Please sign in to proceed with checkout.';
@@ -121,18 +149,17 @@ export function parseApiError(error: unknown, context: ErrorContext = 'generic')
         userMessage = 'Authentication required. Please sign in to continue.';
       }
     } else if (status === 403) {
-      userMessage = 'You do not have permission to perform this action.';
+      userMessage = rawMessage || 'You do not have permission to perform this action.';
     } else if (status === 404) {
-      userMessage = 'The requested resource was not found.';
+      userMessage = rawMessage || 'The requested resource was not found.';
     } else if (status === 400) {
       if (details) {
-        // Extract first human-readable validation error
-        const keys = Object.keys(details);
-        if (keys.length > 0) {
-          const firstKey = keys[0];
-          const val = details[firstKey];
-          const text = Array.isArray(val) ? val[0] : String(val);
-          userMessage = `${firstKey !== 'non_field_errors' ? `${firstKey}: ` : ''}${text}`;
+        const parts = Object.entries(details).map(([key, val]) => {
+          const text = Array.isArray(val) ? val.join(', ') : String(val);
+          return key !== 'non_field_errors' ? `${key}: ${text}` : text;
+        });
+        if (parts.length > 0) {
+          userMessage = parts.join(' | ');
         }
       }
       if (!userMessage) {

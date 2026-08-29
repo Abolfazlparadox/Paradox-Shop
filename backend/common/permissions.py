@@ -73,6 +73,8 @@ def get_user_effective_permissions(user) -> list[str]:
             "analytics.view",
             "audit.view",
             "settings.manage",
+            "promotions.view",
+            "promotions.manage",
         ]
 
     # For staff users, return specific domain capabilities

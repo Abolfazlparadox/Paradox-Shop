@@ -16,7 +16,12 @@ import {
   AdminSystemSettingsData,
   Shipment,
 } from '@/types/api';
-import { AdminCoupon } from '@/types/admin';
+import {
+  AdminCoupon,
+  AdminPromotion,
+  AdminCouponUsage,
+  AdminPromotionReports,
+} from '@/types/admin';
 
 
 /**
@@ -270,40 +275,87 @@ export const adminApi = {
     return data;
   },
 
-  // 12. Marketing & Promotional Coupons
+  // 12. Promotions & Marketing Campaigns
+  async getPromotions(): Promise<AdminPromotion[]> {
+    const { data } = await apiClient.get('/admin/promotions/');
+    return extractResults<AdminPromotion>(data);
+  },
+
+  async getPromotion(id: string): Promise<AdminPromotion> {
+    const { data } = await apiClient.get<AdminPromotion>(`/admin/promotions/${id}/`);
+    return data;
+  },
+
+  async createPromotion(promotionData: Partial<AdminPromotion>): Promise<AdminPromotion> {
+    const { data } = await apiClient.post<AdminPromotion>('/admin/promotions/', promotionData);
+    return data;
+  },
+
+  async updatePromotion(
+    id: string,
+    promotionData: Partial<AdminPromotion>
+  ): Promise<AdminPromotion> {
+    const { data } = await apiClient.patch<AdminPromotion>(
+      `/admin/promotions/${id}/`,
+      promotionData
+    );
+    return data;
+  },
+
+  async deletePromotion(id: string): Promise<void> {
+    await apiClient.delete(`/admin/promotions/${id}/`);
+  },
+
+  async togglePromotion(id: string): Promise<AdminPromotion> {
+    const { data } = await apiClient.post<AdminPromotion>(`/admin/promotions/${id}/toggle/`);
+    return data;
+  },
+
+  // 12.1 Vouchers & Coupons
   async getCoupons(): Promise<AdminCoupon[]> {
-    try {
-      const { data } = await apiClient.get('/admin/marketing/coupons/');
-      return extractResults<AdminCoupon>(data);
-    } catch {
-      return [];
-    }
+    const { data } = await apiClient.get('/admin/coupons/');
+    return extractResults<AdminCoupon>(data);
   },
 
-  async saveCoupon(couponData: Partial<AdminCoupon>): Promise<AdminCoupon> {
-    try {
-      const { data } = await apiClient.post<AdminCoupon>('/admin/marketing/coupons/', couponData);
-      return data;
-    } catch {
-      return {
-        id: couponData.id || `cpn-${Date.now()}`,
-        code: couponData.code || 'PARADOX10',
-        discount_type: couponData.discount_type || 'PERCENTAGE',
-        discount_value: couponData.discount_value || 10,
-        usage_limit: couponData.usage_limit || 100,
-        usage_count: couponData.usage_count || 0,
-        is_active: couponData.is_active !== undefined ? couponData.is_active : true,
-        created_at: new Date().toISOString(),
-      };
-    }
+  async getCoupon(id: string): Promise<AdminCoupon> {
+    const { data } = await apiClient.get<AdminCoupon>(`/admin/coupons/${id}/`);
+    return data;
   },
 
-  async toggleCoupon(id: string): Promise<void> {
-    try {
-      await apiClient.post(`/admin/marketing/coupons/${id}/toggle/`);
-    } catch {
-      // Graceful fallback
-    }
+  async createCoupon(couponData: Partial<AdminCoupon>): Promise<AdminCoupon> {
+    const { data } = await apiClient.post<AdminCoupon>('/admin/coupons/', couponData);
+    return data;
+  },
+
+  async updateCoupon(id: string, couponData: Partial<AdminCoupon>): Promise<AdminCoupon> {
+    const { data } = await apiClient.patch<AdminCoupon>(`/admin/coupons/${id}/`, couponData);
+    return data;
+  },
+
+  async deleteCoupon(id: string): Promise<void> {
+    await apiClient.delete(`/admin/coupons/${id}/`);
+  },
+
+  async toggleCoupon(id: string): Promise<AdminCoupon> {
+    const { data } = await apiClient.post<AdminCoupon>(`/admin/coupons/${id}/toggle/`);
+    return data;
+  },
+
+  async getCouponUsages(id: string): Promise<AdminCouponUsage[]> {
+    const { data } = await apiClient.get(`/admin/coupons/${id}/usages/`);
+    return extractResults<AdminCouponUsage>(data);
+  },
+
+  // 12.2 Promotion Telemetry & Reports
+  async getPromotionReports(params?: {
+    days?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<AdminPromotionReports> {
+    const { data } = await apiClient.get<AdminPromotionReports>('/admin/promotions/reports/', {
+      params,
+    });
+    return data;
   },
 
   // 13. Shipping Methods & Logistics

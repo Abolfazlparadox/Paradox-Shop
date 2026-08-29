@@ -26,6 +26,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     """Serializer for a Product's purchasable SKU/variant."""
 
     final_price = serializers.DecimalField(max_digits=12, decimal_places=0, read_only=True)
+    discounted_price = serializers.SerializerMethodField()
+    is_discounted = serializers.SerializerMethodField()
+    active_promotion = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductVariant
@@ -35,10 +38,70 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "name",
             "price_override",
             "final_price",
+            "discounted_price",
+            "is_discounted",
+            "active_promotion",
             "stock",
             "is_active",
             "attributes",
         ]
+
+    def _get_pricing(self, obj):
+        if not hasattr(obj, "_promo_cache"):
+            from apps.promotions.selectors import PromotionSelector
+            from apps.promotions.services import PromotionEngine
+
+            matching_promos = PromotionSelector.get_promotions_for_product(obj.product)
+            best_promo, discount = PromotionEngine._find_best_promotion_for_product(
+                obj.product, matching_promos, obj.final_price
+            )
+            discounted = obj.final_price - discount if discount > 0 else None
+            promo_info = None
+            if best_promo and discount > 0:
+                pct = (
+                    round((discount / obj.final_price) * 100)
+                    if obj.final_price > 0
+                    else 0
+                )
+                promo_info = {
+                    "id": str(best_promo.id),
+                    "name": best_promo.name,
+                    "discount_type": best_promo.discount_type,
+                    "discount_value": best_promo.discount_value,
+                    "savings": discount,
+                    "discount_percentage": pct,
+                }
+            obj._promo_cache = {
+                "discounted_price": discounted,
+                "is_discounted": discounted is not None,
+                "active_promotion": promo_info,
+            }
+        return obj._promo_cache
+
+    @extend_schema_field({"type": "number", "nullable": True})
+    def get_discounted_price(self, obj):
+        return self._get_pricing(obj)["discounted_price"]
+
+    @extend_schema_field({"type": "boolean"})
+    def get_is_discounted(self, obj):
+        return self._get_pricing(obj)["is_discounted"]
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "discount_type": {"type": "string"},
+                "discount_value": {"type": "number"},
+                "savings": {"type": "number"},
+                "discount_percentage": {"type": "integer"},
+            },
+        }
+    )
+    def get_active_promotion(self, obj):
+        return self._get_pricing(obj)["active_promotion"]
 
 
 class ProductAttributeValueSerializer(serializers.ModelSerializer):
@@ -51,7 +114,13 @@ class ProductAttributeValueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductAttributeValue
-        fields = ["id", "attribute_id", "attribute_name", "attribute_type", "value"]
+        fields = [
+            "id",
+            "attribute_id",
+            "attribute_name",
+            "attribute_type",
+            "value",
+        ]
 
     @extend_schema_field(
         {"oneOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "nullable": True}
@@ -70,6 +139,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     brand = BrandSerializer(read_only=True)
     category = CategoryMiniSerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
+    discounted_price = serializers.SerializerMethodField()
+    is_discounted = serializers.SerializerMethodField()
+    active_promotion = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -79,12 +151,47 @@ class ProductListSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "base_price",
+            "discounted_price",
+            "is_discounted",
+            "active_promotion",
             "product_type",
             "is_featured",
             "brand",
             "category",
             "primary_image",
         ]
+
+    def _get_pricing(self, obj):
+        if not hasattr(obj, "_promo_cache"):
+            from apps.promotions.selectors import PromotionSelector
+            from apps.promotions.services import PromotionEngine
+
+            matching_promos = PromotionSelector.get_promotions_for_product(obj)
+            best_promo, discount = PromotionEngine._find_best_promotion_for_product(
+                obj, matching_promos, obj.base_price
+            )
+            discounted = obj.base_price - discount if discount > 0 else None
+            promo_info = None
+            if best_promo and discount > 0:
+                pct = (
+                    round((discount / obj.base_price) * 100)
+                    if obj.base_price > 0
+                    else 0
+                )
+                promo_info = {
+                    "id": str(best_promo.id),
+                    "name": best_promo.name,
+                    "discount_type": best_promo.discount_type,
+                    "discount_value": best_promo.discount_value,
+                    "savings": discount,
+                    "discount_percentage": pct,
+                }
+            obj._promo_cache = {
+                "discounted_price": discounted,
+                "is_discounted": discounted is not None,
+                "active_promotion": promo_info,
+            }
+        return obj._promo_cache
 
     @extend_schema_field({"type": "string", "format": "uri", "nullable": True})
     def get_primary_image(self, obj):
@@ -98,6 +205,31 @@ class ProductListSerializer(serializers.ModelSerializer):
         url = image_obj.image.url
         return request.build_absolute_uri(url) if request else url
 
+    @extend_schema_field({"type": "number", "nullable": True})
+    def get_discounted_price(self, obj):
+        return self._get_pricing(obj)["discounted_price"]
+
+    @extend_schema_field({"type": "boolean"})
+    def get_is_discounted(self, obj):
+        return self._get_pricing(obj)["is_discounted"]
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "discount_type": {"type": "string"},
+                "discount_value": {"type": "number"},
+                "savings": {"type": "number"},
+                "discount_percentage": {"type": "integer"},
+            },
+        }
+    )
+    def get_active_promotion(self, obj):
+        return self._get_pricing(obj)["active_promotion"]
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Full Product representation including brand, category, images, variants and attributes."""
@@ -107,6 +239,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     attribute_values = ProductAttributeValueSerializer(many=True, read_only=True)
+    discounted_price = serializers.SerializerMethodField()
+    is_discounted = serializers.SerializerMethodField()
+    active_promotion = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -117,6 +252,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "description",
             "short_description",
             "base_price",
+            "discounted_price",
+            "is_discounted",
+            "active_promotion",
             "product_type",
             "is_active",
             "is_featured",
@@ -127,6 +265,63 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "attribute_values",
             "created_at",
         ]
+
+    def _get_pricing(self, obj):
+        if not hasattr(obj, "_promo_cache"):
+            from apps.promotions.selectors import PromotionSelector
+            from apps.promotions.services import PromotionEngine
+
+            matching_promos = PromotionSelector.get_promotions_for_product(obj)
+            best_promo, discount = PromotionEngine._find_best_promotion_for_product(
+                obj, matching_promos, obj.base_price
+            )
+            discounted = obj.base_price - discount if discount > 0 else None
+            promo_info = None
+            if best_promo and discount > 0:
+                pct = (
+                    round((discount / obj.base_price) * 100)
+                    if obj.base_price > 0
+                    else 0
+                )
+                promo_info = {
+                    "id": str(best_promo.id),
+                    "name": best_promo.name,
+                    "discount_type": best_promo.discount_type,
+                    "discount_value": best_promo.discount_value,
+                    "savings": discount,
+                    "discount_percentage": pct,
+                }
+            obj._promo_cache = {
+                "discounted_price": discounted,
+                "is_discounted": discounted is not None,
+                "active_promotion": promo_info,
+            }
+        return obj._promo_cache
+
+    @extend_schema_field({"type": "number", "nullable": True})
+    def get_discounted_price(self, obj):
+        return self._get_pricing(obj)["discounted_price"]
+
+    @extend_schema_field({"type": "boolean"})
+    def get_is_discounted(self, obj):
+        return self._get_pricing(obj)["is_discounted"]
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "discount_type": {"type": "string"},
+                "discount_value": {"type": "number"},
+                "savings": {"type": "number"},
+                "discount_percentage": {"type": "integer"},
+            },
+        }
+    )
+    def get_active_promotion(self, obj):
+        return self._get_pricing(obj)["active_promotion"]
 
 
 class ProductCommentReplySerializer(serializers.ModelSerializer):

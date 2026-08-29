@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,8 @@ import { ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function CartPage() {
   const queryClient = useQueryClient();
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
+  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState<string | number | null>(null);
 
   const { data: cart, isLoading } = useQuery<Cart>({
     queryKey: ['cart'],
@@ -138,8 +140,22 @@ export default function CartPage() {
               <div className="lg:col-span-4">
                 <CartSummary
                   subtotal={cart?.subtotal || '0'}
+                  discountAmount={cart?.discount_amount}
+                  couponDiscount={appliedCouponDiscount}
+                  couponCode={appliedCouponCode}
+                  total={cart?.total}
+                  savings={cart?.savings}
+                  appliedPromotions={cart?.applied_promotions}
                   totalItems={cart?.items_count ?? cart?.total_items ?? 0}
                   isLoading={updateMutation.isPending || removeMutation.isPending}
+                  onApplyCouponSuccess={(code, data) => {
+                    setAppliedCouponCode(code);
+                    setAppliedCouponDiscount(data.discount_amount);
+                  }}
+                  onRemoveCoupon={() => {
+                    setAppliedCouponCode(null);
+                    setAppliedCouponDiscount(null);
+                  }}
                 />
               </div>
             </div>

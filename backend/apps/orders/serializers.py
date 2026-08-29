@@ -21,6 +21,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "variant_name",
             "sku",
             "quantity",
+            "original_unit_price",
+            "discount_amount",
+            "promotion_snapshot",
             "unit_price",
             "total_price",
         ]
@@ -58,6 +61,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "subtotal",
             "shipping_cost",
             "discount_amount",
+            "coupon_code",
             "total",
             "notes",
             "created_at",
@@ -84,6 +88,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "subtotal",
             "shipping_cost",
             "discount_amount",
+            "coupon_code",
+            "coupon_snapshot",
             "total",
             "notes",
             "paid_at",
@@ -103,3 +109,6 @@ class CheckoutSerializer(serializers.Serializer):
     address_id = serializers.UUIDField(required=True)
     shipping_method_id = serializers.UUIDField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    coupon_code = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True, max_length=50
+    )

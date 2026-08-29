@@ -8,6 +8,10 @@ from .admin_views import (
     AdminCommentListView,
     AdminCommentModerateView,
     AdminCommentReplyView,
+    AdminCouponDetailView,
+    AdminCouponListCreateView,
+    AdminCouponToggleView,
+    AdminCouponUsageListView,
     AdminCustomerDetailView,
     AdminCustomerListView,
     AdminCustomerToggleStatusView,
@@ -28,6 +32,10 @@ from .admin_views import (
     AdminPaymentListView,
     AdminProductDetailView,
     AdminProductListCreateView,
+    AdminPromotionDetailView,
+    AdminPromotionListCreateView,
+    AdminPromotionReportsView,
+    AdminPromotionToggleView,
     AdminReviewDeleteView,
     AdminReviewListView,
     AdminReviewModerateView,
@@ -95,4 +103,14 @@ urlpatterns = [
 
     # Settings
     path("settings/", AdminSettingsView.as_view(), name="settings"),
+
+    # Promotions & Coupons
+    path("promotions/", AdminPromotionListCreateView.as_view(), name="promotions-list"),
+    path("promotions/reports/", AdminPromotionReportsView.as_view(), name="promotions-reports"),
+    path("promotions/<uuid:pk>/", AdminPromotionDetailView.as_view(), name="promotions-detail"),
+    path("promotions/<uuid:pk>/toggle/", AdminPromotionToggleView.as_view(), name="promotions-toggle"),
+    path("coupons/", AdminCouponListCreateView.as_view(), name="coupons-list"),
+    path("coupons/<uuid:pk>/", AdminCouponDetailView.as_view(), name="coupons-detail"),
+    path("coupons/<uuid:pk>/toggle/", AdminCouponToggleView.as_view(), name="coupons-toggle"),
+    path("coupons/<uuid:pk>/usages/", AdminCouponUsageListView.as_view(), name="coupons-usages"),
 ]

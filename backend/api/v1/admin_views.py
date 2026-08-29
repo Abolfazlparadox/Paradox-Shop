@@ -61,6 +61,16 @@ from common.models import AdminNotification, AuditLog, SystemSetting
 from apps.shipping.models import Shipment, ShippingMethod
 from apps.shipping.serializers import ShippingMethodSerializer, ShipmentSerializer
 from apps.shipping.services import update_shipment_status
+from apps.promotions.models import Coupon, Promotion
+from apps.promotions.selectors import CouponSelector, PromotionSelector, PromotionReportSelector
+from apps.promotions.serializers import (
+    AdminCouponSerializer,
+    AdminCouponUsageSerializer,
+    AdminPromotionSerializer,
+    AdminPromotionReportSerializer,
+)
+from apps.promotions.services import CouponService, PromotionService
+from apps.promotions.permissions import IsPromotionAdmin
 from common.permissions import IsStaffAdmin
 
 User = get_user_model()
@@ -775,4 +785,220 @@ class AdminOrderShipmentUpdateView(APIView):
             shipment = update_shipment_status(shipment, data["status"], notes=data.get("notes"))
 
         return Response(ShipmentSerializer(shipment).data)
+
+
+# ============================================================
+# 10. Promotions & Coupons
+# ============================================================
+
+@extend_schema(
+    tags=["Admin - Promotions"],
+    responses={200: AdminPromotionSerializer(many=True)},
+)
+class AdminPromotionListCreateView(APIView):
+    """List all promotions or create a new one."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def get(self, request):
+        promotions = PromotionSelector.get_all_promotions()
+        serializer = AdminPromotionSerializer(promotions, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(request=AdminPromotionSerializer, responses={201: AdminPromotionSerializer})
+    def post(self, request):
+        serializer = AdminPromotionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        promotion = PromotionService.create_promotion(
+            data=serializer.validated_data, request=request
+        )
+        return Response(
+            AdminPromotionSerializer(promotion).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=["Admin - Promotions"])
+class AdminPromotionDetailView(APIView):
+    """Retrieve, update, or delete a promotion."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    @extend_schema(responses={200: AdminPromotionSerializer})
+    def get(self, request, pk):
+        promotion = get_object_or_404(Promotion, pk=pk)
+        return Response(AdminPromotionSerializer(promotion).data)
+
+    @extend_schema(request=AdminPromotionSerializer, responses={200: AdminPromotionSerializer})
+    def put(self, request, pk):
+        promotion = get_object_or_404(Promotion, pk=pk)
+        serializer = AdminPromotionSerializer(promotion, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        promotion = PromotionService.update_promotion(
+            promotion=promotion, data=serializer.validated_data, request=request
+        )
+        return Response(AdminPromotionSerializer(promotion).data)
+
+    @extend_schema(request=AdminPromotionSerializer, responses={200: AdminPromotionSerializer})
+    def patch(self, request, pk):
+        promotion = get_object_or_404(Promotion, pk=pk)
+        serializer = AdminPromotionSerializer(promotion, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        promotion = PromotionService.update_promotion(
+            promotion=promotion, data=serializer.validated_data, request=request
+        )
+        return Response(AdminPromotionSerializer(promotion).data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, pk):
+        promotion = get_object_or_404(Promotion, pk=pk)
+        promotion.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Admin - Promotions"], responses={200: AdminPromotionSerializer})
+class AdminPromotionToggleView(APIView):
+    """Toggle a promotion's active status."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def post(self, request, pk):
+        promotion = get_object_or_404(Promotion, pk=pk)
+        promotion = PromotionService.toggle_activation(promotion=promotion, request=request)
+        return Response(AdminPromotionSerializer(promotion).data)
+
+
+@extend_schema(
+    tags=["Admin - Coupons"],
+    responses={200: AdminCouponSerializer(many=True)},
+)
+class AdminCouponListCreateView(APIView):
+    """List all coupons or create a new one."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def get(self, request):
+        coupons = CouponSelector.get_all_coupons()
+        serializer = AdminCouponSerializer(coupons, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(request=AdminCouponSerializer, responses={201: AdminCouponSerializer})
+    def post(self, request):
+        serializer = AdminCouponSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        coupon = CouponService.create_coupon(
+            data=serializer.validated_data, request=request
+        )
+        return Response(
+            AdminCouponSerializer(coupon).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=["Admin - Coupons"])
+class AdminCouponDetailView(APIView):
+    """Retrieve, update, or delete a coupon."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    @extend_schema(responses={200: AdminCouponSerializer})
+    def get(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        return Response(AdminCouponSerializer(coupon).data)
+
+    @extend_schema(request=AdminCouponSerializer, responses={200: AdminCouponSerializer})
+    def put(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        serializer = AdminCouponSerializer(coupon, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        coupon = CouponService.update_coupon(
+            coupon=coupon, data=serializer.validated_data, request=request
+        )
+        return Response(AdminCouponSerializer(coupon).data)
+
+    @extend_schema(request=AdminCouponSerializer, responses={200: AdminCouponSerializer})
+    def patch(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        serializer = AdminCouponSerializer(coupon, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        coupon = CouponService.update_coupon(
+            coupon=coupon, data=serializer.validated_data, request=request
+        )
+        return Response(AdminCouponSerializer(coupon).data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        coupon.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Admin - Coupons"], responses={200: AdminCouponSerializer})
+class AdminCouponToggleView(APIView):
+    """Toggle a coupon's active status."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def post(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        coupon = CouponService.toggle_activation(coupon=coupon, request=request)
+        return Response(AdminCouponSerializer(coupon).data)
+
+
+@extend_schema(
+    tags=["Admin - Coupons"],
+    responses={200: AdminCouponUsageSerializer(many=True)},
+)
+class AdminCouponUsageListView(APIView):
+    """List usage records for a specific coupon."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def get(self, request, pk):
+        coupon = get_object_or_404(Coupon, pk=pk)
+        usages = CouponSelector.get_coupon_usages(coupon)
+        serializer = AdminCouponUsageSerializer(usages, many=True)
+        return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin - Promotions"],
+    responses={200: AdminPromotionReportSerializer},
+)
+class AdminPromotionReportsView(APIView):
+    """Aggregated reporting data and telemetry for promotions and vouchers."""
+
+    permission_classes = [IsPromotionAdmin]
+
+    def get(self, request):
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
+        days = request.query_params.get("days")
+
+        parsed_start = None
+        parsed_end = None
+
+        if days:
+            try:
+                days_int = int(days)
+                parsed_start = timezone.now() - timezone.timedelta(days=days_int)
+            except (ValueError, TypeError):
+                pass
+        elif start_date:
+            try:
+                parsed_start = timezone.datetime.fromisoformat(start_date)
+            except (ValueError, TypeError):
+                pass
+
+        if end_date:
+            try:
+                parsed_end = timezone.datetime.fromisoformat(end_date)
+            except (ValueError, TypeError):
+                pass
+
+        reports = PromotionReportSelector.get_promotion_reports(
+            start_date=parsed_start, end_date=parsed_end
+        )
+        serializer = AdminPromotionReportSerializer(reports)
+        return Response(serializer.data)
 

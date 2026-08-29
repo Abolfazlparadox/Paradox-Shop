@@ -285,31 +285,52 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
                     <th className="px-4 py-2.5">Artifact Name</th>
                     <th className="px-4 py-2.5">SKU</th>
                     <th className="px-4 py-2.5 text-center">Qty</th>
-                    <th className="px-4 py-2.5 text-right">Unit Price</th>
+                    <th className="px-4 py-2.5 text-right">Original Price</th>
+                    <th className="px-4 py-2.5 text-right">Promo Discount</th>
+                    <th className="px-4 py-2.5 text-right">Final Unit Price</th>
                     <th className="px-4 py-2.5 text-right">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle font-mono">
-                  {order.items?.map((item) => (
-                    <tr key={item.id} className="hover:bg-bg-secondary/50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-fg-primary">
-                        {item.product_name}
-                        {item.variant_name && (
-                          <span className="block text-[11px] text-fg-muted font-normal">
-                            Variant: {item.variant_name}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-fg-muted">{item.sku || 'N/A'}</td>
-                      <td className="px-4 py-3 text-center text-fg-primary">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right text-fg-secondary">
-                        {formatCurrency(Number(item.unit_price))}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-fg-primary">
-                        {formatCurrency(Number(item.total_price))}
-                      </td>
-                    </tr>
-                  ))}
+                  {order.items?.map((item: any) => {
+                    const originalPrice = item.original_unit_price
+                      ? Number(item.original_unit_price)
+                      : Number(item.unit_price);
+                    const itemDiscount = item.discount_amount ? Number(item.discount_amount) : 0;
+                    const finalUnitPrice = Number(item.unit_price);
+
+                    return (
+                      <tr key={item.id} className="hover:bg-bg-secondary/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-fg-primary">
+                          {item.product_name}
+                          {item.variant_name && (
+                            <span className="block text-[11px] text-fg-muted font-normal">
+                              Variant: {item.variant_name}
+                            </span>
+                          )}
+                          {item.promotion_snapshot?.name && (
+                            <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">
+                              {item.promotion_snapshot.name}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-fg-muted">{item.sku || 'N/A'}</td>
+                        <td className="px-4 py-3 text-center text-fg-primary">{item.quantity}</td>
+                        <td className="px-4 py-3 text-right text-fg-muted line-through">
+                          {itemDiscount > 0 ? formatCurrency(originalPrice) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right text-emerald-400 font-semibold">
+                          {itemDiscount > 0 ? `-${formatCurrency(itemDiscount)}` : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right text-fg-secondary">
+                          {formatCurrency(finalUnitPrice)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-fg-primary">
+                          {formatCurrency(Number(item.total_price))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -321,16 +342,34 @@ export function OrderDetailModal({ order, onClose, onStatusUpdate, onCancelOrder
               <span>Items Subtotal:</span>
               <span className="text-fg-primary">{formatCurrency(subtotalNum)}</span>
             </div>
+
+            {/* Coupon Code Badge & Discount */}
+            {order.coupon_code && (
+              <div className="flex justify-between items-center text-emerald-400">
+                <span className="flex items-center gap-1">
+                  <span>Voucher Code:</span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20 font-bold text-[10px] text-emerald-400">
+                    {order.coupon_code}
+                  </span>
+                </span>
+                {order.coupon_snapshot?.calculated_discount && (
+                  <span>-{formatCurrency(Number(order.coupon_snapshot.calculated_discount))}</span>
+                )}
+              </div>
+            )}
+
+            {discountNum > 0 && (
+              <div className="flex justify-between text-emerald-400">
+                <span>Total Discount:</span>
+                <span>-{formatCurrency(discountNum)}</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-fg-secondary">
               <span>Shipping & Logistics:</span>
               <span className="text-fg-primary">{shippingNum === 0 ? 'Free' : formatCurrency(shippingNum)}</span>
             </div>
-            {discountNum > 0 && (
-              <div className="flex justify-between text-status-error">
-                <span>Promotional Discount:</span>
-                <span>-{formatCurrency(discountNum)}</span>
-              </div>
-            )}
+
             <div className="flex justify-between text-sm font-bold text-fg-primary pt-2 border-t border-border-subtle">
               <span>Total Settlement:</span>
               <span className="text-amber-600 dark:text-amber-400 font-display">{formatCurrency(totalNum)}</span>

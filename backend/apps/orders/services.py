@@ -26,6 +26,7 @@ class OrderService:
         address_id: uuid.UUID,
         shipping_method_id: uuid.UUID | None = None,
         notes: str | None = None,
+        coupon_code: str | None = None,
     ) -> Order:
         """
         Executes the full checkout workflow atomically:
@@ -35,14 +36,17 @@ class OrderService:
         3. Validate the address belongs to the user.
         4. Lock required ProductVariant rows with select_for_update().
         5. Re-validate stock AFTER acquiring locks.
-        6. Calculate subtotal / shipping / total using the locked variant's
-           current final_price (NOT the stale CartItem.unit_price) and selected shipping method.
+        6. Calculate subtotal, promotions, coupon discounts, shipping, and total
+           using locked variants' current final_price and the PromotionEngine.
         7. Create Order + OrderItem snapshots + OrderAddress snapshot + Shipment.
-        8. Decrease variant stock.
-        9. Clear the user's cart.
+        8. Atomically redeem coupon if used (with select_for_update locking).
+        9. Decrease variant stock.
+        10. Clear the user's cart.
         """
         from apps.users.models import Address
         from apps.shipping.services import calculate_shipping_for_order, create_shipment_for_order
+        from apps.promotions.models import Coupon
+        from apps.promotions.services import CouponService, PromotionEngine
 
         # --- Step 1: Lock the cart row to prevent concurrent checkouts ---
         try:
@@ -90,23 +94,58 @@ class OrderService:
                         }
                     )
 
-        # --- Step 6: Calculate totals using live prices and shipping quote ---
-        subtotal = Decimal("0")
+        # --- Step 6: Calculate promotions and coupon discounts via PromotionEngine ---
+        engine_cart_items = []
         for item in cart_items:
             if item.variant_id is not None:
                 unit_price = locked_variants[item.variant_id].final_price
             else:
                 unit_price = item.product.base_price
-            subtotal += unit_price * item.quantity
+            engine_cart_items.append(
+                {
+                    "product": item.product,
+                    "variant": item.variant,
+                    "quantity": item.quantity,
+                    "unit_price": unit_price,
+                }
+            )
+
+        discount_result = PromotionEngine.calculate_cart_discounts(
+            cart_items=engine_cart_items,
+            coupon_code=coupon_code if coupon_code else None,
+            user=user,
+        )
+
+        subtotal = discount_result.subtotal_before_discounts
+        discount_amount = discount_result.total_discount
+        subtotal_after_discounts = discount_result.subtotal_after_discounts
 
         shipping_method, shipping_cost = calculate_shipping_for_order(
             shipping_method_id=shipping_method_id,
             province=address.province,
             city=address.city,
-            subtotal=subtotal,
+            subtotal=subtotal_after_discounts,
         )
 
-        total = subtotal + shipping_cost
+        total = subtotal_after_discounts + shipping_cost
+
+        # Coupon snapshot payload
+        coupon_obj = None
+        coupon_snapshot = {}
+        if discount_result.coupon_id:
+            coupon_obj = Coupon.objects.get(id=discount_result.coupon_id)
+            coupon_snapshot = {
+                "id": str(coupon_obj.id),
+                "code": coupon_obj.code,
+                "discount_type": coupon_obj.discount_type,
+                "discount_value": str(coupon_obj.discount_value),
+                "max_discount_amount": (
+                    str(coupon_obj.max_discount_amount)
+                    if coupon_obj.max_discount_amount
+                    else None
+                ),
+                "coupon_discount_applied": str(discount_result.coupon_discount),
+            }
 
         # --- Step 7: Create Order ---
         order_number = OrderService._generate_order_number()
@@ -116,19 +155,49 @@ class OrderService:
             status=Order.OrderStatus.PENDING,
             subtotal=subtotal,
             shipping_cost=shipping_cost,
+            discount_amount=discount_amount,
+            coupon_code=discount_result.coupon_code,
+            coupon_snapshot=coupon_snapshot,
             total=total,
             notes=notes,
         )
         order.save()
 
-        # --- Step 7a: Create OrderItem snapshots with live prices ---
+        # --- Step 7a: Create OrderItem snapshots with promotion details ---
+        item_discount_map = {
+            (item.product_id, item.variant_id): item
+            for item in discount_result.item_discounts
+        }
+
         order_items_to_create = []
         for item in cart_items:
             variant = item.variant
-            if variant is not None:
-                unit_price = locked_variants[variant.id].final_price
+            item_key = (item.product_id, variant.id if variant else None)
+            item_discount = item_discount_map.get(item_key)
+
+            if item_discount:
+                original_unit_price = item_discount.original_unit_price
+                promo_discount_per_unit = item_discount.promotion_discount_per_unit
+                final_unit_price = item_discount.final_unit_price
+                promo_snapshot = (
+                    {
+                        "id": str(item_discount.promotion_id),
+                        "name": item_discount.promotion_name,
+                        "discount_type": item_discount.discount_type,
+                        "discount_value": str(item_discount.discount_value),
+                    }
+                    if item_discount.promotion_id
+                    else {}
+                )
             else:
-                unit_price = item.product.base_price
+                original_unit_price = (
+                    locked_variants[variant.id].final_price
+                    if variant
+                    else item.product.base_price
+                )
+                promo_discount_per_unit = Decimal("0")
+                final_unit_price = original_unit_price
+                promo_snapshot = {}
 
             order_items_to_create.append(
                 OrderItem(
@@ -139,8 +208,11 @@ class OrderService:
                     variant_name=variant.name if variant else None,
                     sku=variant.sku if variant else f"PRD-{item.product.id.hex[:8].upper()}",
                     quantity=item.quantity,
-                    unit_price=unit_price,
-                    total_price=unit_price * item.quantity,
+                    original_unit_price=original_unit_price,
+                    discount_amount=promo_discount_per_unit,
+                    promotion_snapshot=promo_snapshot,
+                    unit_price=final_unit_price,
+                    total_price=final_unit_price * item.quantity,
                 )
             )
         OrderItem.objects.bulk_create(order_items_to_create)
@@ -162,6 +234,15 @@ class OrderService:
             shipping_method=shipping_method,
             shipping_fee=shipping_cost,
         )
+
+        # --- Step 7d: Atomically redeem coupon if applied ---
+        if coupon_obj and discount_result.coupon_discount > Decimal("0"):
+            CouponService.redeem_coupon(
+                coupon=coupon_obj,
+                user=user,
+                order=order,
+                discount_amount=discount_result.coupon_discount,
+            )
 
         # --- Step 8: Decrease variant stock (while locked) ---
         for item in cart_items:

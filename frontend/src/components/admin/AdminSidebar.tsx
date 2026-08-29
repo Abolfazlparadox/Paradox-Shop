@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Truck,
   X,
+  Sparkles,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -131,6 +133,29 @@ export function AdminSidebar({ isMobileOpen = false, onCloseMobile }: AdminSideb
           href: '/admin/shipping',
           icon: Truck,
           permission: 'settings.view',
+        },
+      ],
+    },
+    {
+      label: 'Campaigns & Vault',
+      items: [
+        {
+          title: 'Promotion Rules',
+          href: '/admin/promotions',
+          icon: Sparkles,
+          permission: 'promotions.view',
+        },
+        {
+          title: 'Vouchers & Coupons',
+          href: '/admin/promotions/coupons',
+          icon: Tag,
+          permission: 'promotions.view',
+        },
+        {
+          title: 'Discount Telemetry',
+          href: '/admin/promotions/reports',
+          icon: BarChart3,
+          permission: 'promotions.view',
         },
       ],
     },

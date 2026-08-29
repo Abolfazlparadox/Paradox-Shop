@@ -45,7 +45,11 @@ function AdminMarketingContent() {
   }, [loadCoupons]);
 
   const handleSaveCoupon = async (data: Partial<AdminCoupon>) => {
-    await adminApi.saveCoupon(data);
+    if (data.id) {
+      await adminApi.updateCoupon(data.id, data);
+    } else {
+      await adminApi.createCoupon(data);
+    }
     await loadCoupons();
   };
 
@@ -159,20 +163,20 @@ function AdminMarketingContent() {
 
                     {/* Min Order */}
                     <td className="py-3.5 px-4 text-fg-secondary">
-                      {c.min_order_value ? formatCurrency(c.min_order_value) : 'None'}
+                      {c.min_order_subtotal ? formatCurrency(Number(c.min_order_subtotal)) : 'None'}
                     </td>
 
                     {/* Usage Progress */}
                     <td className="py-3.5 px-4">
                       <div>
-                        {c.usage_count} / {c.usage_limit || '∞'} used
+                        {c.usage_count} / {c.total_usage_limit || '∞'} used
                       </div>
-                      {c.usage_limit && (
+                      {c.total_usage_limit && (
                         <div className="w-24 h-1.5 rounded-full bg-bg-secondary overflow-hidden mt-1">
                           <div
                             className="h-full bg-amber-500 rounded-full"
                             style={{
-                              width: `${Math.min(100, (c.usage_count / c.usage_limit) * 100)}%`,
+                              width: `${Math.min(100, (c.usage_count / c.total_usage_limit) * 100)}%`,
                             }}
                           />
                         </div>
@@ -181,7 +185,7 @@ function AdminMarketingContent() {
 
                     {/* Expiration */}
                     <td className="py-3.5 px-4 text-fg-muted">
-                      {c.expires_at ? formatDate(c.expires_at) : 'Perpetual'}
+                      {c.end_at ? formatDate(c.end_at) : 'Perpetual'}
                     </td>
 
                     {/* Status Toggle */}

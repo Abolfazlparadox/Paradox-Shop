@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.shipping",
     "apps.payments",
     "apps.reviews",
+    "apps.promotions",
 ]
 
 MIDDLEWARE = [
@@ -171,6 +172,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "Shipping", "description": "Shipping methods, rate calculation, and delivery tracking"},
         {"name": "Payments", "description": "Payment processing"},
         {"name": "Reviews", "description": "Product reviews and ratings"},
+        {"name": "Promotions", "description": "Promotions, coupons, and discount management"},
     ],
     "SECURITY": [{"bearerAuth": []}],
     "APPEND_COMPONENTS": {

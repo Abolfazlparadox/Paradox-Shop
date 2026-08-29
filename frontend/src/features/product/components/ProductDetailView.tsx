@@ -30,9 +30,14 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
   const [quantity, setQuantity] = useState(1);
   const [addedRecently, setAddedRecently] = useState(false);
 
-  const activePrice = selectedVariant?.price_override || product.base_price;
+  const activeBasePrice = selectedVariant?.price_override || product.base_price;
+  const activeDiscountedPrice = selectedVariant ? selectedVariant.discounted_price : product.discounted_price;
+  const activePromo = selectedVariant ? selectedVariant.active_promotion : product.active_promotion;
   const currentStock = selectedVariant ? selectedVariant.stock : 10;
   const isOutOfStock = currentStock <= 0;
+
+  const effectivePrice = activeDiscountedPrice || activeBasePrice;
+  const originalPrice = activeDiscountedPrice ? activeBasePrice : null;
 
   const addToCartMutation = useMutation({
     mutationFn: () =>
@@ -112,38 +117,60 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
           </div>
 
           {/* Price Stage with Smooth Spring Transition */}
-          <div className="p-4 bg-bg-elevated border border-border-subtle rounded-lg flex items-center justify-between shadow-subtle hover:border-border-accent transition-colors">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-mono uppercase text-fg-muted block">
-                Authoritative Price
-              </span>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activePrice}
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.18 }}
+          <div className="p-4 bg-bg-elevated border border-border-subtle rounded-lg space-y-3 shadow-subtle hover:border-border-accent transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono uppercase text-fg-muted block">
+                  Authoritative Price
+                </span>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={String(effectivePrice)}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <Price
+                      amount={effectivePrice}
+                      originalAmount={originalPrice}
+                      discountPercentage={activePromo?.discount_percentage}
+                      size="xl"
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <div className="text-end">
+                <span
+                  className={`text-xs font-mono font-semibold ${
+                    isOutOfStock ? 'text-rose-400' : 'text-emerald-400'
+                  }`}
                 >
-                  <Price amount={activePrice} size="xl" />
-                </motion.div>
-              </AnimatePresence>
+                  {isOutOfStock ? 'OUT OF STOCK' : 'AVAILABLE IN STOCK'}
+                </span>
+                {!isOutOfStock && currentStock <= 5 && (
+                  <span className="text-[10px] font-mono text-amber-400 block">
+                    Only {currentStock} units remaining
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="text-end">
-              <span
-                className={`text-xs font-mono font-semibold ${
-                  isOutOfStock ? 'text-rose-400' : 'text-emerald-400'
-                }`}
-              >
-                {isOutOfStock ? 'OUT OF STOCK' : 'AVAILABLE IN STOCK'}
-              </span>
-              {!isOutOfStock && currentStock <= 5 && (
-                <span className="text-[10px] font-mono text-amber-400 block">
-                  Only {currentStock} units remaining
-                </span>
-              )}
-            </div>
+            {/* Active Promotion Detail Banner */}
+            {activePromo && (
+              <div className="pt-2.5 border-t border-border-subtle/60 flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-semibold">{activePromo.name}</span>
+                </div>
+                {activePromo.savings > 0 && (
+                  <span className="text-fg-secondary text-[11px]">
+                    Save <Price amount={activePromo.savings} size="xs" className="text-emerald-400 inline" />
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Variant Selector */}

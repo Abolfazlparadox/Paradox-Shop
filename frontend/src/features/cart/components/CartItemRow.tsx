@@ -73,8 +73,20 @@ export function CartItemRow({
             </div>
           )}
 
+          {/* Line-item promotion banner */}
+          {item.is_discounted && item.applied_promotion && (
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>{item.applied_promotion.name}</span>
+            </div>
+          )}
+
           <div className="sm:hidden pt-1">
-            <Price amount={item.unit_price} size="sm" />
+            <Price
+              amount={item.unit_price}
+              originalAmount={item.is_discounted ? item.original_unit_price : null}
+              size="sm"
+            />
           </div>
         </div>
       </div>
@@ -105,8 +117,12 @@ export function CartItemRow({
         </div>
 
         {/* Total Price */}
-        <div className="text-end min-w-[100px]">
-          <Price amount={item.total_price} size="md" />
+        <div className="text-end min-w-[110px] space-y-0.5">
+          <Price
+            amount={item.total_price}
+            originalAmount={item.is_discounted ? item.original_total_price : null}
+            size="md"
+          />
           {item.quantity > 1 && (
             <span className="text-[10px] font-mono text-fg-muted block">
               @ {item.unit_price}

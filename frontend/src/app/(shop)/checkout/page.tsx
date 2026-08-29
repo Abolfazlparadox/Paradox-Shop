@@ -15,6 +15,8 @@ import { cartApi, ordersApi } from '@/lib/api/endpoints';
 import { Address, Cart, OrderDetail, ShippingQuote } from '@/types/api';
 import { useShippingQuotes } from '@/features/shipping/hooks/use-shipping';
 import { ShippingMethodSelector } from '@/features/shipping/components/ShippingMethodSelector';
+import { CouponInput } from '@/features/promotions/components/CouponInput';
+import { formatCurrency } from '@/lib/utils/format';
 import {
   ShieldCheck,
   Check,
@@ -29,6 +31,8 @@ import {
   CreditCard,
   Loader2,
   Truck,
+  Sparkles,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -40,6 +44,8 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingQuote | null>(null);
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
+  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState<string | number | null>(null);
   const [notes, setNotes] = useState('');
   const [createdOrder, setCreatedOrder] = useState<OrderDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -94,15 +100,22 @@ export default function CheckoutPage() {
   const items = cart?.items || [];
   const isEmpty = items.length === 0;
 
-  // Compute live total including calculated shipping fee
+  // Compute live total including calculated shipping fee and promotion/coupon discounts
   const subtotalNumber = Number(cart?.subtotal || 0);
+  const promoDiscountNumber = Number(cart?.discount_amount || 0);
+  const couponDiscountNumber = Number(appliedCouponDiscount || 0);
   const shippingFeeNumber = selectedShippingMethod ? Number(selectedShippingMethod.shipping_fee) : 0;
-  const grandTotal = subtotalNumber + shippingFeeNumber;
+  const grandTotal = Math.max(0, subtotalNumber - promoDiscountNumber - couponDiscountNumber) + shippingFeeNumber;
+  const totalSavingsNumber = promoDiscountNumber + couponDiscountNumber;
 
   // Checkout Mutation
   const checkoutMutation = useMutation({
-    mutationFn: (payload: { address_id: string; shipping_method_id?: string | null; notes?: string }) =>
-      ordersApi.checkout(payload),
+    mutationFn: (payload: {
+      address_id: string;
+      shipping_method_id?: string | null;
+      notes?: string;
+      coupon_code?: string | null;
+    }) => ordersApi.checkout(payload),
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       setCreatedOrder(order);
@@ -110,10 +123,14 @@ export default function CheckoutPage() {
       notify.success('Order Created', `Order #${order.order_number} has been created and stock locked.`);
     },
     onError: (err: any) => {
+      // Invalidate cart to ensure authoritative sync if pricing/promotions changed
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+
       const data = err.response?.data;
       let msg = 'Failed to create order.';
       if (data) {
         if (typeof data === 'string') msg = data;
+        else if (data.error?.message) msg = data.error.message;
         else if (data.detail) msg = data.detail;
         else if (data.errors) {
           const firstKey = Object.keys(data.errors)[0];
@@ -387,6 +404,24 @@ export default function CheckoutPage() {
                     />
                   </div>
 
+                  {/* Promotional Voucher / Coupon Section */}
+                  <div className="p-4 rounded-lg bg-bg-secondary border border-border-subtle">
+                    <CouponInput
+                      appliedCode={appliedCouponCode}
+                      appliedDiscount={couponDiscountNumber > 0 ? couponDiscountNumber : null}
+                      onApplySuccess={(code, data) => {
+                        setAppliedCouponCode(code);
+                        setAppliedCouponDiscount(data.discount_amount);
+                        setErrorMessage(null);
+                      }}
+                      onRemove={() => {
+                        setAppliedCouponCode(null);
+                        setAppliedCouponDiscount(null);
+                      }}
+                      disabled={checkoutMutation.isPending}
+                    />
+                  </div>
+
                   {/* Order Notes */}
                   <div className="space-y-2">
                     <label className="block text-xs font-mono uppercase tracking-wider text-fg-primary font-medium">
@@ -421,6 +456,7 @@ export default function CheckoutPage() {
                           address_id: selectedAddress.id,
                           shipping_method_id: selectedShippingMethod?.method_id,
                           notes: notes.trim() || undefined,
+                          coupon_code: appliedCouponCode || undefined,
                         });
                       }}
                       rightIcon={<Check className="w-4 h-4" />}
@@ -436,9 +472,16 @@ export default function CheckoutPage() {
             {/* Right: Sticky Order Snapshot Column */}
             <div className="lg:col-span-4 space-y-6">
               <div className="bg-bg-elevated border border-border-subtle rounded-xl p-6 space-y-6 shadow-card sticky top-24">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-fg-primary font-semibold pb-3 border-b border-border-subtle">
-                  Cart Snapshot ({items.length})
-                </h3>
+                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+                  <h3 className="text-xs font-mono uppercase tracking-wider text-fg-primary font-semibold">
+                    Cart Snapshot ({items.length})
+                  </h3>
+                  {totalSavingsNumber > 0 && (
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Save {formatCurrency(totalSavingsNumber, 'Rial')}
+                    </span>
+                  )}
+                </div>
 
                 {/* Items preview list */}
                 <div className="space-y-3 max-h-60 overflow-y-auto divide-y divide-border-subtle/50 pe-1">
@@ -463,7 +506,11 @@ export default function CheckoutPage() {
                         </h4>
                         <div className="flex items-center justify-between text-[11px] font-mono text-fg-muted">
                           <span>Qty: {item.quantity}</span>
-                          <Price amount={item.total_price} size="sm" />
+                          <Price
+                            amount={item.total_price}
+                            originalAmount={item.is_discounted ? item.original_total_price : null}
+                            size="sm"
+                          />
                         </div>
                       </div>
                     </div>
@@ -473,9 +520,30 @@ export default function CheckoutPage() {
                 {/* Financial Summary */}
                 <div className="pt-4 border-t border-border-subtle space-y-2 text-xs font-mono">
                   <div className="flex justify-between text-fg-secondary">
-                    <span>Subtotal</span>
-                    <Price amount={cart?.subtotal || '0'} size="sm" />
+                    <span>Artifacts Subtotal</span>
+                    <Price amount={subtotalNumber} size="sm" />
                   </div>
+
+                  {promoDiscountNumber > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        Promotion Discount
+                      </span>
+                      <span>-{formatCurrency(promoDiscountNumber, 'Rial')}</span>
+                    </div>
+                  )}
+
+                  {couponDiscountNumber > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-3 h-3" />
+                        Coupon ({appliedCouponCode})
+                      </span>
+                      <span>-{formatCurrency(couponDiscountNumber, 'Rial')}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-fg-secondary">
                     <span>Shipping Fee</span>
                     {selectedShippingMethod ? (
@@ -488,8 +556,9 @@ export default function CheckoutPage() {
                       <span className="text-fg-muted">Calculated at dispatch</span>
                     )}
                   </div>
+
                   <div className="pt-2 border-t border-border-subtle flex justify-between items-baseline text-fg-primary font-bold">
-                    <span>Order Total</span>
+                    <span>Final Order Total</span>
                     <Price amount={grandTotal.toString()} size="md" />
                   </div>
                 </div>

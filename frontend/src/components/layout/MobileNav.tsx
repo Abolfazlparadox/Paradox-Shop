@@ -70,6 +70,15 @@ export function MobileNav({ categories = [], onOpenSearch }: MobileNavProps) {
             </Link>
 
             <Link
+              href="/products?is_featured=true"
+              onClick={handleClose}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-emerald-400 hover:bg-bg-secondary transition-colors"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Promotional Offers</span>
+            </Link>
+
+            <Link
               href="/track"
               onClick={handleClose}
               className="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-fg-secondary hover:text-fg-primary hover:bg-bg-secondary transition-colors"

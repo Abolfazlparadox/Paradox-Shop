@@ -251,12 +251,24 @@ export interface ProductImage {
   variant?: string | null;
 }
 
+export interface ProductActivePromotion {
+  id: string;
+  name: string;
+  discount_type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discount_value: number;
+  savings: number;
+  discount_percentage: number;
+}
+
 export interface ProductVariant {
   id: string;
   sku: string;
   name?: string;
   price_override?: string | null;
   final_price: string;
+  discounted_price?: string | null;
+  is_discounted?: boolean;
+  active_promotion?: ProductActivePromotion | null;
   stock: number;
   attributes: Record<string, any>;
   is_active: boolean;
@@ -276,6 +288,9 @@ export interface ProductListItem {
   slug: string;
   short_description?: string | null;
   base_price: string;
+  discounted_price?: string | null;
+  is_discounted?: boolean;
+  active_promotion?: ProductActivePromotion | null;
   is_active?: boolean;
   is_featured: boolean;
   product_type?: string;
@@ -294,6 +309,9 @@ export interface ProductDetail {
   description: string;
   short_description?: string | null;
   base_price: string;
+  discounted_price?: string | null;
+  is_discounted?: boolean;
+  active_promotion?: ProductActivePromotion | null;
   is_active: boolean;
   is_featured: boolean;
   product_type: string;
@@ -360,13 +378,34 @@ export interface CartItemVariant {
   is_active: boolean;
 }
 
+export interface CartItemAppliedPromotion {
+  id: string;
+  name: string;
+  discount_type: string;
+  discount_value: string;
+  savings: string;
+}
+
+export interface CartAppliedPromotion {
+  id: string;
+  name: string;
+  discount_type: string;
+  discount_value: string;
+  total_discount: string;
+}
+
 export interface CartItem {
   id: string;
   product: CartItemProduct;
   variant?: CartItemVariant | null;
   quantity: number;
+  original_unit_price?: string;
+  discount_amount?: string;
   unit_price: string;
+  original_total_price?: string;
   total_price: string;
+  is_discounted?: boolean;
+  applied_promotion?: CartItemAppliedPromotion | null;
   created_at: string;
 }
 
@@ -378,6 +417,10 @@ export interface Cart {
   items_count?: number;
   total_items?: number;
   subtotal: string;
+  discount_amount?: string;
+  total?: string;
+  savings?: string;
+  applied_promotions?: CartAppliedPromotion[];
   created_at: string;
   updated_at: string;
 }
@@ -410,7 +453,11 @@ export interface OrderItem {
   product_name: string;
   variant_sku?: string | null;
   variant_name?: string | null;
+  sku?: string | null;
   quantity: number;
+  original_unit_price?: string;
+  discount_amount?: string;
+  promotion_snapshot?: Record<string, any> | null;
   unit_price: string;
   total_price: string;
 }
@@ -432,6 +479,7 @@ export interface OrderListItem {
   subtotal: string;
   shipping_cost: string;
   discount_amount: string;
+  coupon_code?: string | null;
   total: string;
   notes?: string | null;
   created_at: string;
@@ -447,6 +495,8 @@ export interface OrderDetail {
   subtotal: string;
   shipping_cost: string;
   discount_amount: string;
+  coupon_code?: string | null;
+  coupon_snapshot?: Record<string, any> | null;
   total: string;
   notes?: string | null;
   paid_at?: string | null;
@@ -462,6 +512,7 @@ export interface CheckoutRequest {
   address_id: string;
   shipping_method_id?: string | null;
   notes?: string | null;
+  coupon_code?: string | null;
 }
 
 // ==========================================
@@ -616,6 +667,9 @@ export interface AdminOrderItem {
   variant_name?: string | null;
   sku: string;
   quantity: number;
+  original_unit_price?: string | null;
+  discount_amount?: string | null;
+  promotion_snapshot?: Record<string, any> | null;
   unit_price: string;
   total_price: string;
   primary_image?: string | null;
@@ -648,6 +702,8 @@ export interface AdminOrder {
   subtotal: string;
   shipping_cost: string;
   discount_amount: string;
+  coupon_code?: string | null;
+  coupon_snapshot?: Record<string, any> | null;
   total: string;
   total_amount?: string;
   items_count: number;
@@ -961,5 +1017,84 @@ export interface Shipment {
   updated_at?: string;
 }
 
+// ==========================================
+// 11. Promotions & Coupons Domain
+// ==========================================
 
+export type DiscountType = 'PERCENTAGE' | 'FIXED_AMOUNT';
 
+export interface ActivePromotion {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  discount_type: DiscountType;
+  discount_type_display: string;
+  discount_value: string;
+  max_discount_amount: string | null;
+  start_at: string;
+  end_at: string;
+}
+
+export interface CouponValidateRequest {
+  code: string;
+}
+
+export interface AffectedItem {
+  product_id: string;
+  variant_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: string;
+  eligible_for_coupon: boolean;
+}
+
+export interface MinOrderStatus {
+  met: boolean;
+  required_amount: string;
+  current_amount: string;
+}
+
+export interface CouponValidateResponse {
+  valid: boolean;
+  reason: string;
+  code: string;
+  discount_type: DiscountType | string;
+  discount_value: string;
+  max_discount_amount: string | null;
+  min_order_subtotal: string;
+  discount_amount: string;
+  estimated_discount: string | null;
+  affected_items: AffectedItem[];
+  min_order_status: MinOrderStatus | null;
+  is_expired: boolean;
+  remaining_eligibility: number | null;
+}
+
+export interface ItemDiscount {
+  product_id: string;
+  variant_id: string | null;
+  quantity: number;
+  original_unit_price: string;
+  promotion_discount_per_unit: string;
+  final_unit_price: string;
+  promotion_id: string | null;
+  promotion_name: string | null;
+  discount_type: string | null;
+  discount_value: string | null;
+}
+
+export interface CartDiscountPreviewRequest {
+  coupon_code?: string | null;
+}
+
+export interface CartDiscountPreviewResponse {
+  item_discounts: ItemDiscount[];
+  promotion_total: string;
+  coupon_discount: string;
+  coupon_id: string | null;
+  coupon_code: string | null;
+  subtotal_before_discounts: string;
+  subtotal_after_discounts: string;
+  total_discount: string;
+}

@@ -47,6 +47,11 @@ import {
   Shipment,
   ShippingCalculateRequest,
   ShippingQuote,
+  ActivePromotion,
+  CouponValidateRequest,
+  CouponValidateResponse,
+  CartDiscountPreviewRequest,
+  CartDiscountPreviewResponse,
 } from '@/types/api';
 
 // ==========================================
@@ -324,6 +329,25 @@ export const shippingApi = {
   },
   trackShipment: async (trackingCode: string): Promise<Shipment> => {
     const res = await apiClient.get<Shipment>(`/shipping/track/${trackingCode}/`);
+    return res.data;
+  },
+};
+
+// ==========================================
+// 11. Promotions & Coupons Domain
+// ==========================================
+
+export const promotionsApi = {
+  getActivePromotions: async (): Promise<ActivePromotion[]> => {
+    const res = await apiClient.get<ActivePromotion[]>('/promotions/');
+    return res.data;
+  },
+  validateCoupon: async (data: CouponValidateRequest): Promise<CouponValidateResponse> => {
+    const res = await apiClient.post<CouponValidateResponse>('/promotions/coupons/validate/', data);
+    return res.data;
+  },
+  getCartDiscountPreview: async (data?: CartDiscountPreviewRequest): Promise<CartDiscountPreviewResponse> => {
+    const res = await apiClient.post<CartDiscountPreviewResponse>('/promotions/cart/preview/', data || {});
     return res.data;
   },
 };

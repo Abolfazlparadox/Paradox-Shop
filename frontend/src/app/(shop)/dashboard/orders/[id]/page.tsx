@@ -150,45 +150,75 @@ export default function OrderDetailPage() {
           </h3>
 
           <div className="divide-y divide-border-subtle/60">
-            {order.items?.map((item) => (
-              <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1 min-w-0">
-                  <span className="text-xs font-semibold font-display text-fg-primary block truncate">
-                    {item.product_name}
-                  </span>
-                  {item.variant_sku && (
-                    <span className="text-[11px] font-mono text-fg-muted block">
-                      SKU: {item.variant_sku} {item.variant_name ? `• ${item.variant_name}` : ''}
+            {order.items?.map((item) => {
+              const hasItemDiscount = Boolean(
+                item.discount_amount && Number(item.discount_amount) > 0
+              );
+              const promoSnapshot = item.promotion_snapshot;
+
+              return (
+                <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <span className="text-xs font-semibold font-display text-fg-primary block truncate">
+                      {item.product_name}
                     </span>
-                  )}
-                  <span className="text-[11px] font-mono text-fg-secondary">
-                    Quantity: {item.quantity} × <Price amount={item.unit_price} size="sm" />
-                  </span>
-                </div>
+                    {item.variant_sku && (
+                      <span className="text-[11px] font-mono text-fg-muted block">
+                        SKU: {item.variant_sku} {item.variant_name ? `• ${item.variant_name}` : ''}
+                      </span>
+                    )}
 
-                <div className="flex items-center gap-3 self-end sm:self-auto">
-                  <Price amount={item.total_price} size="sm" className="font-semibold" />
+                    {/* Historical Promotion Badge */}
+                    {promoSnapshot && (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>{promoSnapshot.name || 'Promotional Discount'}</span>
+                      </div>
+                    )}
 
-                  {/* Review Button for Delivered Orders */}
-                  {isDelivered && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setReviewProduct({
-                          id: item.product || (item as any).product_id || item.id,
-                          name: item.product_name,
-                        })
+                    <div className="text-[11px] font-mono text-fg-secondary flex items-baseline gap-1.5 flex-wrap">
+                      <span>Quantity: {item.quantity} ×</span>
+                      <Price
+                        amount={item.unit_price}
+                        originalAmount={hasItemDiscount ? item.original_unit_price : null}
+                        size="xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end sm:self-auto">
+                    <Price
+                      amount={item.total_price}
+                      originalAmount={
+                        hasItemDiscount && item.original_unit_price
+                          ? Number(item.original_unit_price) * item.quantity
+                          : null
                       }
-                      leftIcon={<Star className="w-3 h-3 text-amber-400" />}
-                      className="text-xs h-8"
-                    >
-                      Write Review
-                    </Button>
-                  )}
+                      size="sm"
+                      className="font-semibold"
+                    />
+
+                    {/* Review Button for Delivered Orders */}
+                    {isDelivered && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setReviewProduct({
+                            id: item.product || (item as any).product_id || item.id,
+                            name: item.product_name,
+                          })
+                        }
+                        leftIcon={<Star className="w-3 h-3 text-amber-400" />}
+                        className="text-xs h-8"
+                      >
+                        Write Review
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -226,16 +256,29 @@ export default function OrderDetailPage() {
                 <span>Subtotal</span>
                 <Price amount={order.subtotal} size="sm" />
               </div>
+
+              {/* Coupon code badge if redeemed */}
+              {order.coupon_code && (
+                <div className="flex justify-between text-fg-secondary">
+                  <span>Applied Voucher</span>
+                  <span className="px-1.5 py-0.5 rounded bg-bg-secondary border border-border-subtle font-semibold text-[11px] text-fg-primary">
+                    {order.coupon_code}
+                  </span>
+                </div>
+              )}
+
+              {order.discount_amount && parseFloat(order.discount_amount) > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>Total Discount</span>
+                  <span>-{order.discount_amount} Rial</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-fg-secondary">
                 <span>Shipping</span>
                 <Price amount={order.shipping_cost || '0'} size="sm" />
               </div>
-              {order.discount_amount && parseFloat(order.discount_amount) > 0 && (
-                <div className="flex justify-between text-emerald-400">
-                  <span>Discount</span>
-                  <span>-{order.discount_amount}</span>
-                </div>
-              )}
+
               <div className="pt-2 border-t border-border-subtle flex justify-between items-baseline text-fg-primary font-bold text-sm">
                 <span>Grand Total</span>
                 <Price amount={order.total} size="md" />

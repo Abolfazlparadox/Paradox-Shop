@@ -86,6 +86,13 @@ export function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch Active Promotions for discovery
+  const { data: activePromotions = [] } = useQuery({
+    queryKey: ['promotions', 'active'],
+    queryFn: () => import('@/lib/api/endpoints').then((m) => m.promotionsApi.getActivePromotions()),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const totalItems = cart?.items_count ?? cart?.total_items ?? 0;
   const { totalItemsCount: totalWishlistItems } = useWishlist();
 
@@ -120,6 +127,20 @@ export function Navbar() {
                 >
                   All Products
                 </Link>
+
+                {/* Real Active Offers indicator */}
+                {activePromotions && activePromotions.length > 0 && (
+                  <Link
+                    href="/products?is_featured=true"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Offers</span>
+                    <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                      {activePromotions.length}
+                    </span>
+                  </Link>
+                )}
 
                 <Link
                   href="/track"

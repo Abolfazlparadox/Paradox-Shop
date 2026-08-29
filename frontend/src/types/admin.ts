@@ -31,6 +31,9 @@ export interface AdminOrderItem {
   product_name: string;
   sku: string;
   variant_name?: string | null;
+  original_unit_price?: number | string | null;
+  discount_amount?: number | string | null;
+  promotion_snapshot?: Record<string, any> | null;
   unit_price: number;
   quantity: number;
   total_price: number;
@@ -63,6 +66,8 @@ export interface AdminOrder {
   shipping_cost?: number;
   shipping_fee?: number;
   discount_amount?: number;
+  coupon_code?: string | null;
+  coupon_snapshot?: Record<string, any> | null;
   total: number;
   total_amount?: number;
   payment_method: string;
@@ -200,19 +205,88 @@ export interface AdminComment {
   parent_id?: string | null;
 }
 
+export interface AdminPromotion {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  discount_type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discount_type_display?: string;
+  discount_value: number;
+  max_discount_amount?: number | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  is_active: boolean;
+  priority: number;
+  included_products?: string[];
+  excluded_products?: string[];
+  included_categories?: string[];
+  included_brands?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminCoupon {
   id: string;
   code: string;
-  discount_type: 'PERCENTAGE' | 'FIXED';
+  description?: string;
+  discount_type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discount_type_display?: string;
   discount_value: number;
-  min_order_value?: number;
-  max_discount_amount?: number;
-  usage_limit: number;
-  usage_count: number;
+  max_discount_amount?: number | null;
+  min_order_subtotal?: number;
+  start_at?: string | null;
+  end_at?: string | null;
   is_active: boolean;
-  expires_at?: string | null;
+  total_usage_limit?: number | null;
+  per_user_usage_limit: number;
+  usage_count: number;
+  audience_type: 'ALL_USERS' | 'SPECIFIC_USERS';
+  eligible_users?: string[];
+  included_products?: string[];
+  excluded_products?: string[];
+  included_categories?: string[];
+  included_brands?: string[];
   created_at: string;
+  updated_at: string;
 }
+
+export interface AdminCouponUsage {
+  id: string;
+  coupon: string;
+  user: string;
+  user_email: string;
+  order?: string | null;
+  order_number?: string | null;
+  discount_amount: string | number;
+  redeemed_at: string;
+}
+
+export interface CouponLeaderboardItem {
+  id: string;
+  code: string;
+  discount_type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discount_value: number | string;
+  usage_count: number;
+  total_usage_limit?: number | null;
+  is_active: boolean;
+}
+
+export interface AdminPromotionReports {
+  total_discounts_given: number | string;
+  coupon_redemptions: number;
+  total_coupon_discounts: number | string;
+  revenue_affected: number | string;
+  orders_with_coupons: number;
+  orders_with_promotions: number;
+  active_promotions_count: number;
+  active_coupons_count: number;
+  active_campaigns: number;
+  expired_campaigns: number;
+  most_used_coupons: CouponLeaderboardItem[];
+  least_used_coupons: CouponLeaderboardItem[];
+}
+
 
 export interface StoreCurrency {
   code: string;

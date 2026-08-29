@@ -50,6 +50,10 @@ class Order(UUIDPrimaryKeyMixin, TimestampMixin):
     discount_amount = models.DecimalField(
         _("discount amount (Rial)"), max_digits=12, decimal_places=0, default=0
     )
+    coupon_code = models.CharField(
+        _("coupon code snapshot"), max_length=50, null=True, blank=True
+    )
+    coupon_snapshot = models.JSONField(_("coupon snapshot"), default=dict, blank=True)
     total = models.DecimalField(_("total amount (Rial)"), max_digits=12, decimal_places=0)
     notes = models.TextField(_("order notes"), null=True, blank=True)
     paid_at = models.DateTimeField(_("paid at"), null=True, blank=True)
@@ -111,8 +115,24 @@ class OrderItem(UUIDPrimaryKeyMixin):
     )
     sku = models.CharField(_("SKU snapshot"), max_length=100)
     quantity = models.PositiveIntegerField(_("quantity"))
+    original_unit_price = models.DecimalField(
+        _("original unit price snapshot (Rial)"),
+        max_digits=12,
+        decimal_places=0,
+        null=True,
+        blank=True,
+    )
+    discount_amount = models.DecimalField(
+        _("discount amount per unit (Rial)"),
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+    )
+    promotion_snapshot = models.JSONField(
+        _("promotion snapshot"), default=dict, blank=True
+    )
     unit_price = models.DecimalField(
-        _("unit price snapshot (Rial)"), max_digits=12, decimal_places=0
+        _("final unit price snapshot (Rial)"), max_digits=12, decimal_places=0
     )
     total_price = models.DecimalField(
         _("total price snapshot (Rial)"), max_digits=12, decimal_places=0
@@ -130,6 +150,17 @@ class OrderItem(UUIDPrimaryKeyMixin):
             ),
             models.CheckConstraint(
                 condition=models.Q(total_price__gte=0), name="order_item_total_price_gte_0"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(discount_amount__gte=0),
+                name="order_item_discount_amount_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(original_unit_price__isnull=True)
+                    | models.Q(original_unit_price__gte=0)
+                ),
+                name="order_item_orig_price_gte_0",
             ),
         ]
 

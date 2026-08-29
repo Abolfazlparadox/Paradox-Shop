@@ -58,7 +58,12 @@ export function ProductCard({
 
         {/* Floating Badges */}
         <div className="absolute top-3 start-3 flex flex-col gap-1.5 z-10">
-          {product.is_featured && (
+          {product.is_discounted && product.active_promotion && (
+            <Badge variant="mono" size="sm" className="bg-bg-elevated/95 border-emerald-500/30 text-emerald-400 font-mono text-[10px] shadow-subtle">
+              {product.active_promotion.discount_percentage > 0 ? `-${product.active_promotion.discount_percentage}%` : 'SALE'}
+            </Badge>
+          )}
+          {product.is_featured && !product.is_discounted && (
             <Badge variant="mono" size="sm">
               Featured
             </Badge>
@@ -122,8 +127,13 @@ export function ProductCard({
           </h3>
         </div>
 
-        <div className="pt-2 border-t border-border-subtle/50 flex items-center justify-between mt-2">
-          <Price amount={product.base_price} size="sm" />
+        <div className="pt-2 border-t border-border-subtle/50 flex items-center justify-between mt-2 flex-wrap gap-1">
+          <Price
+            amount={product.discounted_price || product.base_price}
+            originalAmount={product.discounted_price ? product.base_price : null}
+            discountPercentage={product.active_promotion?.discount_percentage}
+            size="sm"
+          />
           {product.total_stock !== undefined && product.total_stock > 0 && product.total_stock <= 3 && (
             <span className="text-[10px] font-mono text-amber-500 font-medium">
               Only {product.total_stock} left

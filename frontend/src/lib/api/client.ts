@@ -2,7 +2,9 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'ax
 import { APIError, TokenPair } from '@/types/api';
 import { parseApiError, toApiError, ErrorContext } from './error-handler';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { env, getApiBaseUrl } from '@/lib/config';
+
+export { getApiBaseUrl };
 
 // In-memory token storage reference for client interceptors
 let accessToken: string | null = null;
@@ -57,23 +59,6 @@ export function normalizeApiError(error: unknown, context: ErrorContext = 'gener
   const parsed = parseApiError(error, context);
   return toApiError(parsed);
 }
-
-export const getApiBaseUrl = (): string => {
-  if (typeof window === 'undefined') {
-    return process.env.INTERNAL_API_URL || 'http://backend:8000/api/v1';
-  }
-  const configured = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-  try {
-    const parsed = new URL(configured);
-    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-      parsed.hostname = window.location.hostname;
-      return parsed.toString().replace(/\/$/, '');
-    }
-    return configured.replace(/\/$/, '');
-  } catch {
-    return configured.replace(/\/$/, '');
-  }
-};
 
 export const apiClient: AxiosInstance = axios.create({
   timeout: 15000,

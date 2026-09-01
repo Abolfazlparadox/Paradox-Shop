@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import type Lenis from 'lenis';
 import { useUIStore } from '@/stores/ui';
 
 export function SmoothScroll() {
+  const pathname = usePathname();
   const lenisRef = useRef<Lenis | null>(null);
   const { isCartDrawerOpen, isMobileMenuOpen, activeModal } = useUIStore();
 
@@ -57,16 +59,22 @@ export function SmoothScroll() {
     };
   }, []);
 
-  // Pause Lenis during modal / drawer open state so standard overflow locks work correctly
+  // Pause Lenis during modal / drawer open state or on admin/dashboard routes
   useEffect(() => {
     if (!lenisRef.current) return;
+    const isExcludedRoute =
+      pathname?.startsWith('/admin') ||
+      pathname?.startsWith('/dashboard') ||
+      pathname?.startsWith('/login') ||
+      pathname?.startsWith('/register');
     const isOverlayOpen = isCartDrawerOpen || isMobileMenuOpen || Boolean(activeModal);
-    if (isOverlayOpen) {
+
+    if (isExcludedRoute || isOverlayOpen) {
       lenisRef.current.stop();
     } else {
       lenisRef.current.start();
     }
-  }, [isCartDrawerOpen, isMobileMenuOpen, activeModal]);
+  }, [pathname, isCartDrawerOpen, isMobileMenuOpen, activeModal]);
 
   return null;
 }

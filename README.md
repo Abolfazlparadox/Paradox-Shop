@@ -22,11 +22,15 @@ The architecture adopts a **Modular Monolith** pattern designed to handle enterp
 
 2. **Start Development Services via Docker Compose**:
    ```bash
+   # Standard Development
    make up
+   # Or explicitly using dev compose
+   docker compose -f docker-compose.dev.yml up -d
    ```
-   Or directly:
+
+   **Production Simulation**:
    ```bash
-   docker compose up -d
+   docker compose -f docker-compose.prod.yml up -d --build
    ```
 
 3. **Run Database Migrations**:

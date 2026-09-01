@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { productsApi } from '@/lib/api/endpoints';
+import { env } from '@/lib/config';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = env.NEXT_PUBLIC_SITE_URL;
 
   let productRoutes: MetadataRoute.Sitemap = [];
 

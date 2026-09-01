@@ -19,7 +19,8 @@ interface WishlistItemCardProps {
   onRemove: (itemId: string) => Promise<any>;
 }
 
-export function WishlistItemCard({ item, onRemove }: WishlistItemCardProps) {
+export const WishlistItemCard = React.forwardRef<HTMLDivElement, WishlistItemCardProps>(
+  ({ item, onRemove }, ref) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isMovingToCart, setIsMovingToCart] = useState(false);
   const queryClient = useQueryClient();
@@ -65,6 +66,7 @@ export function WishlistItemCard({ item, onRemove }: WishlistItemCardProps) {
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -155,4 +157,6 @@ export function WishlistItemCard({ item, onRemove }: WishlistItemCardProps) {
       </div>
     </motion.div>
   );
-}
+});
+
+WishlistItemCard.displayName = 'WishlistItemCard';

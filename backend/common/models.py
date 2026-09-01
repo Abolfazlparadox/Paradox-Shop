@@ -170,3 +170,45 @@ class SystemSetting(UUIDPrimaryKeyMixin, TimestampMixin):
     def __str__(self):
         return f"{self.key}"
 
+
+class UserNotification(UUIDPrimaryKeyMixin, TimestampMixin):
+    """
+    Client-facing in-app notifications (review updates, staff responses, order alerts).
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_notifications",
+        verbose_name=_("user"),
+    )
+    title = models.CharField(max_length=255, verbose_name=_("title"))
+    message = models.TextField(verbose_name=_("message"))
+    notification_type = models.CharField(
+        max_length=50,
+        default="SYSTEM",
+        db_index=True,
+        verbose_name=_("notification type"),
+    )
+    is_read = models.BooleanField(
+        default=False, db_index=True, verbose_name=_("is read")
+    )
+    action_url = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name=_("action URL")
+    )
+    resource_id = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name=_("resource ID")
+    )
+
+    class Meta:
+        verbose_name = _("User Notification")
+        verbose_name_plural = _("User Notifications")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_read", "-created_at"], name="idx_usr_notif_read_created"),
+        ]
+
+    def __str__(self):
+        return f"Notification for {self.user_id}: {self.title} (Read: {self.is_read})"
+
+

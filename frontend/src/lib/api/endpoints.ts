@@ -33,6 +33,12 @@ import {
   ResendOTPRequest,
   ResendOTPResponse,
   Review,
+  ReviewEligibility,
+  ReviewSummary,
+  UserReview,
+  ProductQuestion,
+  QuestionAnswer,
+  UserProductQuestion,
   TokenPair,
   UpdateCartItemRequest,
   User,
@@ -53,6 +59,7 @@ import {
   CartDiscountPreviewRequest,
   CartDiscountPreviewResponse,
 } from '@/types/api';
+
 
 // ==========================================
 // 1. Authentication & Users
@@ -244,19 +251,106 @@ export const paymentsApi = {
 };
 
 // ==========================================
-// 7. Reviews
+// 7. Reviews & Product Q&A
 // ==========================================
 
 export const reviewsApi = {
-  getByProduct: async (productId: string, params?: { page?: number; page_size?: number }): Promise<PaginatedResponse<Review>> => {
+  getByProduct: async (
+    productId: string,
+    params?: {
+      rating?: number;
+      verified?: boolean;
+      has_images?: boolean;
+      sort?: string;
+      page?: number;
+      page_size?: number;
+    }
+  ): Promise<PaginatedResponse<Review>> => {
     const res = await apiClient.get<PaginatedResponse<Review>>(`/reviews/product/${productId}/`, { params });
     return res.data;
   },
-  create: async (data: CreateReviewRequest): Promise<Review> => {
-    const res = await apiClient.post<Review>('/reviews/create/', data);
+
+  getSummary: async (productId: string): Promise<ReviewSummary> => {
+    const res = await apiClient.get<ReviewSummary>(`/reviews/product/${productId}/summary/`);
+    return res.data;
+  },
+
+  getEligibility: async (productId: string): Promise<ReviewEligibility> => {
+    const res = await apiClient.get<ReviewEligibility>(`/reviews/product/${productId}/eligibility/`);
+    return res.data;
+  },
+
+  create: async (data: FormData | CreateReviewRequest): Promise<Review> => {
+    const res = await apiClient.post<Review>('/reviews/create/', data, {
+      headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    });
+    return res.data;
+  },
+
+  update: async (id: string, data: FormData | Partial<CreateReviewRequest>): Promise<Review> => {
+    const res = await apiClient.patch<Review>(`/reviews/${id}/`, data, {
+      headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    });
+    return res.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/reviews/${id}/`);
+  },
+
+  vote: async (id: string, isHelpful: boolean): Promise<{ user_vote: boolean | null; helpful_count: number; unhelpful_count: number }> => {
+    const res = await apiClient.post<{ user_vote: boolean | null; helpful_count: number; unhelpful_count: number }>(`/reviews/${id}/vote/`, {
+      is_helpful: isHelpful,
+    });
+    return res.data;
+  },
+
+  report: async (id: string, reason: string, details?: string): Promise<{ detail: string }> => {
+    const res = await apiClient.post<{ detail: string }>(`/reviews/${id}/report/`, {
+      reason,
+      details,
+    });
+    return res.data;
+  },
+
+  getMyReviews: async (params?: { page?: number; page_size?: number }): Promise<PaginatedResponse<UserReview>> => {
+    const res = await apiClient.get<PaginatedResponse<UserReview>>('/reviews/my/', { params });
     return res.data;
   },
 };
+
+export const questionsApi = {
+  getByProduct: async (
+    productId: string,
+    params?: { page?: number; page_size?: number }
+  ): Promise<PaginatedResponse<ProductQuestion>> => {
+    const res = await apiClient.get<PaginatedResponse<ProductQuestion>>(`/reviews/questions/product/${productId}/`, { params });
+    return res.data;
+  },
+
+  create: async (data: { product_id: string; question: string }): Promise<ProductQuestion> => {
+    const res = await apiClient.post<ProductQuestion>('/reviews/questions/create/', data);
+    return res.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/reviews/questions/${id}/`);
+  },
+
+  report: async (id: string, reason: string, details?: string): Promise<{ detail: string }> => {
+    const res = await apiClient.post<{ detail: string }>(`/reviews/questions/${id}/report/`, {
+      reason,
+      details,
+    });
+    return res.data;
+  },
+
+  getMyQuestions: async (params?: { page?: number; page_size?: number }): Promise<PaginatedResponse<UserProductQuestion>> => {
+    const res = await apiClient.get<PaginatedResponse<UserProductQuestion>>('/reviews/questions/my/', { params });
+    return res.data;
+  },
+};
+
 
 // ==========================================
 // 8. Health & Diagnostics

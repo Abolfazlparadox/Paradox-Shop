@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -38,10 +40,23 @@ from apps.reviews.admin_serializers import (
     AdminCommentListSerializer,
     AdminCommentReplyCreateSerializer,
     AdminModerationActionSerializer,
+    AdminQuestionAnswerCreateSerializer,
+    AdminQuestionListSerializer,
+    AdminQuestionModerateSerializer,
     AdminReviewListSerializer,
+    AdminReviewModerateSerializer,
+    AdminReviewReportListSerializer,
+    AdminReviewStaffResponseSerializer,
 )
 from apps.reviews.admin_services import AdminReviewService
-from apps.reviews.models import Review
+from apps.reviews.models import (
+    ProductQuestion,
+    QuestionReport,
+    Review,
+    ReviewReport,
+    ReviewResponse,
+)
+
 from apps.users.admin_selectors import AdminUserSelector
 from apps.users.admin_serializers import (
     AdminCustomerDetailSerializer,
@@ -456,9 +471,11 @@ class AdminCustomerToggleStatusView(APIView):
 @extend_schema(
     tags=["Admin - Moderation"],
     parameters=[
+        OpenApiParameter(name="status", description="Filter by status (PENDING, APPROVED, REJECTED, HIDDEN)", required=False, type=str),
         OpenApiParameter(name="is_approved", description="Filter approved/pending (true/false)", required=False, type=bool),
         OpenApiParameter(name="rating", description="Filter by rating (1-5)", required=False, type=int),
         OpenApiParameter(name="search", description="Search review content, product, author", required=False, type=str),
+        OpenApiParameter(name="product_id", description="Filter by product UUID", required=False, type=str),
     ],
     responses={200: AdminReviewListSerializer(many=True)},
 )
@@ -475,30 +492,57 @@ class AdminReviewListView(generics.ListAPIView):
             is_approved = params.get("is_approved").lower() in ("true", "1", "yes")
 
         return AdminReviewSelector.get_reviews_queryset(
+            status=params.get("status"),
             is_approved=is_approved,
-            rating=params.get("rating"),
+            rating=int(params.get("rating")) if params.get("rating") and params.get("rating").isdigit() else None,
             search=params.get("search"),
+            product_id=params.get("product_id"),
         )
 
 
-@extend_schema(tags=["Admin - Moderation"], request=AdminModerationActionSerializer, responses={200: AdminReviewListSerializer})
+@extend_schema(tags=["Admin - Moderation"], request=AdminReviewModerateSerializer, responses={200: AdminReviewListSerializer})
 class AdminReviewModerateView(APIView):
-    """Approves or rejects a product review."""
+    """Approves, rejects, or hides a product review with optional editorial feedback."""
 
     permission_classes = [IsStaffAdmin]
 
     def post(self, request, pk):
-        serializer = AdminModerationActionSerializer(data=request.data)
+        serializer = AdminReviewModerateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         review = get_object_or_404(Review, id=pk)
         updated = AdminReviewService.moderate_review(
             review=review,
-            is_approved=serializer.validated_data["is_approved"],
+            status=serializer.validated_data.get("status"),
+            is_approved=serializer.validated_data.get("is_approved"),
+            rejection_reason=serializer.validated_data.get("rejection_reason"),
             actor_user=request.user,
             request=request,
         )
         return Response(AdminReviewListSerializer(updated).data)
+
+
+@extend_schema(tags=["Admin - Moderation"], request=AdminReviewStaffResponseSerializer, responses={200: OpenApiTypes.OBJECT})
+class AdminReviewStaffResponseView(APIView):
+    """Publishes an official staff response to a customer review."""
+
+    permission_classes = [IsStaffAdmin]
+
+    def post(self, request, pk):
+        serializer = AdminReviewStaffResponseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        review = get_object_or_404(Review, id=pk)
+        response_obj = AdminReviewService.add_staff_response(
+            review=review,
+            response_text=serializer.validated_data["response_text"],
+            staff_user=request.user,
+            request=request,
+        )
+        return Response(
+            {"id": str(response_obj.id), "response_text": response_obj.response_text, "created_at": response_obj.created_at.isoformat()},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(tags=["Admin - Moderation"])
@@ -506,11 +550,129 @@ class AdminReviewDeleteView(generics.DestroyAPIView):
     """Deletes a product review permanently."""
 
     permission_classes = [IsStaffAdmin]
+    serializer_class = AdminReviewListSerializer
     queryset = Review.objects.all()
 
     def perform_destroy(self, instance):
         AdminReviewService.delete_review(instance, actor_user=self.request.user, request=self.request)
 
+
+@extend_schema(tags=["Admin - Moderation"], responses={200: AdminReviewReportListSerializer(many=True)})
+class AdminReviewReportListView(generics.ListAPIView):
+    """Lists community abuse reports on reviews."""
+
+    permission_classes = [IsStaffAdmin]
+    serializer_class = AdminReviewReportListSerializer
+
+    def get_queryset(self):
+        status_param = self.request.query_params.get("status")
+        return AdminReviewSelector.get_review_reports_queryset(status=status_param)
+
+
+@extend_schema(tags=["Admin - Moderation"], responses={200: AdminReviewReportListSerializer})
+class AdminReviewReportResolveView(APIView):
+    """Resolves or dismisses an abuse report."""
+
+    permission_classes = [IsStaffAdmin]
+
+    def post(self, request, pk):
+        report = get_object_or_404(ReviewReport, id=pk)
+        new_status = request.data.get("status", "RESOLVED")
+        updated = AdminReviewService.resolve_review_report(
+            report=report, status=new_status, actor_user=request.user, request=request
+        )
+        return Response(AdminReviewReportListSerializer(updated).data)
+
+
+# =====================================================================
+# Q&A MODERATION VIEWS
+# =====================================================================
+
+@extend_schema(
+    tags=["Admin - Moderation"],
+    parameters=[
+        OpenApiParameter(name="status", description="Filter by status (PENDING, APPROVED, REJECTED, HIDDEN)", required=False, type=str),
+        OpenApiParameter(name="search", description="Search question text, product, author", required=False, type=str),
+        OpenApiParameter(name="product_id", description="Filter by product UUID", required=False, type=str),
+    ],
+    responses={200: AdminQuestionListSerializer(many=True)},
+)
+class AdminQuestionListView(generics.ListAPIView):
+    """Q&A product inquiries moderation queue."""
+
+    permission_classes = [IsStaffAdmin]
+    serializer_class = AdminQuestionListSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        return AdminReviewSelector.get_questions_queryset(
+            status=params.get("status"),
+            search=params.get("search"),
+            product_id=params.get("product_id"),
+        )
+
+
+@extend_schema(tags=["Admin - Moderation"], request=AdminQuestionModerateSerializer, responses={200: AdminQuestionListSerializer})
+class AdminQuestionModerateView(APIView):
+    """Approves, rejects, or hides a product inquiry."""
+
+    permission_classes = [IsStaffAdmin]
+
+    def post(self, request, pk):
+        serializer = AdminQuestionModerateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        question = get_object_or_404(ProductQuestion, id=pk)
+        updated = AdminReviewService.moderate_question(
+            question=question,
+            status=serializer.validated_data.get("status"),
+            is_approved=serializer.validated_data.get("is_approved"),
+            rejection_reason=serializer.validated_data.get("rejection_reason"),
+            actor_user=request.user,
+            request=request,
+        )
+        return Response(AdminQuestionListSerializer(updated).data)
+
+
+@extend_schema(tags=["Admin - Moderation"], request=AdminQuestionAnswerCreateSerializer, responses={200: OpenApiTypes.OBJECT})
+class AdminQuestionAnswerView(APIView):
+    """Publishes an authoritative staff answer to a client inquiry."""
+
+    permission_classes = [IsStaffAdmin]
+
+    def post(self, request, pk):
+        serializer = AdminQuestionAnswerCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        question = get_object_or_404(ProductQuestion, id=pk)
+        answer_obj = AdminReviewService.answer_question(
+            question=question,
+            answer_text=serializer.validated_data["answer"],
+            staff_user=request.user,
+            request=request,
+        )
+        return Response(
+            {"id": str(answer_obj.id), "answer": answer_obj.answer, "created_at": answer_obj.created_at.isoformat()},
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Admin - Moderation"])
+class AdminQuestionDeleteView(generics.DestroyAPIView):
+    """Deletes a product question permanently."""
+
+    permission_classes = [IsStaffAdmin]
+    serializer_class = AdminQuestionListSerializer
+    queryset = ProductQuestion.objects.all()
+
+    def perform_destroy(self, instance):
+        AdminReviewService.delete_question(instance, actor_user=self.request.user, request=self.request)
+
+
+
+# =====================================================================
+# LEGACY COMMENT VIEWS
+# =====================================================================
 
 @extend_schema(
     tags=["Admin - Moderation"],
@@ -576,6 +738,7 @@ class AdminCommentReplyView(APIView):
             request=request,
         )
         return Response(AdminCommentListSerializer(reply).data, status=status.HTTP_201_CREATED)
+
 
 
 # ============================================================

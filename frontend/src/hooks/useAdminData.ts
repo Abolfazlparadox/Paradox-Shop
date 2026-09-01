@@ -21,7 +21,10 @@ export const adminKeys = {
   customers: (params?: any) => [...adminKeys.all, 'customers', params] as const,
   customer: (id: string) => [...adminKeys.all, 'customer', id] as const,
   reviews: (params?: any) => [...adminKeys.all, 'reviews', params] as const,
+  reviewReports: (params?: any) => [...adminKeys.all, 'review-reports', params] as const,
+  questions: (params?: any) => [...adminKeys.all, 'questions', params] as const,
   comments: (params?: any) => [...adminKeys.all, 'comments', params] as const,
+
   payments: (params?: any) => [...adminKeys.all, 'payments', params] as const,
   payment: (id: string) => [...adminKeys.all, 'payment', id] as const,
   notifications: () => [...adminKeys.all, 'notifications'] as const,
@@ -274,11 +277,14 @@ export function useToggleCustomerStatus() {
 
 // ==========================================
 // 8. Reviews & Comments Moderation
+// 8. Reviews & Q&A Moderation
 // ==========================================
 export function useAdminReviews(params?: {
+  status?: string;
   is_approved?: boolean;
   rating?: number;
   search?: string;
+  product_id?: string;
 }) {
   return useQuery({
     queryKey: adminKeys.reviews(params),
@@ -290,8 +296,28 @@ export function useAdminReviews(params?: {
 export function useModerateReview() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, is_approved }: { id: string; is_approved: boolean }) =>
-      adminApi.moderateReview(id, is_approved),
+    mutationFn: ({
+      id,
+      status,
+      is_approved,
+      rejection_reason,
+    }: {
+      id: string;
+      status?: string;
+      is_approved?: boolean;
+      rejection_reason?: string;
+    }) => adminApi.moderateReview(id, { status, is_approved, rejection_reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.reviews() });
+    },
+  });
+}
+
+export function useRespondToReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, response_text }: { id: string; response_text: string }) =>
+      adminApi.respondToReview(id, response_text),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.reviews() });
     },
@@ -304,6 +330,79 @@ export function useDeleteReview() {
     mutationFn: (id: string) => adminApi.deleteReview(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.reviews() });
+    },
+  });
+}
+
+export function useAdminReviewReports(params?: { status?: string }) {
+  return useQuery({
+    queryKey: adminKeys.reviewReports(params),
+    queryFn: () => adminApi.getReviewReports(params),
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useResolveReviewReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      adminApi.resolveReviewReport(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.reviewReports() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.reviews() });
+    },
+  });
+}
+
+export function useAdminQuestions(params?: {
+  status?: string;
+  search?: string;
+  product_id?: string;
+}) {
+  return useQuery({
+    queryKey: adminKeys.questions(params),
+    queryFn: () => adminApi.getQuestions(params),
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useModerateQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      is_approved,
+      rejection_reason,
+    }: {
+      id: string;
+      status?: string;
+      is_approved?: boolean;
+      rejection_reason?: string;
+    }) => adminApi.moderateQuestion(id, { status, is_approved, rejection_reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.questions() });
+    },
+  });
+}
+
+export function useAnswerQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, answer }: { id: string; answer: string }) =>
+      adminApi.answerQuestion(id, answer),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.questions() });
+    },
+  });
+}
+
+export function useDeleteQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deleteQuestion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.questions() });
     },
   });
 }
@@ -337,6 +436,7 @@ export function useReplyComment() {
     },
   });
 }
+
 
 // ==========================================
 // 9. Payment Transactions

@@ -6,7 +6,8 @@ import { ProductDetail, ProductVariant } from '@/types/api';
 import { ProductGallery } from './ProductGallery';
 import { ProductVariantSelector } from './ProductVariantSelector';
 import { ProductReviews } from './ProductReviews';
-import { ProductComments } from './ProductComments';
+import { ProductQA } from './ProductQA';
+
 import { Price } from '@/components/ui/Price';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -303,10 +304,11 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
         <ProductReviews productId={product.id} />
       </ScrollReveal>
 
-      {/* Community & Technical Discussions Section */}
+      {/* Technical Inquiries & Atelier Q&A Section */}
       <ScrollReveal variant="fade-up">
-        <ProductComments productId={product.id} />
+        <ProductQA productId={product.id} />
       </ScrollReveal>
     </div>
   );
 }
+

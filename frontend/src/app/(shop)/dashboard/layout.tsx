@@ -13,16 +13,19 @@ import {
   User,
   LogOut,
   ShieldCheck,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/orders', label: 'Orders & Tracking', icon: Package },
+  { href: '/dashboard/reviews', label: 'My Reviews & Q&A', icon: Star },
   { href: '/dashboard/wishlist', label: 'Wishlist & Saved', icon: Heart },
   { href: '/dashboard/addresses', label: 'Delivery Addresses', icon: MapPin },
   { href: '/dashboard/profile', label: 'Profile & Security', icon: User },
 ];
+
 
 export default function DashboardLayout({
   children,

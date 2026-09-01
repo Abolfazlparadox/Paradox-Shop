@@ -74,11 +74,12 @@ class TestReviewsAPI:
         prod = create_product()
 
         Review.objects.create(
-            product=prod, user=u1, rating=5, title="Approved Review", is_approved=True
+            product=prod, user=u1, rating=5, title="Approved Review", status=Review.ReviewStatus.APPROVED
         )
         Review.objects.create(
-            product=prod, user=u2, rating=1, title="Pending Review", is_approved=False
+            product=prod, user=u2, rating=1, title="Pending Review", status=Review.ReviewStatus.PENDING
         )
+
 
         list_url = reverse("api_v1:reviews:product-reviews", kwargs={"product_id": prod.id})
         response = api_client.get(list_url)

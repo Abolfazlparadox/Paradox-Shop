@@ -11,8 +11,11 @@ import {
   AdminOrder,
   AdminPaymentTransaction,
   AdminProduct,
+  AdminQuestionItem,
   AdminReviewItem,
+  AdminReviewReportItem,
   AdminShippingMethod,
+
   AdminSystemSettingsData,
   Shipment,
 } from '@/types/api';
@@ -179,23 +182,75 @@ export const adminApi = {
 
   // 8. Reviews & Q&A Moderation
   async getReviews(params?: {
+    status?: string;
     is_approved?: boolean;
     rating?: number;
     search?: string;
+    product_id?: string;
   }): Promise<AdminReviewItem[]> {
     const { data } = await apiClient.get('/admin/reviews/', { params });
     return extractResults<AdminReviewItem>(data);
   },
 
-  async moderateReview(id: string, is_approved: boolean): Promise<AdminReviewItem> {
-    const { data } = await apiClient.post<AdminReviewItem>(`/admin/reviews/${id}/moderate/`, {
-      is_approved,
+  async moderateReview(
+    id: string,
+    options: { status?: string; is_approved?: boolean; rejection_reason?: string } | boolean
+  ): Promise<AdminReviewItem> {
+    const payload = typeof options === 'boolean' ? { is_approved: options } : options;
+    const { data } = await apiClient.post<AdminReviewItem>(`/admin/reviews/${id}/moderate/`, payload);
+    return data;
+  },
+
+  async respondToReview(id: string, response_text: string): Promise<{ id: string; response_text: string }> {
+    const { data } = await apiClient.post<{ id: string; response_text: string }>(`/admin/reviews/${id}/respond/`, {
+      response_text,
     });
     return data;
   },
 
   async deleteReview(id: string): Promise<void> {
     await apiClient.delete(`/admin/reviews/${id}/`);
+  },
+
+  async getReviewReports(params?: { status?: string }): Promise<AdminReviewReportItem[]> {
+    const { data } = await apiClient.get('/admin/reviews/reports/', { params });
+    return extractResults<AdminReviewReportItem>(data);
+  },
+
+  async resolveReviewReport(id: string, status: string): Promise<AdminReviewReportItem> {
+    const { data } = await apiClient.post<AdminReviewReportItem>(`/admin/reviews/reports/${id}/resolve/`, {
+      status,
+    });
+    return data;
+  },
+
+  async getQuestions(params?: {
+    status?: string;
+    search?: string;
+    product_id?: string;
+  }): Promise<AdminQuestionItem[]> {
+    const { data } = await apiClient.get('/admin/questions/', { params });
+    return extractResults<AdminQuestionItem>(data);
+  },
+
+  async moderateQuestion(
+    id: string,
+    options: { status?: string; is_approved?: boolean; rejection_reason?: string } | boolean
+  ): Promise<AdminQuestionItem> {
+    const payload = typeof options === 'boolean' ? { is_approved: options } : options;
+    const { data } = await apiClient.post<AdminQuestionItem>(`/admin/questions/${id}/moderate/`, payload);
+    return data;
+  },
+
+  async answerQuestion(id: string, answer: string): Promise<{ id: string; answer: string }> {
+    const { data } = await apiClient.post<{ id: string; answer: string }>(`/admin/questions/${id}/answer/`, {
+      answer,
+    });
+    return data;
+  },
+
+  async deleteQuestion(id: string): Promise<void> {
+    await apiClient.delete(`/admin/questions/${id}/`);
   },
 
   async getComments(params?: {
@@ -219,6 +274,7 @@ export const adminApi = {
     });
     return data;
   },
+
 
   // 9. Payment Transactions
   async getPayments(params?: {

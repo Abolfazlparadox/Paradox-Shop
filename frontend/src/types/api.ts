@@ -552,8 +552,33 @@ export interface MockPayRequest {
 }
 
 // ==========================================
-// 8. Reviews Domain
+// 8. Reviews & Q&A Domain
 // ==========================================
+
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type QuestionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type ReviewReportReason = 'SPAM' | 'OFFENSIVE' | 'FAKE' | 'IRRELEVANT' | 'INAPPROPRIATE_IMAGE' | 'OTHER';
+
+export interface ReviewImage {
+  id: string;
+  image: string;
+  thumbnail?: string | null;
+  original_filename?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  is_processed?: boolean;
+  sort_order?: number;
+  created_at: string;
+}
+
+export interface ReviewResponse {
+  id: string;
+  staff_name: string;
+  response_text: string;
+  is_official: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Review {
   id: string;
@@ -562,11 +587,66 @@ export interface Review {
   user_name?: string;
   rating: number;
   title?: string | null;
-  comment?: string;
   body?: string | null;
+  comment?: string;
+  pros?: string[];
+  cons?: string[];
   is_verified_purchase: boolean;
+  helpful_count?: number;
+  unhelpful_count?: number;
+  user_vote?: boolean | null;
+  images?: ReviewImage[];
+  staff_response?: ReviewResponse | null;
   created_at: string;
   updated_at?: string;
+}
+
+export interface UserReview {
+  id: string;
+  product: string;
+  product_name: string;
+  product_slug: string;
+  rating: number;
+  title?: string | null;
+  body?: string | null;
+  pros?: string[];
+  cons?: string[];
+  status: ReviewStatus;
+  rejection_reason?: string | null;
+  is_verified_purchase: boolean;
+  helpful_count: number;
+  unhelpful_count: number;
+  images: ReviewImage[];
+  staff_response?: ReviewResponse | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RatingBreakdownItem {
+  stars: number;
+  count: number;
+  percentage: number;
+}
+
+export interface ReviewSummary {
+  product_id: string;
+  total_reviews: number;
+  average_rating: number;
+  verified_purchases_count: number;
+  with_images_count: number;
+  rating_breakdown: Record<string, RatingBreakdownItem>;
+}
+
+export interface ReviewEligibility {
+  can_review: boolean;
+  has_purchased: boolean;
+  has_reviewed: boolean;
+  existing_review?: {
+    id: string;
+    rating: number;
+    status: ReviewStatus;
+    created_at: string;
+  } | null;
 }
 
 export interface CreateReviewRequest {
@@ -574,7 +654,41 @@ export interface CreateReviewRequest {
   rating: number;
   title?: string | null;
   body?: string | null;
+  pros?: string[];
+  cons?: string[];
 }
+
+export interface QuestionAnswer {
+  id: string;
+  staff_name: string;
+  answer: string;
+  is_official: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductQuestion {
+  id: string;
+  product: string;
+  user_display_name: string;
+  question: string;
+  answer?: QuestionAnswer | null;
+  created_at: string;
+}
+
+export interface UserProductQuestion {
+  id: string;
+  product: string;
+  product_name: string;
+  product_slug: string;
+  question: string;
+  status: QuestionStatus;
+  rejection_reason?: string | null;
+  answer?: QuestionAnswer | null;
+  created_at: string;
+  updated_at: string;
+}
+
 
 // ==========================================
 // 9. Admin Control Center Domain
@@ -818,11 +932,48 @@ export interface AdminReviewItem {
   rating: number;
   title?: string | null;
   body?: string | null;
+  pros?: string[];
+  cons?: string[];
+  status: ReviewStatus;
+  rejection_reason?: string | null;
   is_verified_purchase: boolean;
   is_approved: boolean;
+  helpful_count: number;
+  unhelpful_count: number;
+  images: ReviewImage[];
+  staff_response?: ReviewResponse | null;
+  reports_count?: number;
   created_at: string;
   updated_at: string;
 }
+
+export interface AdminQuestionItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  author_name: string;
+  author_email: string;
+  question: string;
+  status: QuestionStatus;
+  rejection_reason?: string | null;
+  answer?: QuestionAnswer | null;
+  reports_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminReviewReportItem {
+  id: string;
+  review_id: string;
+  product_name: string;
+  reporting_user_email: string;
+  reason: string;
+  details?: string | null;
+  status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
+  created_at: string;
+}
+
 
 export interface AdminCommentReply {
   id: string;

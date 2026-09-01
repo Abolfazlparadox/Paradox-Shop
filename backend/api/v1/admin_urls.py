@@ -36,9 +36,16 @@ from .admin_views import (
     AdminPromotionListCreateView,
     AdminPromotionReportsView,
     AdminPromotionToggleView,
+    AdminQuestionAnswerView,
+    AdminQuestionDeleteView,
+    AdminQuestionListView,
+    AdminQuestionModerateView,
     AdminReviewDeleteView,
     AdminReviewListView,
     AdminReviewModerateView,
+    AdminReviewReportListView,
+    AdminReviewReportResolveView,
+    AdminReviewStaffResponseView,
     AdminSettingsView,
     AdminShippingMethodDetailView,
     AdminShippingMethodListView,
@@ -83,13 +90,25 @@ urlpatterns = [
     path("customers/<uuid:pk>/", AdminCustomerDetailView.as_view(), name="customers-detail"),
     path("customers/<uuid:pk>/toggle-status/", AdminCustomerToggleStatusView.as_view(), name="customers-toggle-status"),
 
-    # Reviews & Q&A Moderation
+    # Reviews Moderation
     path("reviews/", AdminReviewListView.as_view(), name="reviews-list"),
+    path("reviews/reports/", AdminReviewReportListView.as_view(), name="reviews-reports-list"),
+    path("reviews/reports/<uuid:pk>/resolve/", AdminReviewReportResolveView.as_view(), name="reviews-reports-resolve"),
     path("reviews/<uuid:pk>/moderate/", AdminReviewModerateView.as_view(), name="reviews-moderate"),
+    path("reviews/<uuid:pk>/respond/", AdminReviewStaffResponseView.as_view(), name="reviews-respond"),
     path("reviews/<uuid:pk>/", AdminReviewDeleteView.as_view(), name="reviews-delete"),
+
+    # Q&A Moderation
+    path("questions/", AdminQuestionListView.as_view(), name="questions-list"),
+    path("questions/<uuid:pk>/moderate/", AdminQuestionModerateView.as_view(), name="questions-moderate"),
+    path("questions/<uuid:pk>/answer/", AdminQuestionAnswerView.as_view(), name="questions-answer"),
+    path("questions/<uuid:pk>/", AdminQuestionDeleteView.as_view(), name="questions-delete"),
+
+    # Legacy Comments
     path("comments/", AdminCommentListView.as_view(), name="comments-list"),
     path("comments/<uuid:pk>/moderate/", AdminCommentModerateView.as_view(), name="comments-moderate"),
     path("comments/<uuid:pk>/reply/", AdminCommentReplyView.as_view(), name="comments-reply"),
+
 
     # Payments
     path("payments/", AdminPaymentListView.as_view(), name="payments-list"),

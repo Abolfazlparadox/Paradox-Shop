@@ -76,6 +76,13 @@ class Product(UUIDPrimaryKeyMixin, TimestampMixin):
                 condition=models.Q(base_price__gte=0), name="product_base_price_gte_0"
             ),
         ]
+        indexes = [
+            models.Index(
+                fields=["is_active", "-is_featured", "-created_at"],
+                name="prod_catalog_sort_idx",
+            ),
+            models.Index(fields=["base_price"], name="prod_base_price_idx"),
+        ]
 
     def __str__(self):
         return self.name
@@ -155,6 +162,9 @@ class ProductImage(UUIDPrimaryKeyMixin):
         verbose_name = _("Product Image")
         verbose_name_plural = _("Product Images")
         ordering = ["-is_primary", "sort_order"]
+        indexes = [
+            models.Index(fields=["product", "is_primary"], name="prod_img_primary_idx"),
+        ]
 
     def __str__(self):
         status = "Primary" if self.is_primary else f"Order {self.sort_order}"

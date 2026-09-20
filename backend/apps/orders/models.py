@@ -75,6 +75,10 @@ class Order(UUIDPrimaryKeyMixin, TimestampMixin):
             ),
             models.CheckConstraint(condition=models.Q(total__gte=0), name="order_total_gte_0"),
         ]
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="order_user_created_idx"),
+            models.Index(fields=["status", "created_at"], name="order_status_created_idx"),
+        ]
 
     def __str__(self):
         return f"Order #{self.order_number} - {self.user.email} ({self.get_status_display()})"

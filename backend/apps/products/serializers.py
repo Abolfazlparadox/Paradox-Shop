@@ -51,7 +51,15 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             from apps.promotions.selectors import PromotionSelector
             from apps.promotions.services import PromotionEngine
 
-            matching_promos = PromotionSelector.get_promotions_for_product(obj.product)
+            active_promos = self.context.get("active_promotions")
+            if active_promos is None:
+                if not hasattr(self, "_active_promos_cache"):
+                    self._active_promos_cache = list(PromotionSelector.get_active_promotions())
+                active_promos = self._active_promos_cache
+
+            matching_promos = PromotionSelector.get_promotions_for_product(
+                obj.product, active_promotions=active_promos
+            )
             best_promo, discount = PromotionEngine._find_best_promotion_for_product(
                 obj.product, matching_promos, obj.final_price
             )
@@ -166,7 +174,15 @@ class ProductListSerializer(serializers.ModelSerializer):
             from apps.promotions.selectors import PromotionSelector
             from apps.promotions.services import PromotionEngine
 
-            matching_promos = PromotionSelector.get_promotions_for_product(obj)
+            active_promos = self.context.get("active_promotions")
+            if active_promos is None:
+                if not hasattr(self, "_active_promos_cache"):
+                    self._active_promos_cache = list(PromotionSelector.get_active_promotions())
+                active_promos = self._active_promos_cache
+
+            matching_promos = PromotionSelector.get_promotions_for_product(
+                obj, active_promotions=active_promos
+            )
             best_promo, discount = PromotionEngine._find_best_promotion_for_product(
                 obj, matching_promos, obj.base_price
             )
@@ -271,7 +287,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             from apps.promotions.selectors import PromotionSelector
             from apps.promotions.services import PromotionEngine
 
-            matching_promos = PromotionSelector.get_promotions_for_product(obj)
+            active_promos = self.context.get("active_promotions")
+            if active_promos is None:
+                if not hasattr(self, "_active_promos_cache"):
+                    self._active_promos_cache = list(PromotionSelector.get_active_promotions())
+                active_promos = self._active_promos_cache
+
+            matching_promos = PromotionSelector.get_promotions_for_product(
+                obj, active_promotions=active_promos
+            )
             best_promo, discount = PromotionEngine._find_best_promotion_for_product(
                 obj, matching_promos, obj.base_price
             )

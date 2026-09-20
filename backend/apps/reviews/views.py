@@ -79,7 +79,7 @@ class ProductReviewListView(generics.ListAPIView):
         context = super().get_serializer_context()
         # Pre-fetch user votes map for the paginated page to eliminate N+1 queries
         if self.request.user.is_authenticated:
-            page = getattr(self, "_paginator_page", None)
+            page = getattr(self, "page", None)
             if page:
                 review_ids = [r.id for r in page]
                 context["user_votes_map"] = ReviewSelector.get_user_votes_for_reviews(

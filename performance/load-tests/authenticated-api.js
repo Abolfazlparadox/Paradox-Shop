@@ -28,11 +28,11 @@ export function setup() {
     return { token: AUTH_TOKEN };
   }
 
-  const email = __ENV.TEST_USER_EMAIL || 'abolfazlmohammadshahi78@gmail.com';
-  const password = __ENV.TEST_USER_PASSWORD || 'TestUserPass123!';
+  const email = __ENV.TEST_USER_EMAIL || 'perfuser@example.com';
+  const password = __ENV.TEST_USER_PASSWORD || 'PerfPassword123!';
 
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/users/auth/token/`,
+    `${BASE_URL}/api/v1/users/login/`,
     JSON.stringify({ email: email, password: password }),
     { headers: { 'Content-Type': 'application/json' } }
   );

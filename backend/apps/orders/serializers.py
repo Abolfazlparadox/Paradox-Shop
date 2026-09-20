@@ -49,7 +49,7 @@ class OrderAddressSerializer(serializers.ModelSerializer):
 class OrderListSerializer(serializers.ModelSerializer):
     """Compact Order representation for listing views."""
 
-    items_count = serializers.IntegerField(source="items.count", read_only=True)
+    items_count = serializers.SerializerMethodField()
     shipment = ShipmentSerializer(read_only=True)
 
     class Meta:
@@ -70,6 +70,11 @@ class OrderListSerializer(serializers.ModelSerializer):
             "shipment",
         ]
         read_only_fields = fields
+
+    def get_items_count(self, obj) -> int:
+        if hasattr(obj, "annotated_items_count"):
+            return obj.annotated_items_count
+        return obj.items.count()
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):

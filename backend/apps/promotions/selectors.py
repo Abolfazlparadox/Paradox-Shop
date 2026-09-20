@@ -34,7 +34,9 @@ class PromotionSelector:
         )
 
     @staticmethod
-    def get_promotions_for_product(product, *, now=None) -> list[Promotion]:
+    def get_promotions_for_product(
+        product, *, now=None, active_promotions=None
+    ) -> list[Promotion]:
         """
         Returns active promotions that target a specific product.
 
@@ -45,20 +47,38 @@ class PromotionSelector:
            b. Product is in included_products, OR
            c. Product's category is in included_categories, OR
            d. Product's brand is in included_brands
+
+        Performance Optimization:
+        Uses in-memory prefetched relationships rather than .values_list() queries,
+        and reuses caller-provided active_promotions list to eliminate N+1 DB roundtrips.
         """
-        active = PromotionSelector.get_active_promotions(now=now)
+        active = (
+            active_promotions
+            if active_promotions is not None
+            else PromotionSelector.get_active_promotions(now=now)
+        )
         matching = []
 
         for promo in active:
-            excluded_ids = set(promo.excluded_products.values_list("id", flat=True))
-            if product.id in excluded_ids:
+            if not hasattr(promo, "_cached_targets"):
+                promo._cached_targets = {
+                    "excluded": {p.id for p in promo.excluded_products.all()},
+                    "included_products": {p.id for p in promo.included_products.all()},
+                    "included_categories": {c.id for c in promo.included_categories.all()},
+                    "included_brands": {b.id for b in promo.included_brands.all()},
+                }
+
+            targets = promo._cached_targets
+            if product.id in targets["excluded"]:
                 continue
 
-            included_product_ids = set(promo.included_products.values_list("id", flat=True))
-            included_category_ids = set(promo.included_categories.values_list("id", flat=True))
-            included_brand_ids = set(promo.included_brands.values_list("id", flat=True))
+            included_product_ids = targets["included_products"]
+            included_category_ids = targets["included_categories"]
+            included_brand_ids = targets["included_brands"]
 
-            has_any_inclusion = included_product_ids or included_category_ids or included_brand_ids
+            has_any_inclusion = (
+                included_product_ids or included_category_ids or included_brand_ids
+            )
 
             if not has_any_inclusion:
                 # Global promotion — applies to all non-excluded products

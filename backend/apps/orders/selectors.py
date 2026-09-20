@@ -8,8 +8,18 @@ class OrderSelector:
 
     @staticmethod
     def get_user_orders(user) -> QuerySet:
-        """Returns all Orders belonging to the given user, newest first."""
-        return Order.objects.filter(user=user).order_by("-created_at")
+        """
+        Returns all Orders belonging to the given user, newest first.
+        Optimized with items_count annotation and select_related('shipment') to prevent N+1 queries.
+        """
+        from django.db.models import Count
+
+        return (
+            Order.objects.filter(user=user)
+            .annotate(annotated_items_count=Count("items"))
+            .select_related("shipment__shipping_method")
+            .order_by("-created_at")
+        )
 
     @staticmethod
     def get_order_detail(order_id, user) -> Order:

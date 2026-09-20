@@ -1,0 +1,12 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503, F403, F401
+exclude =
+    .git,
+    __pycache__,
+    */migrations/*,
+    .venv,
+    venv,
+    build,
+    dist,
+    shop_backend.egg-info

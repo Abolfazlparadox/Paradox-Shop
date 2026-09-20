@@ -1,0 +1,1 @@
+"""Wishlist app package."""

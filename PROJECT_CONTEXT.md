@@ -44,8 +44,11 @@ Paradox-Shop/
 │   │   ├── categories/
 │   │   ├── cart/
 │   │   ├── orders/
+│   │   ├── shipping/
 │   │   ├── payments/
-│   │   └── reviews/
+│   │   ├── reviews/
+│   │   ├── promotions/
+│   │   └── wishlist/
 │   │
 │   ├── common/
 │   │
@@ -122,8 +125,11 @@ products
 categories
 cart
 orders
+shipping
 payments
 reviews
+promotions
+wishlist
 ```
 
 Each domain should remain as independent as reasonably possible.
@@ -197,8 +203,38 @@ Responsible for:
 Responsible for:
 
 * Product reviews
-* Ratings
-* Review moderation
+* Verified purchase enforcement
+* Ratings & photo attachments
+* Staff responses
+* Product Q&A
+* Review & Q&A moderation
+
+## shipping
+
+Responsible for:
+
+* Shipping methods & carriers
+* Province/city delivery zones
+* Dynamic shipping rate calculation
+* Order shipments & tracking numbers
+
+## promotions
+
+Responsible for:
+
+* Store-wide & category promotions
+* Dynamic discount engine & rules
+* Coupon code generation & limits
+* Cart discount preview
+* Coupon usage tracking
+
+## wishlist
+
+Responsible for:
+
+* Customer wishlist
+* Guest wishlist session tracking
+* Cross-session wishlist merge upon login
 
 ---
 

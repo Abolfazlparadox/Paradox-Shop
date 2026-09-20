@@ -35,9 +35,9 @@ export function PenroseHero3D() {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 0, 8);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     currentMount.appendChild(renderer.domElement);
 
     // Build Minimal Geometric Wireframe Monolith (Penrose-inspired octahedron/torus geometry)
@@ -77,12 +77,31 @@ export function PenroseHero3D() {
       targetRotationX = -y * 0.5;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+    // Intersection & Visibility Observer to eliminate off-screen/hidden GPU rendering cycles
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          isVisible = entry.isIntersecting && document.visibilityState === 'visible';
+        });
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(currentMount);
+
+    const handleVisibilityChange = () => {
+      isVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Animation Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+
+      if (!isVisible) return; // Skip GPU draw calls when offscreen or in background tab
 
       if (!prefersReducedMotion) {
         mesh.rotation.y += 0.003;
@@ -110,10 +129,12 @@ export function PenroseHero3D() {
       renderer.setSize(newWidth, newHeight);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       if (currentMount && renderer.domElement) {

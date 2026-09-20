@@ -65,3 +65,9 @@ frontend/yarn-error.log*
 .agent
 .agents
 skills-lock.json
+
+/others/
+
+# Celery & TypeScript build info
+celerybeat-schedule*
+*.tsbuildinfo

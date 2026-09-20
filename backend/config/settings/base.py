@@ -3,17 +3,22 @@ from datetime import timedelta
 from pathlib import Path
 from celery.schedules import crontab
 from corsheaders.defaults import default_headers
+from django.core.exceptions import ImproperlyConfigured
 import dotenv
-from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Load environment variables from .env in project root if available
 dotenv.load_dotenv(BASE_DIR.parent / ".env")
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "default-unsecure-key-change-in-production-123")
-
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("true", "1", "t")
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-development-key-do-not-use-in-production-12345"
+    else:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY environment variable is required in production.")
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,backend").split(",")
 
@@ -148,6 +153,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "login": "10/minute",
         "register": "5/minute",
+        "otp": "10/minute",
+        "password_reset": "5/minute",
     },
     "DEFAULT_PAGINATION_CLASS": "common.pagination.StandardResultsSetPagination",
     "PAGE_SIZE": 20,
@@ -231,8 +238,8 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Security & CORS/CSRF Settings
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True  # در محیط توسعه
+# CORS Configuration (Restricted by default; overridden in development.py)
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
@@ -255,6 +262,16 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:3000").split(",")
     if origin.strip()
 ]
+
+# Upload & Request Body Limits (Protection against DoS payloads)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
+# Cookie Security Defaults
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 
 # Logging Configuration
 LOGGING = {

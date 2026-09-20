@@ -27,6 +27,7 @@ def process_review_image_task(self, review_image_id: str):
             logger.warning(f"Image path {image_path} does not exist on disk.")
             return
 
+        Image.MAX_IMAGE_PIXELS = 10_000_000
         with Image.open(image_path) as img:
             # Normalize orientation / convert RGBA/P to RGB if converting to standard
             if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):

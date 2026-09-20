@@ -24,23 +24,39 @@ from .selectors import ReviewSelector
 from .tasks import process_review_image_task
 
 ALLOWED_IMAGE_MIMES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_IMAGE_DIMENSION = 4096  # 4096 pixels max width/height
 MAX_IMAGES_PER_REVIEW = 5
 
 
 def validate_image_file(uploaded_file):
     """
-    Validates image file size, MIME type, and Pillow integrity.
+    Validates image file size, extension, Pillow integrity, dimension bounds,
+    and prevents decompression bombs (CWE-400).
     """
     if uploaded_file.size > MAX_IMAGE_FILE_SIZE:
         raise ValidationError(
             f"Image '{uploaded_file.name}' exceeds the maximum allowed size of 5MB."
         )
 
-    # Check content with Pillow
+    ext = os.path.splitext(uploaded_file.name)[1].lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValidationError(
+            f"File extension '{ext}' is not permitted. Allowed extensions: .jpg, .jpeg, .png, .webp"
+        )
+
+    # Decompression bomb prevention
+    Image.MAX_IMAGE_PIXELS = 10_000_000
+
     try:
         uploaded_file.seek(0)
         with Image.open(uploaded_file) as img:
+            if img.width > MAX_IMAGE_DIMENSION or img.height > MAX_IMAGE_DIMENSION:
+                raise ValidationError(
+                    f"Image dimensions ({img.width}x{img.height}) exceed maximum allowed {MAX_IMAGE_DIMENSION}x{MAX_IMAGE_DIMENSION} pixels."
+                )
+
             img.verify()
             format_lower = (img.format or "").lower()
             if format_lower not in ("jpeg", "png", "webp", "jpg"):

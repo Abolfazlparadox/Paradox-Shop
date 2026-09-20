@@ -75,6 +75,7 @@ class VerifyEmailView(generics.GenericAPIView):
 
     serializer_class = VerifyEmailSerializer
     permission_classes = [AllowAny]
+    throttle_scope = "otp"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -102,6 +103,7 @@ class ResendOTPView(generics.GenericAPIView):
 
     serializer_class = ResendOTPSerializer
     permission_classes = [AllowAny]
+    throttle_scope = "otp"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -181,6 +183,7 @@ class PasswordResetRequestView(generics.GenericAPIView):
 
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
+    throttle_scope = "password_reset"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -206,6 +209,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
     serializer_class = PasswordResetConfirmSerializer
     permission_classes = [AllowAny]
+    throttle_scope = "password_reset"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)

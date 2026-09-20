@@ -1,0 +1,136 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shop_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shop_db
+      POSTGRES_USER: shop_user
+      POSTGRES_PASSWORD: shop_password_secure_123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop_user -d shop_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: shop_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: shop_migrate
+    command: python manage.py migrate --noinput
+    volumes:
+      - ./backend:/app
+    environment: &backend_env
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: base44-dev-secret-key-not-for-production-use
+      DJANGO_ALLOWED_HOSTS: "*"
+      DATABASE_URL: postgres://shop_user:shop_password_secure_123@postgres:5432/shop_db
+      POSTGRES_DB: shop_db
+      POSTGRES_USER: shop_user
+      POSTGRES_PASSWORD: shop_password_secure_123
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CORS_ALLOWED_ORIGINS: "https://3000-${BASE44_PUBLIC_HOST_SUFFIX},http://localhost:3000"
+      CSRF_TRUSTED_ORIGINS: "https://3000-${BASE44_PUBLIC_HOST_SUFFIX},http://localhost:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: shop_backend
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment: *backend_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: shop_celery_worker
+    restart: unless-stopped
+    command: celery -A config worker -l info --concurrency=2
+    volumes:
+      - ./backend:/app
+    environment: *backend_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: shop_celery_beat
+    restart: unless-stopped
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+    volumes:
+      - ./backend:/app
+    environment: *backend_env
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: shop_frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: https://8000-${BASE44_PUBLIC_HOST_SUFFIX}/api/v1
+      INTERNAL_API_URL: http://backend:8000/api/v1
+      INTERNAL_BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_SITE_URL: https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      BASE44_PUBLIC_HOST_SUFFIX: ${BASE44_PUBLIC_HOST_SUFFIX}
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  postgres_data:

@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth';
 import { parseApiError } from '@/lib/api/error-handler';
 import { notify } from '@/stores/notifications';
+import { getSafeRedirectUrl } from '@/lib/utils/url';
 import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const redirectUrl = getSafeRedirectUrl(searchParams.get('redirect'), '/');
 
   const { login, isLoading } = useAuthStore();
 

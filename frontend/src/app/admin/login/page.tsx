@@ -20,11 +20,12 @@ import {
   Shield,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSafeRedirectUrl } from '@/lib/utils/url';
 
 function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/admin';
+  const redirectUrl = getSafeRedirectUrl(searchParams.get('redirect'), '/admin');
 
   const { login, isLoading } = useAuthStore();
 

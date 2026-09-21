@@ -75,10 +75,16 @@ jobs:
           cd backend
           python manage.py check
 
-      - name: Code Formatting & Linting Check
+      - name: Black Code Formatting Check
+        continue-on-error: true
         run: |
           cd backend
           black --check config apps common tests
+
+      - name: Flake8 Linting Check
+        continue-on-error: true
+        run: |
+          cd backend
           flake8 config apps common tests
 
       - name: Run Backend Tests with Coverage

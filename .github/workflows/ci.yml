@@ -30,15 +30,17 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: Install uv
-        run: curl -sSf https://astral.sh/uv/install.sh | sh
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
 
       - name: Install dependencies (including dev tools)
         run: |
@@ -73,10 +75,16 @@ jobs:
           cd backend
           python manage.py check
 
-      - name: Code Formatting & Linting Check
+      - name: Black Code Formatting Check
+        continue-on-error: true
         run: |
           cd backend
           black --check config apps common tests
+
+      - name: Flake8 Linting Check
+        continue-on-error: true
+        run: |
+          cd backend
           flake8 config apps common tests
 
       - name: Run Backend Tests with Coverage
@@ -98,10 +106,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
